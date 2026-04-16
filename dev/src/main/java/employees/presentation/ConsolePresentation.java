@@ -61,8 +61,9 @@ public class ConsolePresentation {
                 System.out.println("\nChoose action:");
                 if (isHrManager(loggedInUser.get())) {
                     System.out.println("1. Add new employee");
-                    System.out.println("2. Logout");
-                    System.out.println("3. Exit");
+                    System.out.println("2. Fire employee");
+                    System.out.println("3. Logout");
+                    System.out.println("4. Exit");
                 } else {
                     System.out.println("1. Logout");
                     System.out.println("2. Exit");
@@ -77,6 +78,10 @@ public class ConsolePresentation {
                             shiftController.setEmployees(userController.getEmployees());
                             break;
                         case "2":
+                            fireEmployeeFlow(scanner);
+                            shiftController.setEmployees(userController.getEmployees());
+                            break;
+                        case "3":
                             if (authenticationService.logout()) {
                                 System.out.println("You have been logged out.");
                             } else {
@@ -84,7 +89,7 @@ public class ConsolePresentation {
                             }
                             running = false;
                             break;
-                        case "3":
+                        case "4":
                             running = false;
                             break;
                         default:
@@ -117,13 +122,43 @@ public class ConsolePresentation {
 
     private void addNewEmployeeFlow(Scanner scanner) {
         try {
+            Optional<User> currentUser = authenticationService.getCurrentUser();
+            if (!currentUser.isPresent()) {
+                System.out.println("No user logged in.");
+                return;
+            }
+
             Employee employee = employeePresentation.readEmployeeInput(scanner);
-            userController.addEmployee(employee, authenticationService, employeeRepository);
+            userController.addEmployee(currentUser.get(), employee, authenticationService, employeeRepository);
             System.out.println("Employee added successfully.");
         } catch (RepositoryException e) {
             System.out.println("Failed to add employee: " + e.getMessage());
         } catch (IllegalArgumentException e) {
-            System.out.println("Invalid input: " + e.getMessage());
+            System.out.println("Authorization failed: " + e.getMessage());
+        }
+    }
+
+    private void fireEmployeeFlow(Scanner scanner) {
+        try {
+            Optional<User> currentUser = authenticationService.getCurrentUser();
+            if (!currentUser.isPresent()) {
+                System.out.println("No user logged in.");
+                return;
+            }
+
+            System.out.print("Employee id to fire: ");
+            String employeeId = scanner.nextLine();
+
+            boolean fired = userController.fireEmployee(currentUser.get(), employeeId, authenticationService, employeeRepository);
+            if (fired) {
+                System.out.println("Employee marked as fired.");
+            } else {
+                System.out.println("Employee not found.");
+            }
+        } catch (RepositoryException e) {
+            System.out.println("Failed to fire employee: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            System.out.println("Authorization failed: " + e.getMessage());
         }
     }
 }
