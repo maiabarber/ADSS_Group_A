@@ -61,8 +61,9 @@ public class ConsolePresentation {
                 System.out.println("\nChoose action:");
                 if (isHrManager(loggedInUser.get())) {
                     System.out.println("1. Add new employee");
-                    System.out.println("2. Logout");
-                    System.out.println("3. Exit");
+                    System.out.println("2. Update employee details");
+                    System.out.println("3. Logout");
+                    System.out.println("4. Exit");
                 } else {
                     System.out.println("1. Logout");
                     System.out.println("2. Exit");
@@ -74,9 +75,11 @@ public class ConsolePresentation {
                     switch (choice) {
                         case "1":
                             addNewEmployeeFlow(scanner);
-                            shiftController.setEmployees(userController.getEmployees());
                             break;
                         case "2":
+                            updateEmployeeDetailsFlow(scanner);
+                            break;
+                        case "3":
                             if (authenticationService.logout()) {
                                 System.out.println("You have been logged out.");
                             } else {
@@ -84,7 +87,7 @@ public class ConsolePresentation {
                             }
                             running = false;
                             break;
-                        case "3":
+                        case "4":
                             running = false;
                             break;
                         default:
@@ -117,13 +120,134 @@ public class ConsolePresentation {
 
     private void addNewEmployeeFlow(Scanner scanner) {
         try {
+            Optional<User> currentUser = authenticationService.getCurrentUser();
+            if (!currentUser.isPresent()) {
+                System.out.println("No user is currently logged in.");
+                return;
+            }
+
             Employee employee = employeePresentation.readEmployeeInput(scanner);
-            userController.addEmployee(employee, authenticationService, employeeRepository);
+            userController.addEmployee(currentUser.get(), employee, authenticationService, employeeRepository);
             System.out.println("Employee added successfully.");
         } catch (RepositoryException e) {
             System.out.println("Failed to add employee: " + e.getMessage());
         } catch (IllegalArgumentException e) {
-            System.out.println("Invalid input: " + e.getMessage());
+            System.out.println("Not authorized: " + e.getMessage());
+        }
+    }
+
+    private void updateEmployeeDetailsFlow(Scanner scanner) {
+        Optional<User> currentUser = authenticationService.getCurrentUser();
+        if (!currentUser.isPresent()) {
+            System.out.println("No user is currently logged in.");
+            return;
+        }
+
+        System.out.print("Enter employee ID: ");
+        String employeeId = scanner.nextLine();
+
+        Optional<Employee> employeeOptional;
+        try {
+            employeeOptional = employeeRepository.findById(employeeId);
+        } catch (RepositoryException e) {
+            System.out.println("Failed to load employee: " + e.getMessage());
+            return;
+        }
+
+        if (!employeeOptional.isPresent()) {
+            System.out.println("Employee not found.");
+            return;
+        }
+
+        Employee employee = employeeOptional.get();
+
+        String newName = employee.getName();
+        Double newGlobalSalary = employee.getSalary().getGlobalSalary();
+        Double newHourlySalary = employee.getSalary().getHourlySalary();
+        Boolean newCanManageShift = employee.canManageShift();
+
+        boolean choosingFields = true;
+        while (choosingFields) {
+            System.out.println("Choose what to update:");
+            System.out.println("1. Name");
+            System.out.println("2. Global salary");
+            System.out.println("3. Hourly salary");
+            System.out.println("4. Can manage shifts");
+            System.out.println("5. Finish");
+            System.out.print("Selection: ");
+
+            String updateChoice = scanner.nextLine();
+            switch (updateChoice) {
+                case "1":
+                    System.out.print("Enter new name (current: " + newName + "): ");
+                    String nameInput = scanner.nextLine();
+                    if (!nameInput.isEmpty()) {
+                        newName = nameInput;
+                    }
+                    break;
+                case "2":
+                    System.out.print("Enter new global salary (current: " + newGlobalSalary + "): ");
+                    String globalSalaryInput = scanner.nextLine();
+                    if (!globalSalaryInput.isEmpty()) {
+                        try {
+                            newGlobalSalary = Double.parseDouble(globalSalaryInput);
+                        } catch (NumberFormatException e) {
+                            System.out.println("Invalid global salary.");
+                            return;
+                        }
+                    }
+                    break;
+                case "3":
+                    System.out.print("Enter new hourly salary (current: " + newHourlySalary + "): ");
+                    String hourlySalaryInput = scanner.nextLine();
+                    if (!hourlySalaryInput.isEmpty()) {
+                        try {
+                            newHourlySalary = Double.parseDouble(hourlySalaryInput);
+                        } catch (NumberFormatException e) {
+                            System.out.println("Invalid hourly salary.");
+                            return;
+                        }
+                    }
+                    break;
+                case "4":
+                    System.out.print("Can manage shifts? (current: " + newCanManageShift + ", true/false): ");
+                    String canManageShiftInput = scanner.nextLine();
+                    if (!canManageShiftInput.isEmpty()) {
+                        if (!"true".equalsIgnoreCase(canManageShiftInput) && !"false".equalsIgnoreCase(canManageShiftInput)) {
+                            System.out.println("Invalid value. Please enter true or false.");
+                            return;
+                        }
+                        newCanManageShift = Boolean.parseBoolean(canManageShiftInput);
+                    }
+                    break;
+                case "5":
+                    choosingFields = false;
+                    break;
+                default:
+                    System.out.println("Invalid selection.");
+            }
+        }
+
+        try {
+            boolean updated = userController.updateEmployeeDetails(
+                currentUser.get(),
+                employee,
+                newName,
+                newGlobalSalary,
+                newHourlySalary,
+                newCanManageShift,
+                employeeRepository
+            );
+
+            if (updated) {
+                System.out.println("Employee details updated successfully.");
+            } else {
+                System.out.println("Employee not found.");
+            }
+        } catch (RepositoryException e) {
+            System.out.println("Failed to update employee: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            System.out.println("Not authorized: " + e.getMessage());
         }
     }
 }
