@@ -3,29 +3,32 @@ package employees.domain;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class Shift implements Serializable {
     private static final long serialVersionUID = 1L;
     private LocalDate date;
     private ShiftType shiftType;
     private Employee shiftManager;
-    private int requiredCashiers;
-    private int requiredStorekeepers;
+    private final Map<Role, Integer> requiredRoleCounts;
     private List<ShiftAssignment> assignments;
 
     public Shift() {
+        this.requiredRoleCounts = new EnumMap<>(Role.class);
+        initializeDefaultRoleRequirements();
         this.assignments = new ArrayList<>();
     }
 
     public Shift(LocalDate date, ShiftType shiftType, Employee shiftManager, int requiredCashiers, int requiredStorekeepers) {
+        this();
         this.date = date;
         this.shiftType = shiftType;
         this.shiftManager = shiftManager;
-        this.requiredCashiers = requiredCashiers;
-        this.requiredStorekeepers = requiredStorekeepers;
-        this.assignments = new ArrayList<>();
+        setRequiredCashiers(requiredCashiers);
+        setRequiredStorekeepers(requiredStorekeepers);
     }
 
     public LocalDate getDate() {
@@ -75,19 +78,36 @@ public class Shift implements Serializable {
     }
 
     public int getRequiredCashiers() {
-        return requiredCashiers;
+        return getRequiredCount(Role.CASHIER);
     }
 
-    public void setRequiredCashiers(int requiredCashiers) {
-        this.requiredCashiers = requiredCashiers;
+    private void setRequiredCashiers(int requiredCashiers) {
+        setRequiredCount(Role.CASHIER, requiredCashiers);
     }
 
     public int getRequiredStorekeepers() {
-        return requiredStorekeepers;
+        return getRequiredCount(Role.STOREKEEPER);
     }
 
-    public void setRequiredStorekeepers(int requiredStorekeepers) {
-        this.requiredStorekeepers = requiredStorekeepers;
+    private void setRequiredStorekeepers(int requiredStorekeepers) {
+        setRequiredCount(Role.STOREKEEPER, requiredStorekeepers);
+    }
+
+    public Map<Role, Integer> getRequiredRoleCounts() {
+        return Collections.unmodifiableMap(requiredRoleCounts);
+    }
+
+    public void configureRequiredRoleCounts(User selectedBy, Map<Role, Integer> selectedRoleCounts) {
+        ensureHrManager(selectedBy);
+        initializeDefaultRoleRequirements();
+
+        if (selectedRoleCounts == null) {
+            return;
+        }
+
+        for (Map.Entry<Role, Integer> entry : selectedRoleCounts.entrySet()) {
+            setRequiredCount(entry.getKey(), entry.getValue());
+        }
     }
 
     public List<ShiftAssignment> getAssignments() {
@@ -114,9 +134,35 @@ public class Shift implements Serializable {
             "date=" + date +
             ", shiftType=" + shiftType +
             ", shiftManager=" + shiftManager +
-            ", requiredCashiers=" + requiredCashiers +
-            ", requiredStorekeepers=" + requiredStorekeepers +
+            ", requiredRoleCounts=" + requiredRoleCounts +
             ", assignments=" + assignments +
             '}';
+    }
+
+    private void initializeDefaultRoleRequirements() {
+        requiredRoleCounts.clear();
+        for (Role role : Role.values()) {
+            requiredRoleCounts.put(role, 1);
+        }
+    }
+
+    private int getRequiredCount(Role role) {
+        return requiredRoleCounts.getOrDefault(role, 1);
+    }
+
+    private void setRequiredCount(Role role, Integer count) {
+        if (role == null) {
+            throw new IllegalArgumentException("Role must not be null");
+        }
+        if (count == null || count < 1) {
+            throw new IllegalArgumentException("Required count for role " + role + " must be at least 1");
+        }
+        requiredRoleCounts.put(role, count);
+    }
+
+    private void ensureHrManager(User selectedBy) {
+        if (!(selectedBy instanceof HR_Manager) || !((HR_Manager) selectedBy).isHRManager()) {
+            throw new IllegalArgumentException("Only HR manager can configure required roles for a shift");
+        }
     }
 }
