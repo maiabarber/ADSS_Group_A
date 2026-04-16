@@ -44,7 +44,7 @@ public class FileShiftRepository implements ShiftRepository {
 
     @Override
     public Optional<Shift> findById(String id) throws RepositoryException {
-        if (id == null || id.isBlank()) {
+        if (id == null || id.isEmpty()) {
             return Optional.empty();
         }
 
@@ -60,7 +60,7 @@ public class FileShiftRepository implements ShiftRepository {
 
     @Override
     public void deleteById(String id) throws RepositoryException {
-        if (id == null || id.isBlank()) {
+        if (id == null || id.isEmpty()) {
             return;
         }
 

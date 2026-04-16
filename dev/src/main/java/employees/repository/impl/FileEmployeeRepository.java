@@ -28,7 +28,7 @@ public class FileEmployeeRepository implements EmployeeRepository {
         if (employee == null) {
             throw new RepositoryException("Employee cannot be null");
         }
-        if (employee.getId() == null || employee.getId().isBlank()) {
+        if (employee.getId() == null || employee.getId().isEmpty()) {
             throw new RepositoryException("Employee id cannot be null or blank");
         }
 
@@ -43,7 +43,7 @@ public class FileEmployeeRepository implements EmployeeRepository {
 
     @Override
     public Optional<Employee> findById(String id) throws RepositoryException {
-        if (id == null || id.isBlank()) {
+        if (id == null || id.isEmpty()) {
             return Optional.empty();
         }
 
@@ -59,7 +59,7 @@ public class FileEmployeeRepository implements EmployeeRepository {
 
     @Override
     public void deleteById(String id) throws RepositoryException {
-        if (id == null || id.isBlank()) {
+        if (id == null || id.isEmpty()) {
             return;
         }
 
