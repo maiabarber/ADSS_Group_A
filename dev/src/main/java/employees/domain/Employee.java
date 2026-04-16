@@ -1,12 +1,14 @@
 package employees.domain;
 
+import java.io.Serializable;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Employee extends User {
+public class Employee extends User implements Serializable {
+    private static final long serialVersionUID = 1L;
     private BankAccount bankAccount;
     private String name;
     private Salary salary;

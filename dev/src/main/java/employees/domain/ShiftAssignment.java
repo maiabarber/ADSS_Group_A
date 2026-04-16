@@ -1,6 +1,9 @@
 package employees.domain;
 
-public class ShiftAssignment {
+import java.io.Serializable;
+
+public class ShiftAssignment implements Serializable {
+    private static final long serialVersionUID = 1L;
     private Employee employee;
     private Role role;
 

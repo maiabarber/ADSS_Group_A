@@ -1,11 +1,13 @@
 package employees.domain;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class Shift {
+public class Shift implements Serializable {
+    private static final long serialVersionUID = 1L;
     private LocalDate date;
     private ShiftType shiftType;
     private Employee shiftManager;
