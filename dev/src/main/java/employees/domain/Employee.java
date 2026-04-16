@@ -7,7 +7,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class Employee extends User {
-    private static final long serialVersionUID = 1L;
     private BankAccount bankAccount;
     private String name;
     private Salary salary;
