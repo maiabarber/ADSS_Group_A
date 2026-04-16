@@ -2,14 +2,14 @@ package employees.domain;
 
 public class ShiftAssignment {
     private Employee employee;
-    private Role Role;
+    private Role role;
 
     public ShiftAssignment() {
     }
 
-    public ShiftAssignment(Employee employee, Role Role) {
+    public ShiftAssignment(Employee employee, Role role) {
         this.employee = employee;
-        this.Role = Role;
+        this.role = role;
     }
 
     public Employee getEmployee() {
@@ -20,19 +20,19 @@ public class ShiftAssignment {
         this.employee = employee;
     }
 
-    public Role getJobRole() {
-        return Role;
+    public Role getRole() {
+        return role;
     }
 
-    public void setJobRole(Role Role) {
-        this.Role = Role;
+    public void setRole(Role role) {
+        this.role = role;
     }
 
     @Override
     public String toString() {
         return "ShiftAssignment{" +
             "employee=" + employee +
-            ", Role=" + Role +
+            ", role=" + role +
             '}';
     }
 }

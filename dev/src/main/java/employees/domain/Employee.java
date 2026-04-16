@@ -14,6 +14,7 @@ public class Employee extends User {
     private LocalDate startDate;
     private Set<Role> authorizedRoles = new HashSet<>();
     private boolean canManageShift;
+    private boolean isFired;
     private DayOfWeek fixedDayOff;
     private WeeklyAvailabilityRequest weeklyAvailabilityRequest;
 
@@ -30,6 +31,7 @@ public class Employee extends User {
         LocalDate startDate,
         Set<Role> authorizedRoles,
         boolean canManageShift,
+        boolean isFired,
         DayOfWeek fixedDayOff,
         WeeklyAvailabilityRequest weeklyAvailabilityRequest
     ) {
@@ -41,6 +43,7 @@ public class Employee extends User {
         this.startDate = startDate;
         setAuthorizedRoles(authorizedRoles);
         this.canManageShift = canManageShift;
+        this.isFired = isFired;
         this.fixedDayOff = fixedDayOff;
         this.weeklyAvailabilityRequest = weeklyAvailabilityRequest;
     }
@@ -96,12 +99,20 @@ public class Employee extends User {
         }
     }
 
-    public boolean isCanManageShift() {
+    public boolean canManageShift() {
         return canManageShift;
     }
 
     public void setCanManageShift(boolean canManageShift) {
         this.canManageShift = canManageShift;
+    }
+
+    public boolean isFired() {
+        return isFired;
+    }
+
+    public void setFired(boolean fired) {
+        isFired = fired;
     }
 
     public DayOfWeek getFixedDayOff() {
