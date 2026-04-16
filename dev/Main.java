@@ -26,10 +26,36 @@ public class Main {
             String password = scanner.nextLine();
 
             Optional<User> loggedInUser = authenticationService.login(id, password);
-            if (loggedInUser.isPresent()) {
-                System.out.println("Login successful. Welcome " + loggedInUser.get().getId() + ".");
-            } else {
+            if (!loggedInUser.isPresent()) {
                 System.out.println("Invalid credentials.");
+                return;
+            }
+
+            System.out.println("Login successful. Welcome " + loggedInUser.get().getId() + ".");
+
+            boolean running = true;
+            while (running) {
+                System.out.println("\nChoose action:");
+                System.out.println("1. Logout");
+                System.out.println("2. Exit");
+                System.out.print("Selection: ");
+
+                String choice = scanner.nextLine();
+                switch (choice) {
+                    case "1":
+                        if (authenticationService.logout()) {
+                            System.out.println("You have been logged out.");
+                        } else {
+                            System.out.println("No user is currently logged in.");
+                        }
+                        running = false;
+                        break;
+                    case "2":
+                        running = false;
+                        break;
+                    default:
+                        System.out.println("Invalid selection.");
+                }
             }
         }
     }
