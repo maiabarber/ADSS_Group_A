@@ -1,5 +1,7 @@
 ﻿package employees.domain;
 
+import java.io.Serializable;
+
 /**
  * Represents a salary computation for an employee.
  *
@@ -8,7 +10,8 @@
  * workedHours is the total hours worked, and finalSalary is
  * the computed total salary including overtime pay.
  */
-public class Salary {
+public class Salary implements Serializable {
+    private static final long serialVersionUID = 1L;
     private double globalSalary;
     private double hourlySalary;
     private double workedHours;

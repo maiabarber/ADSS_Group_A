@@ -1,8 +1,10 @@
 package employees.domain;
 
+import java.io.Serializable;
 import java.time.DayOfWeek;
 
-public class Preference {
+public class Preference implements Serializable {
+    private static final long serialVersionUID = 1L;
     private DayOfWeek day;
     private ShiftType shiftType;
 
