@@ -1,5 +1,6 @@
 package employees.domain;
 
+import java.util.Objects;
 import java.io.Serializable;
 
 public class User implements Serializable {
@@ -29,5 +30,9 @@ public class User implements Serializable {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public boolean matchesCredentials(String id, String password) {
+        return Objects.equals(this.id, id) && Objects.equals(this.password, password);
     }
 }
