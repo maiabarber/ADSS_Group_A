@@ -49,7 +49,29 @@ public class Shift implements Serializable {
     }
 
     public void setShiftManager(Employee shiftManager) {
+        validateQualifiedShiftManager(shiftManager);
         this.shiftManager = shiftManager;
+    }
+
+    public void assignShiftManager(User selectedBy, Employee candidateShiftManager) {
+        if (!(selectedBy instanceof HR_Manager) || !((HR_Manager) selectedBy).isHRManager()) {
+            throw new IllegalArgumentException("Only HR manager can assign shift manager");
+        }
+
+        validateQualifiedShiftManager(candidateShiftManager);
+        this.shiftManager = candidateShiftManager;
+    }
+
+    private void validateQualifiedShiftManager(Employee candidateShiftManager) {
+        if (candidateShiftManager == null) {
+            throw new IllegalArgumentException("Shift manager must not be null");
+        }
+        if (!candidateShiftManager.canManageShift()) {
+            throw new IllegalArgumentException("Employee is not certified to manage shifts");
+        }
+        if (candidateShiftManager.isFired()) {
+            throw new IllegalArgumentException("Fired employee cannot be assigned as shift manager");
+        }
     }
 
     public int getRequiredCashiers() {
