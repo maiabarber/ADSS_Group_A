@@ -1,5 +1,7 @@
 package employees.domain;
 
+import java.util.Objects;
+
 public class User {
     private String id;
     private String password;
@@ -26,5 +28,9 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public boolean matchesCredentials(String id, String password) {
+        return Objects.equals(this.id, id) && Objects.equals(this.password, password);
     }
 }
