@@ -59,7 +59,7 @@ public class Shift implements Serializable {
         return getRequiredCount(Role.CASHIER);
     }
 
-    public void setRequiredCashiers(int requiredCashiers) {
+    private void setRequiredCashiers(int requiredCashiers) {
         setRequiredCount(Role.CASHIER, requiredCashiers);
     }
 
@@ -67,7 +67,7 @@ public class Shift implements Serializable {
         return getRequiredCount(Role.STOREKEEPER);
     }
 
-    public void setRequiredStorekeepers(int requiredStorekeepers) {
+    private void setRequiredStorekeepers(int requiredStorekeepers) {
         setRequiredCount(Role.STOREKEEPER, requiredStorekeepers);
     }
 
