@@ -57,9 +57,15 @@ public class UserController {
         }
         if (newGlobalSalary != null) {
             employee.getSalary().setGlobalSalary(newGlobalSalary);
+            if (employee.getEmploymentTerms() != null) {
+                employee.getEmploymentTerms().setGlobalSalary(newGlobalSalary);
+            }
         }
         if (newHourlySalary != null) {
             employee.getSalary().setHourlySalary(newHourlySalary);
+            if (employee.getEmploymentTerms() != null) {
+                employee.getEmploymentTerms().setHourlySalary(newHourlySalary);
+            }
         }
         if (newCanManageShift != null) {
             employee.setCanManageShift(newCanManageShift);
@@ -74,9 +80,15 @@ public class UserController {
                 }
                 if (newGlobalSalary != null) {
                     existingEmployee.getSalary().setGlobalSalary(newGlobalSalary);
+                    if (existingEmployee.getEmploymentTerms() != null) {
+                        existingEmployee.getEmploymentTerms().setGlobalSalary(newGlobalSalary);
+                    }
                 }
                 if (newHourlySalary != null) {
                     existingEmployee.getSalary().setHourlySalary(newHourlySalary);
+                    if (existingEmployee.getEmploymentTerms() != null) {
+                        existingEmployee.getEmploymentTerms().setHourlySalary(newHourlySalary);
+                    }
                 }
                 if (newCanManageShift != null) {
                     existingEmployee.setCanManageShift(newCanManageShift);

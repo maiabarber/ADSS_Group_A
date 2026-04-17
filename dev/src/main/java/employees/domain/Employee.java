@@ -4,6 +4,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 public class Employee extends User {
@@ -12,6 +13,7 @@ public class Employee extends User {
     private Salary salary;
     private EmploymentType employmentType;
     private LocalDate startDate;
+    private EmploymentTerms employmentTerms;
     private Set<Role> authorizedRoles = new HashSet<>();
     private boolean canManageShift;
     private boolean isFired;
@@ -28,7 +30,7 @@ public class Employee extends User {
         String name,
         Salary salary,
         EmploymentType employmentType,
-        LocalDate startDate,
+        EmploymentTerms employmentTerms,
         Set<Role> authorizedRoles,
         boolean canManageShift,
         boolean isFired,
@@ -40,7 +42,7 @@ public class Employee extends User {
         this.name = name;
         this.salary = salary;
         this.employmentType = employmentType;
-        this.startDate = startDate;
+        setEmploymentTerms(Objects.requireNonNull(employmentTerms, "employmentTerms must not be null"));
         setAuthorizedRoles(authorizedRoles);
         this.canManageShift = canManageShift;
         this.isFired = isFired;
@@ -70,6 +72,10 @@ public class Employee extends User {
 
     public void setSalary(Salary salary) {
         this.salary = salary;
+        if (salary != null && employmentTerms != null) {
+            employmentTerms.setGlobalSalary(salary.getGlobalSalary());
+            employmentTerms.setHourlySalary(salary.getHourlySalary());
+        }
     }
 
     public EmploymentType getEmploymentType() {
@@ -86,6 +92,25 @@ public class Employee extends User {
 
     public void setStartDate(LocalDate startDate) {
         this.startDate = startDate;
+        if (employmentTerms != null) {
+            employmentTerms.setStartDate(startDate);
+        }
+    }
+
+    public EmploymentTerms getEmploymentTerms() {
+        return employmentTerms;
+    }
+
+    public void setEmploymentTerms(EmploymentTerms employmentTerms) {
+        this.employmentTerms = employmentTerms;
+        if (employmentTerms != null) {
+            this.startDate = employmentTerms.getStartDate();
+            this.salary = new Salary(
+                employmentTerms.getGlobalSalary(),
+                employmentTerms.getHourlySalary(),
+                this.salary != null ? this.salary.getWorkedHours() : 0
+            );
+        }
     }
 
     public Set<Role> getAuthorizedRoles() {

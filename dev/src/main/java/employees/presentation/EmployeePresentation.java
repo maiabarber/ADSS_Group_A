@@ -2,6 +2,8 @@ package employees.presentation;
 
 import employees.domain.BankAccount;
 import employees.domain.Employee;
+import employees.domain.EmploymentScope;
+import employees.domain.EmploymentTerms;
 import employees.domain.EmploymentType;
 import employees.domain.Role;
 import employees.domain.Salary;
@@ -25,6 +27,8 @@ public class EmployeePresentation {
     private double globalSalaryInput;
     private double hourlySalaryInput;
     private double workedHoursInput;
+    private EmploymentScope employmentScopeInput;
+    private int vacationDaysInput;
 
     public Employee readEmployeeInput(Scanner scanner) {
         System.out.println("\nAdd new employee");
@@ -53,23 +57,35 @@ public class EmployeePresentation {
 
         globalSalaryInput = readDouble(scanner, "Base salary: ");
         hourlySalaryInput = readDouble(scanner, "Overtime hourly rate: ");
+        employmentScopeInput = readEmploymentScope(scanner);
+        vacationDaysInput = readInt(scanner, "Vacation days: ");
         workedHoursInput = 0;
-        startDateInput = LocalDate.now();
+        startDateInput = readLocalDate(scanner, "Start date (YYYY-MM-DD): ");
 
-        return new Employee(
+        Salary salary = new Salary(globalSalaryInput, hourlySalaryInput, workedHoursInput);
+        EmploymentTerms employmentTerms = new EmploymentTerms(
+            startDateInput,
+            employmentScopeInput,
+            globalSalaryInput,
+            hourlySalaryInput,
+            vacationDaysInput
+        );
+
+        Employee employee = new Employee(
             idInput,
             passwordInput,
             new BankAccount(bankNumberInput, branchNumberInput, accountNumberInput),
             nameInput,
-            new Salary(globalSalaryInput, hourlySalaryInput, workedHoursInput),
+            salary,
             employeeTypeInput,
-            startDateInput,
+            employmentTerms,
             Collections.singleton(jobRoleInput),
             canManageShiftInput,
             false,
             null,
             new WeeklyAvailabilityRequest()
         );
+        return employee;
     }
 
     private EmploymentType readEmploymentType(Scanner scanner) {
@@ -136,6 +152,49 @@ public class EmployeePresentation {
                 return Double.parseDouble(value);
             } catch (NumberFormatException e) {
                 System.out.println("Please enter a valid number.");
+            }
+        }
+    }
+
+    private EmploymentScope readEmploymentScope(Scanner scanner) {
+        while (true) {
+            System.out.println("Employment scope:");
+            System.out.println("1. FULL_TIME");
+            System.out.println("2. PART_TIME");
+            System.out.print("Selection: ");
+            String value = scanner.nextLine();
+
+            if ("1".equals(value)) {
+                return EmploymentScope.FULL_TIME;
+            }
+            if ("2".equals(value)) {
+                return EmploymentScope.PART_TIME;
+            }
+
+            System.out.println("Invalid selection.");
+        }
+    }
+
+    private int readInt(Scanner scanner, String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String value = scanner.nextLine();
+            try {
+                return Integer.parseInt(value);
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter a valid integer.");
+            }
+        }
+    }
+
+    private LocalDate readLocalDate(Scanner scanner, String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String value = scanner.nextLine();
+            try {
+                return LocalDate.parse(value);
+            } catch (Exception e) {
+                System.out.println("Please enter a valid date in YYYY-MM-DD format.");
             }
         }
     }
