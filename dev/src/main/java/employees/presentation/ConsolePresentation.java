@@ -1,7 +1,10 @@
 package employees.presentation;
 
+import employees.domain.Constraint;
 import employees.domain.Employee;
 import employees.domain.HR_Manager;
+import employees.domain.Preference;
+import employees.domain.ShiftType;
 import employees.domain.User;
 import employees.domain.WeeklyAvailabilityRequest;
 import employees.repository.EmployeeRepository;
@@ -12,7 +15,11 @@ import employees.repository.impl.InMemorySubmissionDeadlineRepository;
 import employees.repository.impl.InMemoryUserRepository;
 import employees.service.AuthenticationService;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 
@@ -58,6 +65,8 @@ public class ConsolePresentation {
 
             if (isHrManager(loggedInUser.get())) {
                 userController.setManager((HR_Manager) loggedInUser.get());
+            } else if (loggedInUser.get() instanceof Employee) {
+                ensureWeeklyAvailabilityCurrent((Employee) loggedInUser.get());
             }
 
             System.out.println("Login successful. Welcome " + loggedInUser.get().getId() + ".");
@@ -72,7 +81,8 @@ public class ConsolePresentation {
                     System.out.println("4. Fire employee");
                     System.out.println("5. Logout");
                 } else {
-                    System.out.println("1. Logout");
+                    System.out.println("1. Submit weekly constraints and preferences");
+                    System.out.println("2. Logout");
                 }
                 System.out.print("Selection: ");
 
@@ -106,6 +116,9 @@ public class ConsolePresentation {
                 } else {
                     switch (choice) {
                         case "1":
+                            submitWeeklyAvailabilityFlow(loggedInUser.get(), scanner);
+                            break;
+                        case "2":
                             if (authenticationService.logout()) {
                                 System.out.println("You have been logged out.");
                             } else {
@@ -143,12 +156,42 @@ public class ConsolePresentation {
                 }
                 weeklyAvailabilityRequest.setSubmissionDeadline(configuredDeadline.get());
             }
+            ensureWeeklyAvailabilityCurrent(employee);
             userController.addEmployee(currentUser.get(), employee, authenticationService, employeeRepository);
             System.out.println("Employee added successfully.");
         } catch (RepositoryException e) {
             System.out.println("Failed to add employee: " + e.getMessage());
         } catch (IllegalArgumentException e) {
             System.out.println("Not authorized: " + e.getMessage());
+        }
+    }
+
+    private void submitWeeklyAvailabilityFlow(User loggedInUser, Scanner scanner) {
+        if (!(loggedInUser instanceof Employee)) {
+            System.out.println("Only employees can submit constraints and preferences.");
+            return;
+        }
+
+        Employee employee = (Employee) loggedInUser;
+        ensureWeeklyAvailabilityCurrent(employee);
+
+        WeeklyAvailabilityRequest weeklyAvailabilityRequest = employee.getWeeklyAvailabilityRequest();
+        if (weeklyAvailabilityRequest == null) {
+            weeklyAvailabilityRequest = new WeeklyAvailabilityRequest();
+            employee.setWeeklyAvailabilityRequest(weeklyAvailabilityRequest);
+            ensureWeeklyAvailabilityCurrent(employee);
+        }
+
+        List<Constraint> constraints = readConstraints(scanner);
+        List<Preference> preferences = readPreferences(scanner);
+        weeklyAvailabilityRequest.setConstraints(constraints);
+        weeklyAvailabilityRequest.setPreferences(preferences);
+
+        try {
+            employeeRepository.save(employee);
+            System.out.println("Weekly constraints and preferences were submitted successfully.");
+        } catch (RepositoryException e) {
+            System.out.println("Failed to save weekly submission: " + e.getMessage());
         }
     }
 
@@ -309,6 +352,126 @@ public class ConsolePresentation {
             System.out.println("Failed to fire employee: " + e.getMessage());
         } catch (IllegalArgumentException e) {
             System.out.println("Not authorized: " + e.getMessage());
+        }
+    }
+
+    private void ensureWeeklyAvailabilityCurrent(Employee employee) {
+        WeeklyAvailabilityRequest weeklyAvailabilityRequest = employee.getWeeklyAvailabilityRequest();
+        if (weeklyAvailabilityRequest == null) {
+            weeklyAvailabilityRequest = new WeeklyAvailabilityRequest();
+            employee.setWeeklyAvailabilityRequest(weeklyAvailabilityRequest);
+        }
+
+        LocalDate currentWeekStart = getCurrentWeekStartDate();
+        LocalDate requestWeekStart = weeklyAvailabilityRequest.getWeekStartDate();
+        if (requestWeekStart == null || !requestWeekStart.equals(currentWeekStart)) {
+            weeklyAvailabilityRequest.resetForWeek(currentWeekStart);
+        }
+    }
+
+    private LocalDate getCurrentWeekStartDate() {
+        return LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+    }
+
+    private List<Constraint> readConstraints(Scanner scanner) {
+        int count = readInt(scanner, "Number of constraints: ");
+        List<Constraint> constraints = new ArrayList<>();
+
+        for (int i = 0; i < count; i++) {
+            System.out.println("Constraint #" + (i + 1) + ":");
+            DayOfWeek day = readDayOfWeek(scanner);
+            ShiftType shiftType = readShiftType(scanner);
+            constraints.add(new Constraint(day, shiftType));
+        }
+
+        return constraints;
+    }
+
+    private List<Preference> readPreferences(Scanner scanner) {
+        int count = readInt(scanner, "Number of preferences: ");
+        List<Preference> preferences = new ArrayList<>();
+
+        for (int i = 0; i < count; i++) {
+            System.out.println("Preference #" + (i + 1) + ":");
+            DayOfWeek day = readDayOfWeek(scanner);
+            ShiftType shiftType = readShiftType(scanner);
+            preferences.add(new Preference(day, shiftType));
+        }
+
+        return preferences;
+    }
+
+    private DayOfWeek readDayOfWeek(Scanner scanner) {
+        while (true) {
+            System.out.println("Day of week:");
+            System.out.println("1. MONDAY");
+            System.out.println("2. TUESDAY");
+            System.out.println("3. WEDNESDAY");
+            System.out.println("4. THURSDAY");
+            System.out.println("5. FRIDAY");
+            System.out.println("6. SATURDAY");
+            System.out.println("7. SUNDAY");
+            System.out.print("Selection: ");
+
+            String value = scanner.nextLine();
+            switch (value) {
+                case "1":
+                    return DayOfWeek.MONDAY;
+                case "2":
+                    return DayOfWeek.TUESDAY;
+                case "3":
+                    return DayOfWeek.WEDNESDAY;
+                case "4":
+                    return DayOfWeek.THURSDAY;
+                case "5":
+                    return DayOfWeek.FRIDAY;
+                case "6":
+                    return DayOfWeek.SATURDAY;
+                case "7":
+                    return DayOfWeek.SUNDAY;
+                default:
+                    System.out.println("Invalid selection.");
+            }
+        }
+    }
+
+    private ShiftType readShiftType(Scanner scanner) {
+        while (true) {
+            System.out.println("Shift type:");
+            System.out.println("1. MORNING");
+            System.out.println("2. AFTERNOON");
+            System.out.println("3. NIGHT");
+            System.out.print("Selection: ");
+
+            String value = scanner.nextLine();
+            switch (value) {
+                case "1":
+                    return ShiftType.MORNING;
+                case "2":
+                    return ShiftType.AFTERNOON;
+                case "3":
+                    return ShiftType.NIGHT;
+                default:
+                    System.out.println("Invalid selection.");
+            }
+        }
+    }
+
+    private int readInt(Scanner scanner, String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String value = scanner.nextLine();
+
+            try {
+                int parsed = Integer.parseInt(value);
+                if (parsed < 0) {
+                    System.out.println("Please enter a non-negative integer.");
+                    continue;
+                }
+                return parsed;
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter a valid integer.");
+            }
         }
     }
 
