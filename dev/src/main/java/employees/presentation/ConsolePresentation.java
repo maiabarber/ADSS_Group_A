@@ -71,10 +71,8 @@ public class ConsolePresentation {
                     System.out.println("3. Update employee details");
                     System.out.println("4. Fire employee");
                     System.out.println("5. Logout");
-                    System.out.println("6. Exit");
                 } else {
                     System.out.println("1. Logout");
-                    System.out.println("2. Exit");
                 }
                 System.out.print("Selection: ");
 
@@ -102,9 +100,6 @@ public class ConsolePresentation {
                             }
                             running = false;
                             break;
-                        case "6":
-                            running = false;
-                            break;
                         default:
                             System.out.println("Invalid selection.");
                     }
@@ -116,9 +111,6 @@ public class ConsolePresentation {
                             } else {
                                 System.out.println("No user is currently logged in.");
                             }
-                            running = false;
-                            break;
-                        case "2":
                             running = false;
                             break;
                         default:
