@@ -66,7 +66,9 @@ public class ConsolePresentation {
             if (isHrManager(loggedInUser.get())) {
                 userController.setManager((HR_Manager) loggedInUser.get());
             } else if (loggedInUser.get() instanceof Employee) {
-                ensureWeeklyAvailabilityCurrent((Employee) loggedInUser.get());
+                Employee employee = (Employee) loggedInUser.get();
+                promptForFixedDayOffIfNeeded(employee, scanner);
+                ensureWeeklyAvailabilityCurrent(employee);
             }
 
             System.out.println("Login successful. Welcome " + loggedInUser.get().getId() + ".");
@@ -166,34 +168,55 @@ public class ConsolePresentation {
         }
     }
 
-    private void submitWeeklyAvailabilityFlow(User loggedInUser, Scanner scanner) {
-        if (!(loggedInUser instanceof Employee)) {
-            System.out.println("Only employees can submit constraints and preferences.");
-            return;
-        }
-
-        Employee employee = (Employee) loggedInUser;
-        ensureWeeklyAvailabilityCurrent(employee);
-
-        WeeklyAvailabilityRequest weeklyAvailabilityRequest = employee.getWeeklyAvailabilityRequest();
-        if (weeklyAvailabilityRequest == null) {
-            weeklyAvailabilityRequest = new WeeklyAvailabilityRequest();
-            employee.setWeeklyAvailabilityRequest(weeklyAvailabilityRequest);
-            ensureWeeklyAvailabilityCurrent(employee);
-        }
-
-        List<Constraint> constraints = readConstraints(scanner);
-        List<Preference> preferences = readPreferences(scanner);
-        weeklyAvailabilityRequest.setConstraints(constraints);
-        weeklyAvailabilityRequest.setPreferences(preferences);
-
-        try {
-            employeeRepository.save(employee);
-            System.out.println("Weekly constraints and preferences were submitted successfully.");
-        } catch (RepositoryException e) {
-            System.out.println("Failed to save weekly submission: " + e.getMessage());
-        }
+private void submitWeeklyAvailabilityFlow(User loggedInUser, Scanner scanner) {
+    if (!(loggedInUser instanceof Employee)) {
+        System.out.println("Only employees can submit constraints and preferences.");
+        return;
     }
+
+    Employee employee = (Employee) loggedInUser;
+    ensureWeeklyAvailabilityCurrent(employee);
+
+    WeeklyAvailabilityRequest weeklyAvailabilityRequest = employee.getWeeklyAvailabilityRequest();
+    if (weeklyAvailabilityRequest == null) {
+        weeklyAvailabilityRequest = new WeeklyAvailabilityRequest();
+        employee.setWeeklyAvailabilityRequest(weeklyAvailabilityRequest);
+        ensureWeeklyAvailabilityCurrent(employee);
+    }
+
+    List<Constraint> constraints = readConstraints(scanner);
+    List<Preference> preferences = readPreferences(scanner);
+    weeklyAvailabilityRequest.setConstraints(constraints);
+    weeklyAvailabilityRequest.setPreferences(preferences);
+
+    try {
+        employeeRepository.save(employee);
+        System.out.println("Weekly constraints and preferences were submitted successfully.");
+    } catch (RepositoryException e) {
+        System.out.println("Failed to save weekly submission: " + e.getMessage());
+    }
+}
+
+private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
+    if (!(loggedInUser instanceof Employee)) {
+        return;
+    }
+
+    Employee employee = (Employee) loggedInUser;
+    if (employee.getFixedDayOff() != null) {
+        return;
+    }
+
+    DayOfWeek fixedDayOff = readFixedDayOff(scanner);
+    employee.setFixedDayOff(fixedDayOff);
+
+    try {
+        employeeRepository.save(employee);
+        System.out.println("Your fixed day off was set to " + fixedDayOff + ".");
+    } catch (RepositoryException e) {
+        System.out.println("Failed to save fixed day off: " + e.getMessage());
+    }
+}
 
     private void setSubmissionDeadlineFlow(Scanner scanner) {
         LocalDate newDeadline = readLocalDate(
@@ -483,6 +506,40 @@ public class ConsolePresentation {
                 return LocalDate.parse(value);
             } catch (Exception e) {
                 System.out.println("Please enter a valid date in YYYY-MM-DD format.");
+            }
+        }
+    }
+
+    private DayOfWeek readFixedDayOff(Scanner scanner) {
+        while (true) {
+            System.out.println("Choose your fixed day off:");
+            System.out.println("1. MONDAY");
+            System.out.println("2. TUESDAY");
+            System.out.println("3. WEDNESDAY");
+            System.out.println("4. THURSDAY");
+            System.out.println("5. FRIDAY");
+            System.out.println("6. SATURDAY");
+            System.out.println("7. SUNDAY");
+            System.out.print("Selection: ");
+            String value = scanner.nextLine();
+
+            switch (value) {
+                case "1":
+                    return DayOfWeek.MONDAY;
+                case "2":
+                    return DayOfWeek.TUESDAY;
+                case "3":
+                    return DayOfWeek.WEDNESDAY;
+                case "4":
+                    return DayOfWeek.THURSDAY;
+                case "5":
+                    return DayOfWeek.FRIDAY;
+                case "6":
+                    return DayOfWeek.SATURDAY;
+                case "7":
+                    return DayOfWeek.SUNDAY;
+                default:
+                    System.out.println("Invalid selection.");
             }
         }
     }
