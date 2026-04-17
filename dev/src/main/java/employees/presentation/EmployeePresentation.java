@@ -5,6 +5,7 @@ import employees.domain.Employee;
 import employees.domain.EmploymentType;
 import employees.domain.Role;
 import employees.domain.Salary;
+import employees.domain.WeeklyAvailabilityRequest;
 
 import java.time.LocalDate;
 import java.util.Collections;
@@ -67,7 +68,7 @@ public class EmployeePresentation {
             canManageShiftInput,
             false,
             null,
-            new AvailabilityPresentation().toWeeklyAvailabilityRequest()
+            new WeeklyAvailabilityRequest()
         );
     }
 
@@ -138,4 +139,5 @@ public class EmployeePresentation {
             }
         }
     }
+
 }

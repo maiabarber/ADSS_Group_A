@@ -1,14 +1,17 @@
 package employees.domain;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 public class WeeklyAvailabilityRequest implements Serializable {
     private static final long serialVersionUID = 1L;
     private List<Constraint> constraints;
     private List<Preference> preferences;
+    private LocalDate submissionDeadline;
 
     public WeeklyAvailabilityRequest() {
         this.constraints = new ArrayList<>();
@@ -18,6 +21,12 @@ public class WeeklyAvailabilityRequest implements Serializable {
     public WeeklyAvailabilityRequest(List<Constraint> constraints, List<Preference> preferences) {
         this.constraints = new ArrayList<>(constraints != null ? constraints : Collections.emptyList());
         this.preferences = new ArrayList<>(preferences != null ? preferences : Collections.emptyList());
+    }
+
+    public WeeklyAvailabilityRequest(List<Constraint> constraints, List<Preference> preferences, LocalDate submissionDeadline) {
+        this.constraints = new ArrayList<>(constraints != null ? constraints : Collections.emptyList());
+        this.preferences = new ArrayList<>(preferences != null ? preferences : Collections.emptyList());
+        this.submissionDeadline = Objects.requireNonNull(submissionDeadline, "submissionDeadline must not be null");
     }
 
     public List<Constraint> getConstraints() {
@@ -34,6 +43,14 @@ public class WeeklyAvailabilityRequest implements Serializable {
 
     public void setPreferences(List<Preference> preferences) {
         this.preferences = new ArrayList<>(preferences != null ? preferences : Collections.emptyList());
+    }
+
+    public LocalDate getSubmissionDeadline() {
+        return submissionDeadline;
+    }
+
+    public void setSubmissionDeadline(LocalDate submissionDeadline) {
+        this.submissionDeadline = Objects.requireNonNull(submissionDeadline, "submissionDeadline must not be null");
     }
 
     public void addConstraint(Constraint constraint) {
@@ -53,6 +70,7 @@ public class WeeklyAvailabilityRequest implements Serializable {
         return "WeeklyAvailabilityRequest{" +
             "constraints=" + constraints +
             ", preferences=" + preferences +
+            ", submissionDeadline=" + submissionDeadline +
             '}';
     }
 }

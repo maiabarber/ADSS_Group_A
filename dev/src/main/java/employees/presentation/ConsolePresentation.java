@@ -3,12 +3,16 @@ package employees.presentation;
 import employees.domain.Employee;
 import employees.domain.HR_Manager;
 import employees.domain.User;
+import employees.domain.WeeklyAvailabilityRequest;
 import employees.repository.EmployeeRepository;
 import employees.repository.RepositoryException;
+import employees.repository.SubmissionDeadlineRepository;
 import employees.repository.impl.InMemoryEmployeeRepository;
+import employees.repository.impl.InMemorySubmissionDeadlineRepository;
 import employees.repository.impl.InMemoryUserRepository;
 import employees.service.AuthenticationService;
 
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.Scanner;
 
@@ -19,6 +23,7 @@ public class ConsolePresentation {
     private final EmployeePresentation employeePresentation;
     private final UserController userController;
     private final ShiftController shiftController;
+    private final SubmissionDeadlineRepository submissionDeadlineRepository;
 
     public ConsolePresentation() {
         this.authenticationService = new AuthenticationService(new InMemoryUserRepository());
@@ -27,6 +32,7 @@ public class ConsolePresentation {
         this.employeePresentation = new EmployeePresentation();
         this.userController = new UserController();
         this.shiftController = new ShiftController();
+        this.submissionDeadlineRepository = new InMemorySubmissionDeadlineRepository();
     }
 
     public void run() {
@@ -60,11 +66,12 @@ public class ConsolePresentation {
             while (running) {
                 System.out.println("\nChoose action:");
                 if (isHrManager(loggedInUser.get())) {
-                    System.out.println("1. Add new employee");
-                    System.out.println("2. Update employee details");
-                    System.out.println("3. Fire employee");
-                    System.out.println("4. Logout");
-                    System.out.println("5. Exit");
+                    System.out.println("1. Set weekly submission deadline");
+                    System.out.println("2. Add new employee");
+                    System.out.println("3. Update employee details");
+                    System.out.println("4. Fire employee");
+                    System.out.println("5. Logout");
+                    System.out.println("6. Exit");
                 } else {
                     System.out.println("1. Logout");
                     System.out.println("2. Exit");
@@ -75,16 +82,19 @@ public class ConsolePresentation {
                 if (isHrManager(loggedInUser.get())) {
                     switch (choice) {
                         case "1":
-                            addNewEmployeeFlow(scanner);
+                            setSubmissionDeadlineFlow(scanner);
                             break;
                         case "2":
-                            updateEmployeeDetailsFlow(scanner);
+                            addNewEmployeeFlow(scanner);
                             break;
                         case "3":
+                            updateEmployeeDetailsFlow(scanner);
+                            break;
+                        case "4":
                             fireEmployeeFlow(scanner);
                             shiftController.setEmployees(userController.getEmployees());
                             break;
-                        case "4":
+                        case "5":
                             if (authenticationService.logout()) {
                                 System.out.println("You have been logged out.");
                             } else {
@@ -92,7 +102,7 @@ public class ConsolePresentation {
                             }
                             running = false;
                             break;
-                        case "5":
+                        case "6":
                             running = false;
                             break;
                         default:
@@ -132,12 +142,35 @@ public class ConsolePresentation {
             }
 
             Employee employee = employeePresentation.readEmployeeInput(scanner);
+            Optional<LocalDate> configuredDeadline = submissionDeadlineRepository.findCurrent();
+            if (configuredDeadline.isPresent()) {
+                WeeklyAvailabilityRequest weeklyAvailabilityRequest = employee.getWeeklyAvailabilityRequest();
+                if (weeklyAvailabilityRequest == null) {
+                    weeklyAvailabilityRequest = new WeeklyAvailabilityRequest();
+                    employee.setWeeklyAvailabilityRequest(weeklyAvailabilityRequest);
+                }
+                weeklyAvailabilityRequest.setSubmissionDeadline(configuredDeadline.get());
+            }
             userController.addEmployee(currentUser.get(), employee, authenticationService, employeeRepository);
             System.out.println("Employee added successfully.");
         } catch (RepositoryException e) {
             System.out.println("Failed to add employee: " + e.getMessage());
         } catch (IllegalArgumentException e) {
             System.out.println("Not authorized: " + e.getMessage());
+        }
+    }
+
+    private void setSubmissionDeadlineFlow(Scanner scanner) {
+        LocalDate newDeadline = readLocalDate(
+            scanner,
+            "Deadline for submitting constraints and preferences for the upcoming week (YYYY-MM-DD): "
+        );
+
+        try {
+            submissionDeadlineRepository.save(newDeadline);
+            System.out.println("Weekly submission deadline was set to " + newDeadline + ".");
+        } catch (RepositoryException e) {
+            System.out.println("Failed to save weekly submission deadline: " + e.getMessage());
         }
     }
 
@@ -284,6 +317,18 @@ public class ConsolePresentation {
             System.out.println("Failed to fire employee: " + e.getMessage());
         } catch (IllegalArgumentException e) {
             System.out.println("Not authorized: " + e.getMessage());
+        }
+    }
+
+    private LocalDate readLocalDate(Scanner scanner, String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String value = scanner.nextLine();
+            try {
+                return LocalDate.parse(value);
+            } catch (Exception e) {
+                System.out.println("Please enter a valid date in YYYY-MM-DD format.");
+            }
         }
     }
 }
