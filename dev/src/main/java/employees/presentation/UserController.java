@@ -39,6 +39,54 @@ public class UserController {
         employees.add(employee);
     }
 
+    public boolean updateEmployeeDetails(
+        User requestedBy,
+        Employee employee,
+        String newName,
+        Double newGlobalSalary,
+        Double newHourlySalary,
+        Boolean newCanManageShift,
+        EmployeeRepository employeeRepository
+    ) throws RepositoryException {
+        if (!(requestedBy instanceof HR_Manager) || !((HR_Manager) requestedBy).isHRManager()) {
+            throw new IllegalArgumentException("Only HR manager can update employee details");
+        }
+
+        if (newName != null && !newName.isEmpty()) {
+            employee.setName(newName);
+        }
+        if (newGlobalSalary != null) {
+            employee.getSalary().setGlobalSalary(newGlobalSalary);
+        }
+        if (newHourlySalary != null) {
+            employee.getSalary().setHourlySalary(newHourlySalary);
+        }
+        if (newCanManageShift != null) {
+            employee.setCanManageShift(newCanManageShift);
+        }
+
+        employeeRepository.save(employee);
+
+        for (Employee existingEmployee : employees) {
+            if (employee.getId().equals(existingEmployee.getId())) {
+                if (newName != null && !newName.isEmpty()) {
+                    existingEmployee.setName(newName);
+                }
+                if (newGlobalSalary != null) {
+                    existingEmployee.getSalary().setGlobalSalary(newGlobalSalary);
+                }
+                if (newHourlySalary != null) {
+                    existingEmployee.getSalary().setHourlySalary(newHourlySalary);
+                }
+                if (newCanManageShift != null) {
+                    existingEmployee.setCanManageShift(newCanManageShift);
+                }
+            }
+        }
+
+        return true;
+    }
+
     public boolean fireEmployee(User requestedBy, String employeeId, AuthenticationService authenticationService, EmployeeRepository employeeRepository)
         throws RepositoryException {
         if (!(requestedBy instanceof HR_Manager) || !((HR_Manager) requestedBy).isHRManager()) {
