@@ -62,8 +62,9 @@ public class ConsolePresentation {
                 if (isHrManager(loggedInUser.get())) {
                     System.out.println("1. Add new employee");
                     System.out.println("2. Update employee details");
-                    System.out.println("3. Logout");
-                    System.out.println("4. Exit");
+                    System.out.println("3. Fire employee");
+                    System.out.println("4. Logout");
+                    System.out.println("5. Exit");
                 } else {
                     System.out.println("1. Logout");
                     System.out.println("2. Exit");
@@ -80,6 +81,10 @@ public class ConsolePresentation {
                             updateEmployeeDetailsFlow(scanner);
                             break;
                         case "3":
+                            fireEmployeeFlow(scanner);
+                            shiftController.setEmployees(userController.getEmployees());
+                            break;
+                        case "4":
                             if (authenticationService.logout()) {
                                 System.out.println("You have been logged out.");
                             } else {
@@ -87,7 +92,7 @@ public class ConsolePresentation {
                             }
                             running = false;
                             break;
-                        case "4":
+                        case "5":
                             running = false;
                             break;
                         default:
@@ -213,7 +218,8 @@ public class ConsolePresentation {
                     System.out.print("Can manage shifts? (current: " + newCanManageShift + ", true/false): ");
                     String canManageShiftInput = scanner.nextLine();
                     if (!canManageShiftInput.isEmpty()) {
-                        if (!"true".equalsIgnoreCase(canManageShiftInput) && !"false".equalsIgnoreCase(canManageShiftInput)) {
+                        if (!"true".equalsIgnoreCase(canManageShiftInput) &&
+                            !"false".equalsIgnoreCase(canManageShiftInput)) {
                             System.out.println("Invalid value. Please enter true or false.");
                             return;
                         }
@@ -246,6 +252,36 @@ public class ConsolePresentation {
             }
         } catch (RepositoryException e) {
             System.out.println("Failed to update employee: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            System.out.println("Not authorized: " + e.getMessage());
+        }
+    }
+
+    private void fireEmployeeFlow(Scanner scanner) {
+        try {
+            Optional<User> currentUser = authenticationService.getCurrentUser();
+            if (!currentUser.isPresent()) {
+                System.out.println("No user is currently logged in.");
+                return;
+            }
+
+            System.out.print("Employee id to fire: ");
+            String employeeId = scanner.nextLine();
+
+            boolean fired = userController.fireEmployee(
+                currentUser.get(),
+                employeeId,
+                authenticationService,
+                employeeRepository
+            );
+
+            if (fired) {
+                System.out.println("Employee marked as fired.");
+            } else {
+                System.out.println("Employee not found.");
+            }
+        } catch (RepositoryException e) {
+            System.out.println("Failed to fire employee: " + e.getMessage());
         } catch (IllegalArgumentException e) {
             System.out.println("Not authorized: " + e.getMessage());
         }

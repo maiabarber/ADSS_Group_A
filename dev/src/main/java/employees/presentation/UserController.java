@@ -86,4 +86,29 @@ public class UserController {
 
         return true;
     }
+
+    public boolean fireEmployee(User requestedBy, String employeeId, AuthenticationService authenticationService, EmployeeRepository employeeRepository)
+        throws RepositoryException {
+        if (!(requestedBy instanceof HR_Manager) || !((HR_Manager) requestedBy).isHRManager()) {
+            throw new IllegalArgumentException("Only HR manager can fire employees");
+        }
+
+        Optional<Employee> employeeOptional = employeeRepository.findById(employeeId);
+        if (!employeeOptional.isPresent()) {
+            return false;
+        }
+
+        Employee employee = employeeOptional.get();
+        employee.setFired(true);
+        employeeRepository.save(employee);
+        authenticationService.registerUser(employee);
+
+        for (Employee existing : employees) {
+            if (employeeId.equals(existing.getId())) {
+                existing.setFired(true);
+            }
+        }
+
+        return true;
+    }
 }
