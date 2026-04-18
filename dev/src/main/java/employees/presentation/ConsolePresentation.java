@@ -95,7 +95,8 @@ public class ConsolePresentation {
                     System.out.println("1. Submit weekly constraints and preferences");
                     System.out.println("2. View and respond to pending shift assignments");
                     System.out.println("3. Request shift cancellation");
-                    System.out.println("4. Logout");
+                    System.out.println("4. Transfer cancellation card at cash register");
+                    System.out.println("5. Logout");
                 }
                 System.out.print("Selection: ");
 
@@ -157,6 +158,9 @@ public class ConsolePresentation {
                             requestShiftCancellationFlow(loggedInUser.get(), scanner);
                             break;
                         case "4":
+                            transferCancellationCardFlow(loggedInUser.get(), scanner);
+                            break;
+                        case "5":
                             if (authenticationService.logout()) {
                                 System.out.println("You have been logged out.");
                             } else {
@@ -1055,5 +1059,42 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
         }
 
         System.out.println("Weekly constraints and preferences were reset for " + resetCount + " employees.");
+    }
+
+    private void transferCancellationCardFlow(User loggedInUser, Scanner scanner) {
+        if (!(loggedInUser instanceof Employee)) {
+            System.out.println("Only employees can transfer cancellation cards.");
+            return;
+        }
+
+        Employee employee = (Employee) loggedInUser;
+        List<Shift> managedShifts = shiftController.getShiftsManagedBy(employee);
+        if (managedShifts.isEmpty()) {
+            System.out.println("You are not assigned as shift manager on any shift.");
+            return;
+        }
+
+        System.out.println("\n=== Transfer Cancellation Card ===");
+        for (int i = 0; i < managedShifts.size(); i++) {
+            Shift shift = managedShifts.get(i);
+            String status = shift.isCancellationCardTransferred() ? "[ALREADY TRANSFERRED]" : "";
+            System.out.println((i + 1) + ". " + shift.getDate() + " - " + shift.getShiftType() + " " + status);
+        }
+
+        System.out.print("Select shift number: ");
+        try {
+            int choice = Integer.parseInt(scanner.nextLine()) - 1;
+            if (choice < 0 || choice >= managedShifts.size()) {
+                System.out.println("Invalid selection.");
+                return;
+            }
+
+            Shift selectedShift = managedShifts.get(choice);
+            shiftController.transferCancellationCard(employee, selectedShift);
+            System.out.println("Cancellation card transfer recorded for shift " +
+                selectedShift.getDate() + " - " + selectedShift.getShiftType() + ".");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Transfer failed: " + e.getMessage());
+        } 
     }
 }

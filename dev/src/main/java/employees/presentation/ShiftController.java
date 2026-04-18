@@ -297,4 +297,23 @@ public class ShiftController {
         }
     }
 
+    /** Req #9: list shifts where this employee is the assigned shift manager. */
+    public List<Shift> getShiftsManagedBy(Employee employee) {
+        List<Shift> managedShifts = new ArrayList<>();
+        for (Shift shift : shifts) {
+            if (shift.getShiftManager() != null && shift.getShiftManager().getId().equals(employee.getId())) {
+                managedShifts.add(shift);
+            }
+        }
+        return managedShifts;
+    }
+
+    /** Req #9: shift manager transfers cancellation card for a selected shift. */
+    public void transferCancellationCard(Employee shiftManager, Shift shift) {
+        if (shift == null) {
+            throw new IllegalArgumentException("Shift is required");
+        }
+        shift.transferCancellationCard(shiftManager);
+    }
+
 }
