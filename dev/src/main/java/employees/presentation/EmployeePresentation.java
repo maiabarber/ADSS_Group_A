@@ -66,7 +66,7 @@ public class EmployeePresentation {
         workedHoursInput = 0;
         startDateInput = readLocalDate(scanner, "Start date (YYYY-MM-DD): ");
 
-        Salary salary = new Salary(globalSalaryInput, hourlySalaryInput, workedHoursInput);
+        Salary salary = new Salary(globalSalaryInput, hourlySalaryInput, workedHoursInput, employmentScopeInput);
         EmploymentTerms employmentTerms = new EmploymentTerms(
             startDateInput,
             employmentScopeInput,

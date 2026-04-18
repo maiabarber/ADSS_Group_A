@@ -1,5 +1,6 @@
 package employees.service;
 
+import employees.domain.Employee;
 import employees.domain.User;
 import employees.repository.RepositoryException;
 import employees.repository.UserRepository;
@@ -28,12 +29,25 @@ public class AuthenticationService {
     public Optional<User> login(String id, String password) {
         try {
             Optional<User> matchedUser = userRepository.findById(id)
-                .filter(user -> user.matchesCredentials(id, password));
+                .filter(user -> user.matchesCredentials(id, password))
+                .filter(user -> !(user instanceof Employee) || !((Employee) user).isFired());
 
             matchedUser.ifPresent(user -> currentUser = user);
             return matchedUser;
         } catch (RepositoryException e) {
             return Optional.empty();
+        }
+    }
+
+    public boolean isFiredCredentials(String id, String password) {
+        try {
+            return userRepository.findById(id)
+                .filter(user -> user.matchesCredentials(id, password))
+                .filter(user -> user instanceof Employee)
+                .map(user -> ((Employee) user).isFired())
+                .orElse(false);
+        } catch (RepositoryException e) {
+            return false;
         }
     }
 
