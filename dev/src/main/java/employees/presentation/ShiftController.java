@@ -68,7 +68,7 @@ public class ShiftController {
     public void assignEmployeeToShift(User assignedBy, Employee employee, Shift shift, Role role) 
     throws IllegalArgumentException {
     if (!(assignedBy instanceof HR_Manager) || !((HR_Manager) assignedBy).isHRManager()) {
-        throw new IllegalArgumentException("Only CA manager can assign employees to shifts");
+        throw new IllegalArgumentException("Only HR manager can assign employees to shifts");
     }
     
     // Validate that employee is authorized for this role
@@ -162,7 +162,7 @@ public class ShiftController {
      *  The replacement must not already be on the shift and must be authorized for the same role. */
     public void substituteEmployee(User requestedBy, Shift shift, Employee originalEmployee, Employee replacement) {
         if (!(requestedBy instanceof HR_Manager) || !((HR_Manager) requestedBy).isHRManager()) {
-            throw new IllegalArgumentException("Only CA manager can make substitutions");
+            throw new IllegalArgumentException("Only HR manager can make substitutions");
         }
 
         // Find the original assignment

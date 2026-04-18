@@ -47,7 +47,9 @@ public class Employee extends User {
         setAuthorizedRoles(authorizedRoles);
         this.canManageShift = canManageShift;
         this.isFired = isFired;
-        this.fixedDayOff = fixedDayOff;
+        if (fixedDayOff != null) {
+            setFixedDayOff(fixedDayOff);
+        }
         this.weeklyAvailabilityRequest = weeklyAvailabilityRequest;
     }
 
@@ -120,6 +122,7 @@ public class Employee extends User {
         if (salary == null || employmentTerms == null) {
             return 0;
         }
+        salary.setEmploymentScope(employmentTerms.getEmploymentScope());
         return salary.recalculateFinalSalary();
     }
 

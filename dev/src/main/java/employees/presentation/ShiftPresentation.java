@@ -3,8 +3,6 @@ package employees.presentation;
 import employees.domain.ShiftType;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -17,7 +15,6 @@ public class ShiftPresentation {
     private int requiredCashierInput;
     private int requiredStoreKeeperInput;
     private String selectManagerIdInput;
-    private List<String> assignedEmployeeIdsInput = new ArrayList<>();
 
     public void readShiftInput(Scanner scanner) {
         System.out.print("Shift date (YYYY-MM-DD): ");
@@ -83,9 +80,5 @@ public class ShiftPresentation {
 
     public String getSelectManagerIdInput() {
         return selectManagerIdInput;
-    }
-
-    public List<String> getAssignedEmployeeIdsInput() {
-        return assignedEmployeeIdsInput;
     }
 }

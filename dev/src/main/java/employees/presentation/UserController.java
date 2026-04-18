@@ -7,7 +7,6 @@ import employees.repository.EmployeeRepository;
 import employees.repository.RepositoryException;
 import employees.service.AuthenticationService;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -18,8 +17,14 @@ import java.util.Optional;
  * to perform these operations while ensuring that only HR managers have the necessary permissions.
  */
 public class UserController {
-    private final List<Employee> employees = new ArrayList<>();
+    private final AuthenticationService authenticationService;
+    private final EmployeeRepository employeeRepository;
     private HR_Manager manager;
+
+    public UserController(AuthenticationService authenticationService, EmployeeRepository employeeRepository) {
+        this.authenticationService = authenticationService;
+        this.employeeRepository = employeeRepository;
+    }
 
     public void setManager(HR_Manager manager) {
         this.manager = manager;
@@ -30,17 +35,20 @@ public class UserController {
     }
 
     public List<Employee> getEmployees() {
-        return Collections.unmodifiableList(employees);
+        try {
+            return Collections.unmodifiableList(employeeRepository.findAll());
+        } catch (RepositoryException e) {
+            return Collections.emptyList();
+        }
     }
 
-    public void addEmployee(User requestedBy, Employee employee, AuthenticationService authenticationService, EmployeeRepository employeeRepository)
+    public void addEmployee(User requestedBy, Employee employee)
         throws RepositoryException {
         if (!(requestedBy instanceof HR_Manager) || !((HR_Manager) requestedBy).isHRManager()) {
             throw new IllegalArgumentException("Only HR manager can add employees");
         }
         authenticationService.registerUser(employee);
         employeeRepository.save(employee);
-        employees.add(employee);
     }
 
     public boolean updateEmployeeDetails(
@@ -49,8 +57,7 @@ public class UserController {
         String newName,
         Double newGlobalSalary,
         Double newHourlySalary,
-        Boolean newCanManageShift,
-        EmployeeRepository employeeRepository
+        Boolean newCanManageShift
     ) throws RepositoryException {
         if (!(requestedBy instanceof HR_Manager) || !((HR_Manager) requestedBy).isHRManager()) {
             throw new IllegalArgumentException("Only HR manager can update employee details");
@@ -76,33 +83,10 @@ public class UserController {
         }
 
         employeeRepository.save(employee);
-
-        for (Employee existingEmployee : employees) {
-            if (employee.getId().equals(existingEmployee.getId())) {
-                if (newName != null && !newName.isEmpty()) {
-                    existingEmployee.setName(newName);
-                }
-                if (newGlobalSalary != null) {
-                    existingEmployee.getSalary().setGlobalSalary(newGlobalSalary);
-                    if (existingEmployee.getEmploymentTerms() != null) {
-                        existingEmployee.getEmploymentTerms().setGlobalSalary(newGlobalSalary);
-                    }
-                }
-                if (newHourlySalary != null) {
-                    existingEmployee.getSalary().setHourlySalary(newHourlySalary);
-                    if (existingEmployee.getEmploymentTerms() != null) {
-                        existingEmployee.getEmploymentTerms().setHourlySalary(newHourlySalary);
-                    }
-                }
-                if (newCanManageShift != null) {
-                    existingEmployee.setCanManageShift(newCanManageShift);
-                }
-            }
-        }
         return true;
     }
 
-    public boolean fireEmployee(User requestedBy, String employeeId, AuthenticationService authenticationService, EmployeeRepository employeeRepository)
+    public boolean fireEmployee(User requestedBy, String employeeId)
         throws RepositoryException {
         if (!(requestedBy instanceof HR_Manager) || !((HR_Manager) requestedBy).isHRManager()) {
             throw new IllegalArgumentException("Only HR manager can fire employees");
@@ -117,16 +101,10 @@ public class UserController {
         employee.setFired(true);
         employeeRepository.save(employee);
         authenticationService.registerUser(employee);
-
-        for (Employee existing : employees) {
-            if (employeeId.equals(existing.getId())) {
-                existing.setFired(true);
-            }
-        }
         return true;
     }
 
-    public void approveAsShiftManager(User requestedBy, String employeeId, EmployeeRepository employeeRepository) throws RepositoryException {
+    public void approveAsShiftManager(User requestedBy, String employeeId) throws RepositoryException {
         if (!(requestedBy instanceof HR_Manager) || !((HR_Manager) requestedBy).isHRManager()) {
             throw new IllegalArgumentException("Only HR manager can approve shift manager");
         }
@@ -139,11 +117,5 @@ public class UserController {
         Employee employee = employeeOptional.get();
         employee.approveAsShiftManager(requestedBy);
         employeeRepository.save(employee);
-
-        for (Employee existing : employees) {
-            if (employeeId.equals(existing.getId())) {
-                existing.approveAsShiftManager(requestedBy);
-            }
-        }
     }
 }
