@@ -2,6 +2,7 @@ package employees.domain;
 
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.Collections;
@@ -15,11 +16,15 @@ public class Shift implements Serializable {
     private Employee shiftManager;
     private final Map<Role, Integer> requiredRoleCounts;
     private List<ShiftAssignment> assignments;
+    private boolean cancellationCardTransferred;
+    private LocalDateTime cancellationCardTransferTime;
+    private Employee cancellationCardTransferredBy;
 
     public Shift() {
         this.requiredRoleCounts = new EnumMap<>(Role.class);
         initializeDefaultRoleRequirements();
         this.assignments = new ArrayList<>();
+        this.cancellationCardTransferred = false;
     }
 
     public Shift(LocalDate date, ShiftType shiftType, Employee shiftManager, int requiredCashiers, int requiredStorekeepers) {
@@ -128,6 +133,38 @@ public class Shift implements Serializable {
         assignments.remove(assignment);
     }
 
+    public boolean isCancellationCardTransferred() {
+        return cancellationCardTransferred;
+    }
+
+    public LocalDateTime getCancellationCardTransferTime() {
+        return cancellationCardTransferTime;
+    }
+
+    public Employee getCancellationCardTransferredBy() {
+        return cancellationCardTransferredBy;
+    }
+
+    /** Req #9: only the shift manager can transfer a cancellation card at the cash register. */
+    public void transferCancellationCard(Employee requestedBy) {
+        if (requestedBy == null) {
+            throw new IllegalArgumentException("Requested by employee is required");
+        }
+        if (shiftManager == null) {
+            throw new IllegalArgumentException("Shift manager is not assigned for this shift");
+        }
+        if (!shiftManager.getId().equals(requestedBy.getId())) {
+            throw new IllegalArgumentException("Only the shift manager can transfer cancellation card");
+        }
+        if (requestedBy.isFired()) {
+            throw new IllegalArgumentException("Fired employee cannot perform cancellation card transfer");
+        }
+
+        this.cancellationCardTransferred = true;
+        this.cancellationCardTransferTime = LocalDateTime.now();
+        this.cancellationCardTransferredBy = requestedBy;
+    }
+
     @Override
     public String toString() {
         return "Shift{" +
@@ -136,6 +173,9 @@ public class Shift implements Serializable {
             ", shiftManager=" + shiftManager +
             ", requiredRoleCounts=" + requiredRoleCounts +
             ", assignments=" + assignments +
+            ", cancellationCardTransferred=" + cancellationCardTransferred +
+            ", cancellationCardTransferTime=" + cancellationCardTransferTime +
+            ", cancellationCardTransferredBy=" + cancellationCardTransferredBy +
             '}';
     }
 
