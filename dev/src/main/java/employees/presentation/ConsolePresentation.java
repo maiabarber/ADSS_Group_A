@@ -81,7 +81,8 @@ public class ConsolePresentation {
                     System.out.println("2. Add new employee");
                     System.out.println("3. Update employee details");
                     System.out.println("4. Fire employee");
-                    System.out.println("5. Logout");
+                    System.out.println("5. Approve employee as shift manager");
+                    System.out.println("6. Logout");
                 } else {
                     System.out.println("1. Submit weekly constraints and preferences");
                     System.out.println("2. Logout");
@@ -104,7 +105,11 @@ public class ConsolePresentation {
                             fireEmployeeFlow(scanner);
                             shiftController.setEmployees(userController.getEmployees());
                             break;
+                            
                         case "5":
+                            approveAsShiftManagerFlow(scanner);
+                            break;
+                        case "6":
                             if (authenticationService.logout()) {
                                 System.out.println("You have been logged out.");
                             } else {
@@ -543,4 +548,46 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
             }
         }
     }
+
+    private void approveAsShiftManagerFlow(Scanner scanner) {
+        try {
+            Optional<User> currentUser = authenticationService.getCurrentUser();
+            if (!currentUser.isPresent()) {
+                System.out.println("No user is currently logged in.");
+                return;
+            }
+
+            System.out.println("\n=== Approve Employee as Shift Manager ===");
+            System.out.println("Available employees:");
+            List<Employee> employees = userController.getEmployees();
+            
+            if (employees.isEmpty()) {
+                System.out.println("No employees found.");
+                return;
+            }
+            
+            for (int i = 0; i < employees.size(); i++) {
+                Employee emp = employees.get(i);
+                String status = emp.canManageShift() ? "(Already approved)" : "(Not approved)";
+                System.out.println((i + 1) + ". " + emp.getId() + " - " + emp.getName() + " " + status);
+            }
+            
+            System.out.print("Select employee number: ");
+            int choice = Integer.parseInt(scanner.nextLine()) - 1;
+            
+            if (choice < 0 || choice >= employees.size()) {
+                System.out.println("Invalid selection.");
+                return;
+            }
+            
+            Employee selectedEmployee = employees.get(choice);
+            userController.approveAsShiftManager(currentUser.get(), selectedEmployee.getId(), employeeRepository);
+            System.out.println("Employee " + selectedEmployee.getName() + " has been approved as shift manager.");
+            
+        } catch (RepositoryException e) {
+            System.out.println("Failed to approve employee: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            System.out.println("Not authorized: " + e.getMessage());
+        }
+    }   
 }
