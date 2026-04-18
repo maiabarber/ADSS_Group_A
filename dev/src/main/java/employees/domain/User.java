@@ -1,15 +1,14 @@
 package employees.domain;
 
-import java.io.Serializable;
 import java.util.Objects;
 
-public class User implements Serializable {
-    private static final long serialVersionUID = 1L;
+/**
+ * User class represents a user in the system with an ID and password.
+ * It provides methods to get and set the ID and password, as well as a method to check if the provided credentials match the user's credentials.
+ */
+public class User {
     private String id;
     private String password;
-
-    public User() {
-    }
 
     public User(String id, String password) {
         this.id = id;

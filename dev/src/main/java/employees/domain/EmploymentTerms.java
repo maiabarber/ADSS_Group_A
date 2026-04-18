@@ -1,19 +1,17 @@
 package employees.domain;
 
-import java.io.Serializable;
 import java.time.LocalDate;
 
-public class EmploymentTerms implements Serializable {
-    private static final long serialVersionUID = 1L;
-
+/**
+ * EmploymentTerms class represents the terms of employment for an employee.
+ * It includes attributes such as start date, employment scope, global salary, hourly salary, and vacation days.
+ */
+public class EmploymentTerms {
     private LocalDate startDate;
     private EmploymentScope employmentScope;
     private double globalSalary;
     private double hourlySalary;
     private int vacationDays;
-
-    public EmploymentTerms() {
-    }
 
     public EmploymentTerms(
         LocalDate startDate,

@@ -9,6 +9,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * AvailabilityPresentation class serves as a presentation layer for handling employee availability input.
+ * It contains lists of constraints and preferences, as well as a submission deadline input.
+ * It provides a method to convert the presentation data into a WeeklyAvailabilityRequest object.
+ */
 public class AvailabilityPresentation {
     private List<Constraint> constraintsInput = new ArrayList<>();
     private List<Preference> preferencesInput = new ArrayList<>();

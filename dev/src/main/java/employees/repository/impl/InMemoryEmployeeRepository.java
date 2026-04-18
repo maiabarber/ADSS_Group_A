@@ -10,6 +10,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * InMemoryEmployeeRepository class provides an in-memory implementation of the EmployeeRepository interface.
+ * It uses a HashMap to store Employee objects by their ID, allowing for basic CRUD operations.
+ */
 public class InMemoryEmployeeRepository implements EmployeeRepository {
     private final Map<String, Employee> employeesById = new HashMap<>();
 

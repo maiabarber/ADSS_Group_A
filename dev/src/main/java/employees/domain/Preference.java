@@ -1,15 +1,14 @@
 package employees.domain;
 
-import java.io.Serializable;
 import java.time.DayOfWeek;
 
-public class Preference implements Serializable {
-    private static final long serialVersionUID = 1L;
+/**
+ * Preference class represents an employee's preference for a specific day and shift type.
+ * It contains the day of the week and the preferred shift type.
+ */
+public class Preference {
     private DayOfWeek day;
     private ShiftType shiftType;
-
-    public Preference() {
-    }
 
     public Preference(DayOfWeek day, ShiftType shiftType) {
         this.day = day;

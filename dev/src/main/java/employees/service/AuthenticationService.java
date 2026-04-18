@@ -6,6 +6,10 @@ import employees.repository.UserRepository;
 
 import java.util.Optional;
 
+/**
+ * AuthenticationService class provides methods for user registration, login, logout, and retrieving the current user.
+ * It interacts with the UserRepository to manage user data and maintains the state of the currently logged-in user.
+ */
 public class AuthenticationService {
     private final UserRepository userRepository;
     private User currentUser;

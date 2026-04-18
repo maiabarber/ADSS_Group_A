@@ -2,6 +2,10 @@ package employees.presentation;
 
 import java.util.Scanner;
 
+/**
+ * LoginPresentation class provides a presentation layer for handling user login input.
+ * It contains fields for user ID and password input, and a method to read these inputs from the console.
+ */
 public class LoginPresentation {
     private String idInput;
     private String passwordInput;

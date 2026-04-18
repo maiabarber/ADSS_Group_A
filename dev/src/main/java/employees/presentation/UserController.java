@@ -12,6 +12,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * UserController class manages user-related operations such as adding employees, updating employee details,
+ * firing employees, and approving shift managers. It interacts with the authentication service and employee repository
+ * to perform these operations while ensuring that only HR managers have the necessary permissions.
+ */
 public class UserController {
     private final List<Employee> employees = new ArrayList<>();
     private HR_Manager manager;
@@ -33,7 +38,6 @@ public class UserController {
         if (!(requestedBy instanceof HR_Manager) || !((HR_Manager) requestedBy).isHRManager()) {
             throw new IllegalArgumentException("Only HR manager can add employees");
         }
-
         authenticationService.registerUser(employee);
         employeeRepository.save(employee);
         employees.add(employee);
@@ -95,7 +99,6 @@ public class UserController {
                 }
             }
         }
-
         return true;
     }
 
@@ -120,7 +123,6 @@ public class UserController {
                 existing.setFired(true);
             }
         }
-
         return true;
     }
 
