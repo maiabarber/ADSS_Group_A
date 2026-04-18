@@ -2,6 +2,7 @@ package employees.domain;
 
 public enum ShiftType {
     MORNING,
-    AFTERNOON,
+    MORNING_OVERTIME,
+    DOUBLE_SHIFT,
     NIGHT
 }
