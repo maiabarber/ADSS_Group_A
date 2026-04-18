@@ -1,4 +1,4 @@
-﻿package employees.domain;
+package employees.domain;
 
 /**
  * Salary class represents the salary details of an employee.

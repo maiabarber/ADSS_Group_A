@@ -103,22 +103,31 @@ public class ShiftController {
         }
     }
     
-    // Check if assignment conflicts with employee constraints
-    boolean hasConflict = false;
+    // Check if assignment conflicts with employee constraints or fixed day off
+    boolean hasConstraintConflict = false;
     WeeklyAvailabilityRequest availability = employee.getWeeklyAvailabilityRequest();
     if (availability != null) {
         for (Constraint constraint : availability.getConstraints()) {
             if (constraint.getDay() == shift.getDate().getDayOfWeek() &&
                 constraint.getShiftType() == shift.getShiftType()) {
-                hasConflict = true;
+                hasConstraintConflict = true;
                 break;
             }
         }
     }
+    boolean hasFixedDayOffConflict = employee.getFixedDayOff() != null &&
+        employee.getFixedDayOff() == shift.getDate().getDayOfWeek();
+    boolean hasConflict = hasConstraintConflict || hasFixedDayOffConflict;
 
     // No conflict → approve immediately
     // Conflict → create PENDING assignment, employee must approve
-    ShiftAssignment assignment = new ShiftAssignment(employee, shift, role, hasConflict);
+    ShiftAssignment assignment = new ShiftAssignment(
+        employee,
+        shift,
+        role,
+        hasConflict,
+        hasFixedDayOffConflict
+    );
     if (!hasConflict) {
         assignment.setApproved(true);
     }
@@ -153,6 +162,9 @@ public class ShiftController {
             throw new IllegalArgumentException("Assignment is not pending approval");
         }
         assignment.setApproved(approved);
+        if (approved && assignment.isConflictsWithFixedDayOff()) {
+            employee.addVacationDays(1);
+        }
         if (!approved) {
             assignment.getShift().removeAssignment(assignment);
         }
@@ -192,21 +204,30 @@ public class ShiftController {
         }
 
         // Check constraints for replacement (req #3 behaviour applies here too)
-        boolean hasConflict = false;
+        boolean hasConstraintConflict = false;
         WeeklyAvailabilityRequest availability = replacement.getWeeklyAvailabilityRequest();
         if (availability != null) {
             for (Constraint constraint : availability.getConstraints()) {
                 if (constraint.getDay() == shift.getDate().getDayOfWeek() &&
                     constraint.getShiftType() == shift.getShiftType()) {
-                    hasConflict = true;
+                    hasConstraintConflict = true;
                     break;
                 }
             }
         }
+        boolean hasFixedDayOffConflict = replacement.getFixedDayOff() != null &&
+            replacement.getFixedDayOff() == shift.getDate().getDayOfWeek();
+        boolean hasConflict = hasConstraintConflict || hasFixedDayOffConflict;
 
         // Remove original, add replacement
         shift.removeAssignment(originalAssignment);
-        ShiftAssignment newAssignment = new ShiftAssignment(replacement, shift, role, hasConflict);
+        ShiftAssignment newAssignment = new ShiftAssignment(
+            replacement,
+            shift,
+            role,
+            hasConflict,
+            hasFixedDayOffConflict
+        );
         if (!hasConflict) {
             newAssignment.setApproved(true);
         }

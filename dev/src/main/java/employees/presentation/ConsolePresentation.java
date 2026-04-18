@@ -20,6 +20,7 @@ import employees.service.AuthenticationService;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.Year;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +33,8 @@ import java.util.Scanner;
  * The class interacts with the authentication service, employee repository, and other controllers to manage user input and system operations.
  */
 public class ConsolePresentation {
+    private static final int DEFAULT_ANNUAL_VACATION_DAYS = 10;
+
     private final AuthenticationService authenticationService;
     private final EmployeeRepository employeeRepository;
     private final LoginPresentation loginPresentation;
@@ -39,6 +42,7 @@ public class ConsolePresentation {
     private final UserController userController;
     private final ShiftController shiftController;
     private final SubmissionDeadlineRepository submissionDeadlineRepository;
+    private int lastVacationResetYear = -1;
 
     public ConsolePresentation() {
         this.authenticationService = new AuthenticationService(new InMemoryUserRepository());
@@ -70,6 +74,8 @@ public class ConsolePresentation {
                 System.out.println("Invalid credentials.");
                 return;
             }
+
+            resetVacationDaysForCurrentYear();
 
             if (isHrManager(loggedInUser.get())) {
                 userController.setManager((HR_Manager) loggedInUser.get());
@@ -227,16 +233,54 @@ private void submitWeeklyAvailabilityFlow(User loggedInUser, Scanner scanner) {
 
     List<Constraint> constraints = readConstraints(scanner);
     List<Preference> preferences = readPreferences(scanner);
+    int currentVacationBalance = employee.getVacationDaysBalance();
+    System.out.println("Current vacation days balance: " + currentVacationBalance);
+    int vacationDaysToUse = readInt(scanner, "Vacation days to use this week: ");
+    if (vacationDaysToUse > currentVacationBalance) {
+        System.out.println("Cannot use more vacation days than available balance.");
+        return;
+    }
+
+    try {
+        employee.consumeVacationDays(vacationDaysToUse);
+    } catch (IllegalArgumentException e) {
+        System.out.println("Vacation days update failed: " + e.getMessage());
+        return;
+    }
+
     weeklyAvailabilityRequest.setConstraints(constraints);
     weeklyAvailabilityRequest.setPreferences(preferences);
 
     try {
         employeeRepository.save(employee);
-        System.out.println("Weekly constraints and preferences were submitted successfully.");
+        System.out.println(
+            "Weekly constraints and preferences were submitted successfully. Remaining vacation days: " +
+            employee.getVacationDaysBalance() + "."
+        );
     } catch (RepositoryException e) {
         System.out.println("Failed to save weekly submission: " + e.getMessage());
     }
 }
+
+    private void resetVacationDaysForCurrentYear() {
+        int currentYear = Year.now().getValue();
+        if (lastVacationResetYear == currentYear) {
+            return;
+        }
+
+        try {
+            List<Employee> allEmployees = employeeRepository.findAll();
+            for (Employee employee : allEmployees) {
+                if (employee.getEmploymentTerms() != null) {
+                    employee.resetVacationDays(DEFAULT_ANNUAL_VACATION_DAYS);
+                    employeeRepository.save(employee);
+                }
+            }
+            lastVacationResetYear = currentYear;
+        } catch (RepositoryException e) {
+            System.out.println("Failed to reset annual vacation days: " + e.getMessage());
+        }
+    }
 
 private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
     if (!(loggedInUser instanceof Employee)) {

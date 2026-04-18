@@ -18,6 +18,8 @@ import java.util.Scanner;
  * It provides methods to read employee details from the console and convert them into an Employee object.
  */
 public class EmployeePresentation {
+    private static final int DEFAULT_VACATION_DAYS = 10;
+
     private String idInput;
     private String passwordInput;
     private String nameInput;
@@ -32,7 +34,6 @@ public class EmployeePresentation {
     private double hourlySalaryInput;
     private double workedHoursInput;
     private EmploymentScope employmentScopeInput;
-    private int vacationDaysInput;
 
     public Employee readEmployeeInput(Scanner scanner) {
         System.out.println("\nAdd new employee");
@@ -62,7 +63,6 @@ public class EmployeePresentation {
         globalSalaryInput = readDouble(scanner, "Base salary: ");
         hourlySalaryInput = readDouble(scanner, "Overtime hourly rate: ");
         employmentScopeInput = readEmploymentScope(scanner);
-        vacationDaysInput = readInt(scanner, "Vacation days: ");
         workedHoursInput = 0;
         startDateInput = readLocalDate(scanner, "Start date (YYYY-MM-DD): ");
 
@@ -72,7 +72,7 @@ public class EmployeePresentation {
             employmentScopeInput,
             globalSalaryInput,
             hourlySalaryInput,
-            vacationDaysInput
+            DEFAULT_VACATION_DAYS
         );
 
         Employee employee = new Employee(
@@ -176,18 +176,6 @@ public class EmployeePresentation {
             }
 
             System.out.println("Invalid selection.");
-        }
-    }
-
-    private int readInt(Scanner scanner, String prompt) {
-        while (true) {
-            System.out.print(prompt);
-            String value = scanner.nextLine();
-            try {
-                return Integer.parseInt(value);
-            } catch (NumberFormatException e) {
-                System.out.println("Please enter a valid integer.");
-            }
         }
     }
 

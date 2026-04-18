@@ -7,11 +7,13 @@ public class ShiftAssignment {
     private boolean approved;
     private boolean requiresApproval;
     private boolean cancellationRequested;
+    private boolean conflictsWithFixedDayOff;
 
     public ShiftAssignment() {
         this.approved = false;
         this.requiresApproval = false;
         this.cancellationRequested = false;
+        this.conflictsWithFixedDayOff = false;
     }
 
     public ShiftAssignment(Employee employee, Shift shift, Role role) {
@@ -21,15 +23,27 @@ public class ShiftAssignment {
         this.approved = false;
         this.requiresApproval = false;
         this.cancellationRequested = false;
+        this.conflictsWithFixedDayOff = false;
     }
 
     public ShiftAssignment(Employee employee, Shift shift, Role role, boolean requiresApproval) {
+        this(employee, shift, role, requiresApproval, false);
+    }
+
+    public ShiftAssignment(
+        Employee employee,
+        Shift shift,
+        Role role,
+        boolean requiresApproval,
+        boolean conflictsWithFixedDayOff
+    ) {
         this.employee = employee;
         this.shift = shift;
         this.role = role;
         this.approved = false;
         this.requiresApproval = requiresApproval;
         this.cancellationRequested = false;
+        this.conflictsWithFixedDayOff = conflictsWithFixedDayOff;
     }
 
     public Employee getEmployee() {
@@ -85,6 +99,14 @@ public class ShiftAssignment {
         this.cancellationRequested = cancellationRequested;
     }
 
+    public boolean isConflictsWithFixedDayOff() {
+        return conflictsWithFixedDayOff;
+    }
+
+    public void setConflictsWithFixedDayOff(boolean conflictsWithFixedDayOff) {
+        this.conflictsWithFixedDayOff = conflictsWithFixedDayOff;
+    }
+
     @Override
     public String toString() {
         return "ShiftAssignment{" +
@@ -94,6 +116,7 @@ public class ShiftAssignment {
             ", requiresApproval=" + requiresApproval +
             ", approved=" + approved +
             ", cancellationRequested=" + cancellationRequested +
+            ", conflictsWithFixedDayOff=" + conflictsWithFixedDayOff +
             '}';
     }
 }

@@ -18,6 +18,7 @@ import java.util.Optional;
  * to perform these operations while ensuring that only HR managers have the necessary permissions.
  */
 public class UserController {
+    public static final int DEFAULT_VACATION_DAYS = 10;
     private final List<Employee> employees = new ArrayList<>();
     private HR_Manager manager;
 
@@ -38,6 +39,11 @@ public class UserController {
         if (!(requestedBy instanceof HR_Manager) || !((HR_Manager) requestedBy).isHRManager()) {
             throw new IllegalArgumentException("Only HR manager can add employees");
         }
+
+        if (employee.getEmploymentTerms() != null) {
+            employee.getEmploymentTerms().setVacationDays(DEFAULT_VACATION_DAYS);
+        }
+
         authenticationService.registerUser(employee);
         employeeRepository.save(employee);
         employees.add(employee);
