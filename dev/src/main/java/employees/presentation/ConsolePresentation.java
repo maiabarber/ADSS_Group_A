@@ -88,7 +88,8 @@ public class ConsolePresentation {
                     System.out.println("6. Assign employee to shift");
                     System.out.println("7. Substitute employee in shift");
                     System.out.println("8. Handle cancellation requests");
-                    System.out.println("9. Logout");
+                    System.out.println("9. Calculate employee salary from shifts");
+                    System.out.println("10. Logout");
                 } else {
                     System.out.println("1. Submit weekly constraints and preferences");
                     System.out.println("2. View and respond to pending shift assignments");
@@ -127,6 +128,9 @@ public class ConsolePresentation {
                             handleCancellationRequestsFlow(scanner);
                             break;
                         case "9":
+                            calculateEmployeeSalaryFlow(scanner);
+                            break;
+                        case "10":
                             if (authenticationService.logout()) {
                                 System.out.println("You have been logged out.");
                             } else {
@@ -965,5 +969,47 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
         } catch (IllegalArgumentException e) {
             System.out.println("Failed to handle cancellation: " + e.getMessage());
         } 
+    }
+
+    private void calculateEmployeeSalaryFlow(Scanner scanner) {
+        try {
+            Optional<User> currentUser = authenticationService.getCurrentUser();
+            if (!currentUser.isPresent()) {
+                System.out.println("No user is currently logged in.");
+                return;
+            }
+
+            List<Employee> employees = userController.getEmployees();
+            if (employees.isEmpty()) {
+                System.out.println("No employees found.");
+                return;
+            }
+
+            System.out.println("\n=== Calculate Employee Salary ===");
+            for (int i = 0; i < employees.size(); i++) {
+                Employee employee = employees.get(i);
+                System.out.println((i + 1) + ". " + employee.getId() + " - " + employee.getName());
+            }
+
+            System.out.print("Select employee number: ");
+            int choice = Integer.parseInt(scanner.nextLine()) - 1;
+            if (choice < 0 || choice >= employees.size()) {
+                System.out.println("Invalid selection.");
+                return;
+            }
+
+            Employee selectedEmployee = employees.get(choice);
+            double workedHours = shiftController.calculateWorkedHoursForEmployee(selectedEmployee);
+            double finalSalary = shiftController.recalculateEmployeeSalary(selectedEmployee);
+            employeeRepository.save(selectedEmployee);
+
+            System.out.println("Salary updated for " + selectedEmployee.getName() + ".");
+            System.out.println("Worked hours: " + workedHours);
+            System.out.println("Final salary: " + finalSalary);
+        } catch (RepositoryException e) {
+            System.out.println("Failed to save updated salary: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            System.out.println("Salary calculation failed: " + e.getMessage());
+        }
     }
 }

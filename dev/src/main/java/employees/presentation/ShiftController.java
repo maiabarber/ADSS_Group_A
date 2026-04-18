@@ -256,4 +256,45 @@ public class ShiftController {
         );
     }
 
+    /** Req #10: calculate worked hours from approved assignments and update salary. */
+    public double calculateWorkedHoursForEmployee(Employee employee) {
+        double totalHours = 0;
+
+        for (Shift shift : shifts) {
+            for (ShiftAssignment assignment : shift.getAssignments()) {
+                if (assignment.getEmployee().getId().equals(employee.getId()) && assignment.isApproved()) {
+                    totalHours += getShiftHours(shift.getShiftType());
+                }
+            }
+        }
+
+        return totalHours;
+    }
+
+    /** Updates employee salary according to approved assigned shifts and returns final salary. */
+    public double recalculateEmployeeSalary(Employee employee) {
+        if (employee.getSalary() == null) {
+            throw new IllegalArgumentException("Employee salary configuration is missing");
+        }
+
+        double workedHours = calculateWorkedHoursForEmployee(employee);
+        employee.getSalary().setWorkedHours(workedHours);
+        return employee.getSalary().recalculateFinalSalary();
+    }
+
+    private double getShiftHours(ShiftType shiftType) {
+        switch (shiftType) {
+            case MORNING:
+                return 8;
+            case MORNING_OVERTIME:
+                return 10;
+            case EVENING:
+                return 8;
+            case DOUBLE_SHIFT:
+                return 16;
+            default:
+                throw new IllegalArgumentException("Unsupported shift type: " + shiftType);
+        }
+    }
+
 }
