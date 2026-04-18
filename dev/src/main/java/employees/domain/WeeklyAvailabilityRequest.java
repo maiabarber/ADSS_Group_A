@@ -12,6 +12,7 @@ public class WeeklyAvailabilityRequest implements Serializable {
     private List<Constraint> constraints;
     private List<Preference> preferences;
     private LocalDate submissionDeadline;
+    private LocalDate weekStartDate;
 
     public WeeklyAvailabilityRequest() {
         this.constraints = new ArrayList<>();
@@ -53,6 +54,14 @@ public class WeeklyAvailabilityRequest implements Serializable {
         this.submissionDeadline = Objects.requireNonNull(submissionDeadline, "submissionDeadline must not be null");
     }
 
+    public LocalDate getWeekStartDate() {
+        return weekStartDate;
+    }
+
+    public void setWeekStartDate(LocalDate weekStartDate) {
+        this.weekStartDate = weekStartDate;
+    }
+
     public void addConstraint(Constraint constraint) {
         if (constraint != null) {
             constraints.add(constraint);
@@ -65,12 +74,19 @@ public class WeeklyAvailabilityRequest implements Serializable {
         }
     }
 
+    public void resetForWeek(LocalDate weekStartDate) {
+        this.constraints = new ArrayList<>();
+        this.preferences = new ArrayList<>();
+        this.weekStartDate = weekStartDate;
+    }
+
     @Override
     public String toString() {
         return "WeeklyAvailabilityRequest{" +
             "constraints=" + constraints +
             ", preferences=" + preferences +
             ", submissionDeadline=" + submissionDeadline +
+            ", weekStartDate=" + weekStartDate +
             '}';
     }
 }
