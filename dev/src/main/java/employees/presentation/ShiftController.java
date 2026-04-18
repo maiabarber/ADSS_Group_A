@@ -60,6 +60,19 @@ public class ShiftController {
     if (!(assignedBy instanceof HR_Manager) || !((HR_Manager) assignedBy).isHRManager()) {
         throw new IllegalArgumentException("Only CA manager can assign employees to shifts");
     }
+    
+    // Validate that employee is authorized for this role
+    if (!employee.getAuthorizedRoles().contains(role)) {
+        throw new IllegalArgumentException("Employee " + employee.getName() + " is not authorized for role " + role);
+    }
+    
+    // Validate that employee is not already assigned to this shift
+    for (ShiftAssignment existing : shift.getAssignments()) {
+        if (existing.getEmployee().getId().equals(employee.getId())) {
+            throw new IllegalArgumentException("Employee " + employee.getName() + " is already assigned to this shift");
+        }
+    }
+    
     ShiftAssignment assignment = new ShiftAssignment(employee, shift, role);
     shift.addAssignment(assignment);
     }
