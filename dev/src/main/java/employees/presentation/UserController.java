@@ -123,4 +123,25 @@ public class UserController {
 
         return true;
     }
+
+    public void approveAsShiftManager(User requestedBy, String employeeId, EmployeeRepository employeeRepository) throws RepositoryException {
+        if (!(requestedBy instanceof HR_Manager) || !((HR_Manager) requestedBy).isHRManager()) {
+            throw new IllegalArgumentException("Only HR manager can approve shift manager");
+        }
+
+        Optional<Employee> employeeOptional = employeeRepository.findById(employeeId);
+        if (!employeeOptional.isPresent()) {
+            throw new IllegalArgumentException("Employee not found");
+        }
+
+        Employee employee = employeeOptional.get();
+        employee.approveAsShiftManager(requestedBy);
+        employeeRepository.save(employee);
+
+        for (Employee existing : employees) {
+            if (employeeId.equals(existing.getId())) {
+                existing.approveAsShiftManager(requestedBy);
+            }
+        }
+    }
 }

@@ -155,4 +155,14 @@ public class Employee extends User {
     public void setWeeklyAvailabilityRequest(WeeklyAvailabilityRequest weeklyAvailabilityRequest) {
         this.weeklyAvailabilityRequest = weeklyAvailabilityRequest;
     }
+
+    public void approveAsShiftManager(User approvedBy) {
+        if (!(approvedBy instanceof HR_Manager) || !((HR_Manager) approvedBy).isHRManager()) {
+            throw new IllegalArgumentException("Only HR manager can approve shift manager");
+        }
+        if (this.isFired()) {
+            throw new IllegalStateException("Fired employee cannot be approved as shift manager");
+        }
+        this.canManageShift = true;
+    }
 }
