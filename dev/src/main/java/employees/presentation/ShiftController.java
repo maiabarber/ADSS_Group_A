@@ -1,11 +1,13 @@
 package employees.presentation;
 
+import employees.domain.Constraint;
 import employees.domain.Employee;
 import employees.domain.HR_Manager;
 import employees.domain.Role;
 import employees.domain.Shift;
 import employees.domain.ShiftAssignment;
 import employees.domain.User;
+import employees.domain.WeeklyAvailabilityRequest;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -70,6 +72,18 @@ public class ShiftController {
     for (ShiftAssignment existing : shift.getAssignments()) {
         if (existing.getEmployee().getId().equals(employee.getId())) {
             throw new IllegalArgumentException("Employee " + employee.getName() + " is already assigned to this shift");
+        }
+    }
+    
+    // Validate that assignment doesn't conflict with employee constraints
+    WeeklyAvailabilityRequest availability = employee.getWeeklyAvailabilityRequest();
+    if (availability != null) {
+        for (Constraint constraint : availability.getConstraints()) {
+            if (constraint.getDay() == shift.getDate().getDayOfWeek() && 
+                constraint.getShiftType() == shift.getShiftType()) {
+                throw new IllegalArgumentException("Assignment conflicts with employee constraint: " + 
+                    employee.getName() + " cannot work " + constraint.getDay() + " " + constraint.getShiftType());
+            }
         }
     }
     
