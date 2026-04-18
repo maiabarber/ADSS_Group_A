@@ -6,6 +6,7 @@ import employees.domain.HR_Manager;
 import employees.domain.Preference;
 import employees.domain.Role;
 import employees.domain.Shift;
+import employees.domain.ShiftAssignment;
 import employees.domain.ShiftType;
 import employees.domain.User;
 import employees.domain.WeeklyAvailabilityRequest;
@@ -88,7 +89,8 @@ public class ConsolePresentation {
                     System.out.println("7. Logout");
                 } else {
                     System.out.println("1. Submit weekly constraints and preferences");
-                    System.out.println("2. Logout");
+                    System.out.println("2. View and respond to pending shift assignments");
+                    System.out.println("3. Logout");
                 }
                 System.out.print("Selection: ");
 
@@ -132,6 +134,9 @@ public class ConsolePresentation {
                             submitWeeklyAvailabilityFlow(loggedInUser.get(), scanner);
                             break;
                         case "2":
+                            respondToPendingAssignmentsFlow(loggedInUser.get(), scanner);
+                            break;
+                        case "3":
                             if (authenticationService.logout()) {
                                 System.out.println("You have been logged out.");
                             } else {
@@ -680,6 +685,56 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
 
         } catch (IllegalArgumentException e) {
             System.out.println("Assignment failed: " + e.getMessage());
-        } 
+        }
+    }
+
+    private void respondToPendingAssignmentsFlow(User loggedInUser, Scanner scanner) {
+        if (!(loggedInUser instanceof Employee)) {
+            System.out.println("Only employees can respond to shift assignments.");
+            return;
+        }
+
+        Employee employee = (Employee) loggedInUser;
+        List<ShiftAssignment> pending = shiftController.getPendingApprovalsForEmployee(employee);
+
+        if (pending.isEmpty()) {
+            System.out.println("You have no pending shift assignments.");
+            return;
+        }
+
+        System.out.println("\n=== Pending Shift Assignments ===");
+        for (int i = 0; i < pending.size(); i++) {
+            ShiftAssignment assignment = pending.get(i);
+            System.out.println((i + 1) + ". " + assignment.getShift().getDate() +
+                " - " + assignment.getShift().getShiftType() +
+                " as " + assignment.getRole() +
+                " [CONFLICTS WITH YOUR CONSTRAINTS]");
+        }
+
+        System.out.print("Select assignment number: ");
+        try {
+            int choice = Integer.parseInt(scanner.nextLine()) - 1;
+            if (choice < 0 || choice >= pending.size()) {
+                System.out.println("Invalid selection.");
+                return;
+            }
+
+            ShiftAssignment selected = pending.get(choice);
+            System.out.print("Do you approve this assignment? (yes/no): ");
+            String response = scanner.nextLine().trim().toLowerCase();
+            boolean approved = "yes".equals(response);
+
+            shiftController.respondToAssignment(employee, selected, approved);
+
+            if (approved) {
+                System.out.println("Assignment approved. You are confirmed for this shift.");
+            } else {
+                System.out.println("Assignment rejected. The manager will be notified to assign another employee.");
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid input.");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
     }
 }

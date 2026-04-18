@@ -75,21 +75,59 @@ public class ShiftController {
         }
     }
     
-    // Validate that assignment doesn't conflict with employee constraints
+    // Check if assignment conflicts with employee constraints
+    boolean hasConflict = false;
     WeeklyAvailabilityRequest availability = employee.getWeeklyAvailabilityRequest();
     if (availability != null) {
         for (Constraint constraint : availability.getConstraints()) {
-            if (constraint.getDay() == shift.getDate().getDayOfWeek() && 
+            if (constraint.getDay() == shift.getDate().getDayOfWeek() &&
                 constraint.getShiftType() == shift.getShiftType()) {
-                throw new IllegalArgumentException("Assignment conflicts with employee constraint: " + 
-                    employee.getName() + " cannot work " + constraint.getDay() + " " + constraint.getShiftType());
+                hasConflict = true;
+                break;
             }
         }
     }
-    
-    ShiftAssignment assignment = new ShiftAssignment(employee, shift, role);
+
+    // No conflict → approve immediately
+    // Conflict → create PENDING assignment, employee must approve
+    ShiftAssignment assignment = new ShiftAssignment(employee, shift, role, hasConflict);
+    if (!hasConflict) {
+        assignment.setApproved(true);
+    }
     shift.addAssignment(assignment);
+
+    if (hasConflict) {
+        System.out.println("Warning: Assignment conflicts with " + employee.getName() +
+            "'s constraints. A pending approval request has been sent to the employee.");
+    }
     }
 
+    /** Returns all assignments waiting for this employee's approval */
+    public List<ShiftAssignment> getPendingApprovalsForEmployee(Employee employee) {
+        List<ShiftAssignment> pending = new ArrayList<>();
+        for (Shift shift : shifts) {
+            for (ShiftAssignment assignment : shift.getAssignments()) {
+                if (assignment.getEmployee().getId().equals(employee.getId()) && assignment.isPending()) {
+                    pending.add(assignment);
+                }
+            }
+        }
+        return pending;
+    }
+
+    /** Employee approves or rejects a pending assignment.
+     *  If rejected, the assignment is removed from the shift so HR can pick another employee. */
+    public void respondToAssignment(Employee employee, ShiftAssignment assignment, boolean approved) {
+        if (!assignment.getEmployee().getId().equals(employee.getId())) {
+            throw new IllegalArgumentException("Employee can only respond to their own assignments");
+        }
+        if (!assignment.isPending()) {
+            throw new IllegalArgumentException("Assignment is not pending approval");
+        }
+        assignment.setApproved(approved);
+        if (!approved) {
+            assignment.getShift().removeAssignment(assignment);
+        }
+    }
 
 }
