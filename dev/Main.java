@@ -1,5 +1,8 @@
+import presentation.DeliveriesUI;
+
 public class Main {
     public static void main(String[] args) {
-        System.out.println("Hello world");
+        DeliveriesUI ui = new DeliveriesUI();
+        ui.start();
     }
 }
