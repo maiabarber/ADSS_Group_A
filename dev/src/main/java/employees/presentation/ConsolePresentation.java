@@ -1,10 +1,15 @@
 package employees.presentation;
 
+import employees.domain.BankAccount;
 import employees.domain.Constraint;
 import employees.domain.Employee;
+import employees.domain.EmploymentScope;
+import employees.domain.EmploymentTerms;
+import employees.domain.EmploymentType;
 import employees.domain.HR_Manager;
 import employees.domain.Preference;
 import employees.domain.Role;
+import employees.domain.Salary;
 import employees.domain.Shift;
 import employees.domain.ShiftAssignment;
 import employees.domain.ShiftType;
@@ -12,8 +17,10 @@ import employees.domain.User;
 import employees.domain.WeeklyAvailabilityRequest;
 import employees.repository.EmployeeRepository;
 import employees.repository.RepositoryException;
+import employees.repository.ShiftRepository;
 import employees.repository.SubmissionDeadlineRepository;
 import employees.repository.impl.InMemoryEmployeeRepository;
+import employees.repository.impl.InMemoryShiftRepository;
 import employees.repository.impl.InMemorySubmissionDeadlineRepository;
 import employees.repository.impl.InMemoryUserRepository;
 import employees.service.AuthenticationService;
@@ -39,8 +46,10 @@ public class ConsolePresentation {
     private final EmployeeRepository employeeRepository;
     private final LoginPresentation loginPresentation;
     private final EmployeePresentation employeePresentation;
+    private final ShiftPresentation shiftPresentation;
     private final UserController userController;
     private final ShiftController shiftController;
+    private final ShiftRepository shiftRepository;
     private final SubmissionDeadlineRepository submissionDeadlineRepository;
     private int lastVacationResetYear = -1;
 
@@ -49,15 +58,16 @@ public class ConsolePresentation {
         this.employeeRepository = new InMemoryEmployeeRepository();
         this.loginPresentation = new LoginPresentation();
         this.employeePresentation = new EmployeePresentation();
-        this.userController = new UserController();
+        this.shiftPresentation = new ShiftPresentation();
+        this.userController = new UserController(authenticationService, employeeRepository);
         this.shiftController = new ShiftController();
+        this.shiftRepository = new InMemoryShiftRepository();
         this.submissionDeadlineRepository = new InMemorySubmissionDeadlineRepository();
     }
 
     public void run() {
         try {
-            authenticationService.registerUser(new User("employee1", "pass123"));
-            authenticationService.registerUser(new HR_Manager("hr001", "hrpass"));
+            registerDemoUsers();
         } catch (Exception e) {
             System.out.println("Failed to register demo users: " + e.getMessage());
             return;
@@ -71,6 +81,13 @@ public class ConsolePresentation {
                 loginPresentation.getPasswordInput()
             );
             if (!loggedInUser.isPresent()) {
+                if (authenticationService.isFiredCredentials(
+                    loginPresentation.getIdInput(),
+                    loginPresentation.getPasswordInput()
+                )) {
+                    System.out.println("Login blocked: this employee is marked as fired.");
+                    return;
+                }
                 System.out.println("Invalid credentials.");
                 return;
             }
@@ -96,11 +113,12 @@ public class ConsolePresentation {
                     System.out.println("3. Update employee details");
                     System.out.println("4. Fire employee");
                     System.out.println("5. Approve employee as shift manager");
-                    System.out.println("6. Assign employee to shift");
-                    System.out.println("7. Substitute employee in shift");
-                    System.out.println("8. Handle cancellation requests");
-                    System.out.println("9. Calculate employee salary from shifts");
-                    System.out.println("10. Logout");
+                    System.out.println("6. Create shift");
+                    System.out.println("7. Assign employee to shift");
+                    System.out.println("8. Substitute employee in shift");
+                    System.out.println("9. Handle cancellation requests");
+                    System.out.println("10. Calculate employee salary from shifts");
+                    System.out.println("11. Logout");
                 } else {
                     System.out.println("1. Submit weekly constraints and preferences");
                     System.out.println("2. View and respond to pending shift assignments");
@@ -124,25 +142,26 @@ public class ConsolePresentation {
                             break;
                         case "4":
                             fireEmployeeFlow(scanner);
-                            shiftController.setEmployees(userController.getEmployees());
                             break;
-                            
                         case "5":
                             approveAsShiftManagerFlow(scanner);
                             break;
                         case "6":
-                            assignEmployeeToShiftFlow(scanner);
+                            createShiftFlow(scanner);
                             break;
                         case "7":
-                            substituteEmployeeFlow(scanner);
+                            assignEmployeeToShiftFlow(scanner);
                             break;
                         case "8":
-                            handleCancellationRequestsFlow(scanner);
+                            substituteEmployeeFlow(scanner);
                             break;
                         case "9":
-                            calculateEmployeeSalaryFlow(scanner);
+                            handleCancellationRequestsFlow(scanner);
                             break;
                         case "10":
+                            calculateEmployeeSalaryFlow(scanner);
+                            break;
+                        case "11":
                             if (authenticationService.logout()) {
                                 System.out.println("You have been logged out.");
                             } else {
@@ -187,6 +206,28 @@ public class ConsolePresentation {
         return user instanceof HR_Manager && ((HR_Manager) user).isHRManager();
     }
 
+    private void registerDemoUsers() throws RepositoryException {
+        authenticationService.registerUser(new HR_Manager("hr001", "hrpass"));
+
+        Employee demoEmployee = new Employee(
+            "employee1",
+            "pass123",
+            new BankAccount("10", "123", "555555"),
+            "Demo Employee",
+            new Salary(5000, 50, 0, EmploymentScope.FULL_TIME),
+            EmploymentType.REGULAR,
+            new EmploymentTerms(LocalDate.now(), EmploymentScope.FULL_TIME, 5000, 50, 12),
+            java.util.Collections.singleton(Role.CASHIER),
+            false,
+            false,
+            null,
+            new WeeklyAvailabilityRequest()
+        );
+
+        authenticationService.registerUser(demoEmployee);
+        employeeRepository.save(demoEmployee);
+    }
+
     private void addNewEmployeeFlow(Scanner scanner) {
         try {
             Optional<User> currentUser = authenticationService.getCurrentUser();
@@ -206,7 +247,7 @@ public class ConsolePresentation {
                 weeklyAvailabilityRequest.setSubmissionDeadline(configuredDeadline.get());
             }
             ensureWeeklyAvailabilityCurrent(employee);
-            userController.addEmployee(currentUser.get(), employee, authenticationService, employeeRepository);
+            userController.addEmployee(currentUser.get(), employee);
             System.out.println("Employee added successfully.");
         } catch (RepositoryException e) {
             System.out.println("Failed to add employee: " + e.getMessage());
@@ -223,6 +264,24 @@ private void submitWeeklyAvailabilityFlow(User loggedInUser, Scanner scanner) {
 
     Employee employee = (Employee) loggedInUser;
     ensureWeeklyAvailabilityCurrent(employee);
+
+    Optional<LocalDate> configuredDeadline;
+    try {
+        configuredDeadline = submissionDeadlineRepository.findCurrent();
+    } catch (RepositoryException e) {
+        System.out.println("Failed to load submission deadline: " + e.getMessage());
+        return;
+    }
+
+    if (!configuredDeadline.isPresent()) {
+        System.out.println("No submission deadline is configured yet. Please contact HR manager.");
+        return;
+    }
+
+    if (LocalDate.now().isAfter(configuredDeadline.get())) {
+        System.out.println("Submission deadline has passed for this week.");
+        return;
+    }
 
     WeeklyAvailabilityRequest weeklyAvailabilityRequest = employee.getWeeklyAvailabilityRequest();
     if (weeklyAvailabilityRequest == null) {
@@ -250,6 +309,7 @@ private void submitWeeklyAvailabilityFlow(User loggedInUser, Scanner scanner) {
 
     weeklyAvailabilityRequest.setConstraints(constraints);
     weeklyAvailabilityRequest.setPreferences(preferences);
+    weeklyAvailabilityRequest.setSubmissionDeadline(configuredDeadline.get());
 
     try {
         employeeRepository.save(employee);
@@ -417,8 +477,7 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
                 newName,
                 newGlobalSalary,
                 newHourlySalary,
-                newCanManageShift,
-                employeeRepository
+                newCanManageShift
             );
 
             if (updated) {
@@ -446,9 +505,7 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
 
             boolean fired = userController.fireEmployee(
                 currentUser.get(),
-                employeeId,
-                authenticationService,
-                employeeRepository
+                employeeId
             );
 
             if (fired) {
@@ -664,13 +721,62 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
             }
             
             Employee selectedEmployee = employees.get(choice);
-            userController.approveAsShiftManager(currentUser.get(), selectedEmployee.getId(), employeeRepository);
+            userController.approveAsShiftManager(currentUser.get(), selectedEmployee.getId());
             System.out.println("Employee " + selectedEmployee.getName() + " has been approved as shift manager.");
             
         } catch (RepositoryException e) {
             System.out.println("Failed to approve employee: " + e.getMessage());
         } catch (IllegalArgumentException e) {
             System.out.println("Not authorized: " + e.getMessage());
+        }
+    }
+
+    private void createShiftFlow(Scanner scanner) {
+        try {
+            Optional<User> currentUser = authenticationService.getCurrentUser();
+            if (!currentUser.isPresent()) {
+                System.out.println("No user is currently logged in.");
+                return;
+            }
+
+            if (!isHrManager(currentUser.get())) {
+                System.out.println("Only HR manager can create shifts.");
+                return;
+            }
+
+            shiftPresentation.readShiftInput(scanner);
+            List<Employee> employees = userController.getEmployees();
+
+            Employee manager = null;
+            String managerId = shiftPresentation.getSelectManagerIdInput();
+            for (Employee employee : employees) {
+                if (employee.getId().equals(managerId)) {
+                    manager = employee;
+                    break;
+                }
+            }
+
+            if (manager == null) {
+                System.out.println("Shift manager id not found.");
+                return;
+            }
+
+            Shift shift = new Shift(
+                shiftPresentation.getShiftDateInput(),
+                shiftPresentation.getShiftTypeInput(),
+                null,
+                shiftPresentation.getRequiredCashierInput(),
+                shiftPresentation.getRequiredStoreKeeperInput()
+            );
+            shift.assignShiftManager(currentUser.get(), manager);
+            shiftController.addShift(shift);
+            shiftRepository.save(shift);
+
+            System.out.println("Shift created successfully: " + shift.getDate() + " - " + shift.getShiftType());
+        } catch (RepositoryException e) {
+            System.out.println("Failed to save shift: " + e.getMessage());
+        } catch (RuntimeException e) {
+            System.out.println("Failed to create shift: " + e.getMessage());
         }
     }
 

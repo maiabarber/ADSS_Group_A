@@ -11,10 +11,6 @@ public class Salary {
     private double overtimeHours;
     private double finalSalary;
     private EmploymentScope employmentScope = EmploymentScope.FULL_TIME;
-    public static final int FULL_TIME_HOURS = 190;
-    public static final int PART_TIME_HOURS = 95;
-
-
 
     public Salary(double globalSalary, double hourlySalary, double workedHours) {
         this(globalSalary, hourlySalary, workedHours, EmploymentScope.FULL_TIME);
@@ -60,6 +56,9 @@ public class Salary {
     }
 
     public void setEmploymentScope(EmploymentScope employmentScope) {
+        if (employmentScope == null) {
+            throw new IllegalArgumentException("employmentScope must not be null");
+        }
         this.employmentScope = employmentScope;
         recalculateFinalSalary();
     }
@@ -73,12 +72,7 @@ public class Salary {
     }
 
     public double calculateOvertimeHours() {
-        int threshold = (employmentScope == EmploymentScope.PART_TIME) ? PART_TIME_HOURS : FULL_TIME_HOURS;
-        return Math.max(0, workedHours - threshold);
-    }
-
-    public double calculateOvertimeHours(EmploymentScope scope) {
-        int threshold = (scope == EmploymentScope.PART_TIME) ? PART_TIME_HOURS : FULL_TIME_HOURS;
+        int threshold = employmentScope.getRequiredHours();
         return Math.max(0, workedHours - threshold);
     }
 
