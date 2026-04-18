@@ -4,6 +4,8 @@ import employees.domain.Constraint;
 import employees.domain.Employee;
 import employees.domain.HR_Manager;
 import employees.domain.Preference;
+import employees.domain.Role;
+import employees.domain.Shift;
 import employees.domain.ShiftType;
 import employees.domain.User;
 import employees.domain.WeeklyAvailabilityRequest;
@@ -82,7 +84,8 @@ public class ConsolePresentation {
                     System.out.println("3. Update employee details");
                     System.out.println("4. Fire employee");
                     System.out.println("5. Approve employee as shift manager");
-                    System.out.println("6. Logout");
+                    System.out.println("6. Assign employee to shift");
+                    System.out.println("7. Logout");
                 } else {
                     System.out.println("1. Submit weekly constraints and preferences");
                     System.out.println("2. Logout");
@@ -110,6 +113,9 @@ public class ConsolePresentation {
                             approveAsShiftManagerFlow(scanner);
                             break;
                         case "6":
+                            assignEmployeeToShiftFlow(scanner);
+                            break;
+                        case "7":
                             if (authenticationService.logout()) {
                                 System.out.println("You have been logged out.");
                             } else {
@@ -592,5 +598,88 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
         } catch (IllegalArgumentException e) {
             System.out.println("Not authorized: " + e.getMessage());
         }
-    }   
+    }
+
+    private void assignEmployeeToShiftFlow(Scanner scanner) {
+        try {
+            Optional<User> currentUser = authenticationService.getCurrentUser();
+            if (!currentUser.isPresent()) {
+                System.out.println("No user is currently logged in.");
+                return;
+            }
+
+            System.out.println("\n=== Assign Employee to Shift ===");
+
+            // Show available employees
+            List<Employee> employees = userController.getEmployees();
+            if (employees.isEmpty()) {
+                System.out.println("No employees found.");
+                return;
+            }
+
+            System.out.println("Available employees:");
+            for (int i = 0; i < employees.size(); i++) {
+                Employee emp = employees.get(i);
+                System.out.println((i + 1) + ". " + emp.getId() + " - " + emp.getName());
+            }
+
+            System.out.print("Select employee number: ");
+            int employeeChoice = Integer.parseInt(scanner.nextLine()) - 1;
+
+            if (employeeChoice < 0 || employeeChoice >= employees.size()) {
+                System.out.println("Invalid employee selection.");
+                return;
+            }
+
+            Employee selectedEmployee = employees.get(employeeChoice);
+
+            // Show available shifts
+            List<Shift> shifts = shiftController.getShifts();
+            if (shifts.isEmpty()) {
+                System.out.println("No shifts found.");
+                return;
+            }
+
+            System.out.println("Available shifts:");
+            for (int i = 0; i < shifts.size(); i++) {
+                Shift shift = shifts.get(i);
+                System.out.println((i + 1) + ". " + shift.getDate() + " - " + shift.getShiftType());
+            }
+
+            System.out.print("Select shift number: ");
+            int shiftChoice = Integer.parseInt(scanner.nextLine()) - 1;
+
+            if (shiftChoice < 0 || shiftChoice >= shifts.size()) {
+                System.out.println("Invalid shift selection.");
+                return;
+            }
+
+            Shift selectedShift = shifts.get(shiftChoice);
+
+            // Select role
+            System.out.println("Select role:");
+            System.out.println("1. CASHIER");
+            System.out.println("2. STOREKEEPER");
+            System.out.print("Selection: ");
+            String roleChoice = scanner.nextLine();
+
+            Role selectedRole;
+            if ("1".equals(roleChoice)) {
+                selectedRole = Role.CASHIER;
+            } else if ("2".equals(roleChoice)) {
+                selectedRole = Role.STOREKEEPER;
+            } else {
+                System.out.println("Invalid role selection.");
+                return;
+            }
+
+            // Perform assignment
+            shiftController.assignEmployeeToShift(currentUser.get(), selectedEmployee, selectedShift, selectedRole);
+            System.out.println("Employee " + selectedEmployee.getName() + " has been assigned to shift " +
+                             selectedShift.getDate() + " - " + selectedShift.getShiftType() + " as " + selectedRole);
+
+        } catch (IllegalArgumentException e) {
+            System.out.println("Assignment failed: " + e.getMessage());
+        } 
+    }
 }
