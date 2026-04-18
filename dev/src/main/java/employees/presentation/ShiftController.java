@@ -152,4 +152,108 @@ public class ShiftController {
         }
     }
 
+    /** Req #4: Substitute an existing assignment with a different available employee.
+     *  The replacement must not already be on the shift and must be authorized for the same role. */
+    public void substituteEmployee(User requestedBy, Shift shift, Employee originalEmployee, Employee replacement) {
+        if (!(requestedBy instanceof HR_Manager) || !((HR_Manager) requestedBy).isHRManager()) {
+            throw new IllegalArgumentException("Only CA manager can make substitutions");
+        }
+
+        // Find the original assignment
+        ShiftAssignment originalAssignment = null;
+        for (ShiftAssignment a : shift.getAssignments()) {
+            if (a.getEmployee().getId().equals(originalEmployee.getId())) {
+                originalAssignment = a;
+                break;
+            }
+        }
+        if (originalAssignment == null) {
+            throw new IllegalArgumentException(originalEmployee.getName() + " is not assigned to this shift");
+        }
+
+        Role role = originalAssignment.getRole();
+
+        // Replacement must not already be on this shift
+        for (ShiftAssignment a : shift.getAssignments()) {
+            if (a.getEmployee().getId().equals(replacement.getId())) {
+                throw new IllegalArgumentException(replacement.getName() + " is already assigned to this shift");
+            }
+        }
+
+        // Replacement must be authorized for same role
+        if (!replacement.getAuthorizedRoles().contains(role)) {
+            throw new IllegalArgumentException(replacement.getName() + " is not authorized for role " + role);
+        }
+
+        // Check constraints for replacement (req #3 behaviour applies here too)
+        boolean hasConflict = false;
+        WeeklyAvailabilityRequest availability = replacement.getWeeklyAvailabilityRequest();
+        if (availability != null) {
+            for (Constraint constraint : availability.getConstraints()) {
+                if (constraint.getDay() == shift.getDate().getDayOfWeek() &&
+                    constraint.getShiftType() == shift.getShiftType()) {
+                    hasConflict = true;
+                    break;
+                }
+            }
+        }
+
+        // Remove original, add replacement
+        shift.removeAssignment(originalAssignment);
+        ShiftAssignment newAssignment = new ShiftAssignment(replacement, shift, role, hasConflict);
+        if (!hasConflict) {
+            newAssignment.setApproved(true);
+        }
+        shift.addAssignment(newAssignment);
+
+        if (hasConflict) {
+            System.out.println("Warning: Substitution conflicts with " + replacement.getName() +
+                "'s constraints. A pending approval request has been sent to the employee.");
+        }
+    }
+
+    /** Req #5: Employee can request to cancel an assigned shift. */
+    public void requestShiftCancellation(Employee employee, Shift shift) {
+        ShiftAssignment employeeAssignment = null;
+        for (ShiftAssignment assignment : shift.getAssignments()) {
+            if (assignment.getEmployee().getId().equals(employee.getId())) {
+                employeeAssignment = assignment;
+                break;
+            }
+        }
+
+        if (employeeAssignment == null) {
+            throw new IllegalArgumentException("Employee is not assigned to this shift");
+        }
+
+        employeeAssignment.setCancellationRequested(true);
+    }
+
+    /** Returns all assignments where cancellation was requested by employees. */
+    public List<ShiftAssignment> getCancellationRequests() {
+        List<ShiftAssignment> requests = new ArrayList<>();
+        for (Shift shift : shifts) {
+            for (ShiftAssignment assignment : shift.getAssignments()) {
+                if (assignment.isCancellationRequested()) {
+                    requests.add(assignment);
+                }
+            }
+        }
+        return requests;
+    }
+
+    /** HR handles cancellation by substituting another employee. */
+    public void handleCancellationWithSubstitution(User requestedBy, ShiftAssignment cancellationRequest, Employee replacement) {
+        if (!cancellationRequest.isCancellationRequested()) {
+            throw new IllegalArgumentException("Assignment is not marked as cancellation request");
+        }
+
+        substituteEmployee(
+            requestedBy,
+            cancellationRequest.getShift(),
+            cancellationRequest.getEmployee(),
+            replacement
+        );
+    }
+
 }
