@@ -64,6 +64,9 @@ public class EmploymentTerms {
     }
 
     public void setVacationDays(int vacationDays) {
+        if (vacationDays < 0) {
+            throw new IllegalArgumentException("Vacation days cannot be negative");
+        }
         this.vacationDays = vacationDays;
     }
 }

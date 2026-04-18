@@ -180,6 +180,44 @@ public class Employee extends User {
         this.weeklyAvailabilityRequest = weeklyAvailabilityRequest;
     }
 
+    public int getVacationDaysBalance() {
+        if (employmentTerms == null) {
+            return 0;
+        }
+        return employmentTerms.getVacationDays();
+    }
+
+    public void resetVacationDays(int days) {
+        if (employmentTerms == null) {
+            throw new IllegalStateException("Employment terms are required to manage vacation days");
+        }
+        employmentTerms.setVacationDays(days);
+    }
+
+    public void consumeVacationDays(int days) {
+        if (days < 0) {
+            throw new IllegalArgumentException("Vacation days to consume cannot be negative");
+        }
+        if (employmentTerms == null) {
+            throw new IllegalStateException("Employment terms are required to manage vacation days");
+        }
+        int currentBalance = employmentTerms.getVacationDays();
+        if (days > currentBalance) {
+            throw new IllegalArgumentException("Not enough vacation days. Current balance: " + currentBalance);
+        }
+        employmentTerms.setVacationDays(currentBalance - days);
+    }
+
+    public void addVacationDays(int days) {
+        if (days < 0) {
+            throw new IllegalArgumentException("Vacation days to add cannot be negative");
+        }
+        if (employmentTerms == null) {
+            throw new IllegalStateException("Employment terms are required to manage vacation days");
+        }
+        employmentTerms.setVacationDays(employmentTerms.getVacationDays() + days);
+    }
+
     public void approveAsShiftManager(User approvedBy) {
         if (!(approvedBy instanceof HR_Manager) || !((HR_Manager) approvedBy).isHRManager()) {
             throw new IllegalArgumentException("Only HR manager can approve shift manager");
