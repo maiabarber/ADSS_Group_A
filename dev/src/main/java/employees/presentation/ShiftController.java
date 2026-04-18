@@ -3,9 +3,11 @@ package employees.presentation;
 import employees.domain.Constraint;
 import employees.domain.Employee;
 import employees.domain.HR_Manager;
+import employees.domain.Preference;
 import employees.domain.Role;
 import employees.domain.Shift;
 import employees.domain.ShiftAssignment;
+import employees.domain.ShiftType;
 import employees.domain.User;
 import employees.domain.WeeklyAvailabilityRequest;
 
@@ -72,6 +74,26 @@ public class ShiftController {
     for (ShiftAssignment existing : shift.getAssignments()) {
         if (existing.getEmployee().getId().equals(employee.getId())) {
             throw new IllegalArgumentException("Employee " + employee.getName() + " is already assigned to this shift");
+        }
+    }
+
+    // Req #2: DOUBLE_SHIFT and MORNING_OVERTIME require explicit employee preference
+    if (shift.getShiftType() == ShiftType.DOUBLE_SHIFT || shift.getShiftType() == ShiftType.MORNING_OVERTIME) {
+        boolean hasPreference = false;
+        WeeklyAvailabilityRequest availability = employee.getWeeklyAvailabilityRequest();
+        if (availability != null) {
+            for (Preference preference : availability.getPreferences()) {
+                if (preference.getDay() == shift.getDate().getDayOfWeek() &&
+                    preference.getShiftType() == shift.getShiftType()) {
+                    hasPreference = true;
+                    break;
+                }
+            }
+        }
+        if (!hasPreference) {
+            throw new IllegalArgumentException("Employee " + employee.getName() +
+                " has not indicated a preference for " + shift.getShiftType() +
+                " on " + shift.getDate().getDayOfWeek());
         }
     }
     
