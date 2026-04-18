@@ -7,14 +7,28 @@ public class ShiftAssignment implements Serializable {
     private Employee employee;
     private Shift shift;
     private Role role;
+    private boolean approved;
+    private boolean requiresApproval;
 
     public ShiftAssignment() {
+        this.approved = false;
+        this.requiresApproval = false;
     }
 
     public ShiftAssignment(Employee employee, Shift shift, Role role) {
         this.employee = employee;
         this.shift = shift;
         this.role = role;
+        this.approved = false;
+        this.requiresApproval = false;
+    }
+
+    public ShiftAssignment(Employee employee, Shift shift, Role role, boolean requiresApproval) {
+        this.employee = employee;
+        this.shift = shift;
+        this.role = role;
+        this.approved = false;
+        this.requiresApproval = requiresApproval;
     }
 
     public Employee getEmployee() {
@@ -41,12 +55,35 @@ public class ShiftAssignment implements Serializable {
         this.role = role;
     }
 
+    public boolean isApproved() {
+        return approved;
+    }
+
+    public void setApproved(boolean approved) {
+        this.approved = approved;
+    }
+
+    public boolean isRequiresApproval() {
+        return requiresApproval;
+    }
+
+    public void setRequiresApproval(boolean requiresApproval) {
+        this.requiresApproval = requiresApproval;
+    }
+
+    /** Returns true if the assignment is waiting for the employee to respond */
+    public boolean isPending() {
+        return requiresApproval && !approved;
+    }
+
     @Override
     public String toString() {
         return "ShiftAssignment{" +
             "employee=" + employee +
             ", shift=" + shift +
             ", role=" + role +
+            ", requiresApproval=" + requiresApproval +
+            ", approved=" + approved +
             '}';
     }
 }
