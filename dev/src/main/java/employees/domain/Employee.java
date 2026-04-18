@@ -7,6 +7,10 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Employee class represents an employee in the system.
+ * It extends the User class and includes additional attributes such as bank account, salary, employment type, etc.
+ */
 public class Employee extends User {
     private BankAccount bankAccount;
     private String name;
@@ -19,9 +23,6 @@ public class Employee extends User {
     private boolean isFired;
     private DayOfWeek fixedDayOff;
     private WeeklyAvailabilityRequest weeklyAvailabilityRequest;
-
-    public Employee() {
-    }
 
     public Employee(
         String id,
@@ -73,6 +74,7 @@ public class Employee extends User {
     public void setSalary(Salary salary) {
         this.salary = salary;
         if (salary != null && employmentTerms != null) {
+            salary.setEmploymentScope(employmentTerms.getEmploymentScope());
             employmentTerms.setGlobalSalary(salary.getGlobalSalary());
             employmentTerms.setHourlySalary(salary.getHourlySalary());
         }
@@ -108,8 +110,23 @@ public class Employee extends User {
             this.salary = new Salary(
                 employmentTerms.getGlobalSalary(),
                 employmentTerms.getHourlySalary(),
-                this.salary != null ? this.salary.getWorkedHours() : 0
+                this.salary != null ? this.salary.getWorkedHours() : 0,
+                employmentTerms.getEmploymentScope()
             );
+        }
+    }
+
+    public double recalculateSalary() {
+        if (salary == null || employmentTerms == null) {
+            return 0;
+        }
+        return salary.recalculateFinalSalary();
+    }
+
+    public void setWorkedHours(double workedHours) {
+        if (salary != null) {
+            salary.setWorkedHours(workedHours);
+            recalculateSalary();
         }
     }
 
@@ -145,6 +162,10 @@ public class Employee extends User {
     }
 
     public void setFixedDayOff(DayOfWeek fixedDayOff) {
+        Objects.requireNonNull(fixedDayOff, "fixedDayOff must not be null");
+        if (this.fixedDayOff != null && this.fixedDayOff != fixedDayOff) {
+            throw new IllegalStateException("Fixed day off can only be set once");
+        }    
         this.fixedDayOff = fixedDayOff;
     }
 

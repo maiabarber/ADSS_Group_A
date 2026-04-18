@@ -13,6 +13,10 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.Scanner;
 
+/**
+ * EmployeePresentation class serves as a presentation layer for handling employee input and creating Employee objects.
+ * It provides methods to read employee details from the console and convert them into an Employee object.
+ */
 public class EmployeePresentation {
     private String idInput;
     private String passwordInput;

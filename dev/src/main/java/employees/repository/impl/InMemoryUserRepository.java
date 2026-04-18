@@ -10,6 +10,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * InMemoryUserRepository class provides an in-memory implementation of the UserRepository interface.
+ * It uses a HashMap to store User objects by their ID, allowing for basic CRUD operations.
+ */
 public class InMemoryUserRepository implements UserRepository {
     private final Map<String, User> usersById = new HashMap<>();
 
@@ -21,7 +25,6 @@ public class InMemoryUserRepository implements UserRepository {
         if (user.getId() == null || user.getId().isEmpty()) {
             throw new RepositoryException("User id cannot be null or blank");
         }
-
         usersById.put(user.getId(), user);
         return user;
     }

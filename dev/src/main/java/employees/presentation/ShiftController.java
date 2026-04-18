@@ -15,6 +15,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * ShiftController class manages the scheduling of shifts, employee assignments, and related operations.
+ * It maintains lists of employees, current shifts, and shift history. The controller provides methods for
+ * adding shifts, assigning employees to shifts, handling substitutions, managing cancellation requests,
+ * calculating worked hours and salaries, and listing shifts managed by a specific employee.
+ */
 public class ShiftController {
     private final List<Employee> employees = new ArrayList<>();
     private final List<Shift> shifts = new ArrayList<>();
@@ -225,7 +231,6 @@ public class ShiftController {
         if (employeeAssignment == null) {
             throw new IllegalArgumentException("Employee is not assigned to this shift");
         }
-
         employeeAssignment.setCancellationRequested(true);
     }
 
@@ -247,7 +252,6 @@ public class ShiftController {
         if (!cancellationRequest.isCancellationRequested()) {
             throw new IllegalArgumentException("Assignment is not marked as cancellation request");
         }
-
         substituteEmployee(
             requestedBy,
             cancellationRequest.getShift(),
@@ -267,7 +271,6 @@ public class ShiftController {
                 }
             }
         }
-
         return totalHours;
     }
 
@@ -315,5 +318,4 @@ public class ShiftController {
         }
         shift.transferCancellationCard(shiftManager);
     }
-
 }

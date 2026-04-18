@@ -10,6 +10,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * InMemoryShiftRepository class provides an in-memory implementation of the ShiftRepository interface.
+ * It uses a HashMap to store Shift objects by a unique ID, allowing for basic CRUD operations.
+ */
 public class InMemoryShiftRepository implements ShiftRepository {
     private final Map<String, Shift> shiftsById = new HashMap<>();
 

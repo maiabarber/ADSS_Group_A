@@ -1,6 +1,5 @@
 package employees.domain;
 
-import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -9,8 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class Shift implements Serializable {
-    private static final long serialVersionUID = 1L;
+public class Shift {
     private LocalDate date;
     private ShiftType shiftType;
     private Employee shiftManager;
@@ -145,7 +143,6 @@ public class Shift implements Serializable {
         return cancellationCardTransferredBy;
     }
 
-    /** Req #9: only the shift manager can transfer a cancellation card at the cash register. */
     public void transferCancellationCard(Employee requestedBy) {
         if (requestedBy == null) {
             throw new IllegalArgumentException("Requested by employee is required");

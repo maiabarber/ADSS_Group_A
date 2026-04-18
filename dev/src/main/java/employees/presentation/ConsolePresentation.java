@@ -26,6 +26,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 
+/**
+ * ConsolePresentation class provides a console-based user interface for the employee scheduling system.
+ * It allows users to log in, submit their weekly availability, and perform various actions based on their role (HR manager or employee).
+ * The class interacts with the authentication service, employee repository, and other controllers to manage user input and system operations.
+ */
 public class ConsolePresentation {
     private final AuthenticationService authenticationService;
     private final EmployeeRepository employeeRepository;
@@ -89,8 +94,7 @@ public class ConsolePresentation {
                     System.out.println("7. Substitute employee in shift");
                     System.out.println("8. Handle cancellation requests");
                     System.out.println("9. Calculate employee salary from shifts");
-                    System.out.println("10. Reset weekly constraints/preferences for all employees");
-                    System.out.println("11. Logout");
+                    System.out.println("10. Logout");
                 } else {
                     System.out.println("1. Submit weekly constraints and preferences");
                     System.out.println("2. View and respond to pending shift assignments");
@@ -133,9 +137,6 @@ public class ConsolePresentation {
                             calculateEmployeeSalaryFlow(scanner);
                             break;
                         case "10":
-                            resetAllEmployeesWeeklyAvailabilityFlow();
-                            break;
-                        case "11":
                             if (authenticationService.logout()) {
                                 System.out.println("You have been logged out.");
                             } else {
@@ -1019,46 +1020,6 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
         } catch (IllegalArgumentException e) {
             System.out.println("Salary calculation failed: " + e.getMessage());
         }
-    }
-
-    private void resetAllEmployeesWeeklyAvailabilityFlow() {
-        List<Employee> employees = userController.getEmployees();
-        if (employees.isEmpty()) {
-            System.out.println("No employees found.");
-            return;
-        }
-
-        LocalDate currentWeekStart = getCurrentWeekStartDate();
-        Optional<LocalDate> configuredDeadline;
-        try {
-            configuredDeadline = submissionDeadlineRepository.findCurrent();
-        } catch (RepositoryException e) {
-            System.out.println("Failed to read weekly submission deadline: " + e.getMessage());
-            return;
-        }
-
-        int resetCount = 0;
-        for (Employee employee : employees) {
-            WeeklyAvailabilityRequest weeklyAvailabilityRequest = employee.getWeeklyAvailabilityRequest();
-            if (weeklyAvailabilityRequest == null) {
-                weeklyAvailabilityRequest = new WeeklyAvailabilityRequest();
-                employee.setWeeklyAvailabilityRequest(weeklyAvailabilityRequest);
-            }
-
-            weeklyAvailabilityRequest.resetForWeek(currentWeekStart);
-            if (configuredDeadline.isPresent()) {
-                weeklyAvailabilityRequest.setSubmissionDeadline(configuredDeadline.get());
-            }
-
-            try {
-                employeeRepository.save(employee);
-                resetCount++;
-            } catch (RepositoryException e) {
-                System.out.println("Failed to save reset for employee " + employee.getId() + ": " + e.getMessage());
-            }
-        }
-
-        System.out.println("Weekly constraints and preferences were reset for " + resetCount + " employees.");
     }
 
     private void transferCancellationCardFlow(User loggedInUser, Scanner scanner) {

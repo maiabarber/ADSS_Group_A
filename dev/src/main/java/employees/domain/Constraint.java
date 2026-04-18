@@ -1,15 +1,13 @@
 package employees.domain;
-
-import java.io.Serializable;
 import java.time.DayOfWeek;
 
-public class Constraint implements Serializable {
-    private static final long serialVersionUID = 1L;
+/**
+ * Constraint class represents a work constraint for an employee.
+ * It includes the day of the week and the type of shift.
+ */
+public class Constraint {
     private DayOfWeek day;
     private ShiftType shiftType;
-
-    public Constraint() {
-    }
 
     public Constraint(DayOfWeek day, ShiftType shiftType) {
         this.day = day;

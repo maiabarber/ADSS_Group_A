@@ -1,15 +1,13 @@
 package employees.domain;
 
-import java.io.Serializable;
-
-public class BankAccount implements Serializable {
-    private static final long serialVersionUID = 1L;
+/**
+ * BankAccount class represents an employee's bank account information in the system.
+ * It contains the bank number, branch number, and account number.
+ */
+public class BankAccount {
     private String bankNumber;
     private String branchNumber;
     private String accountNumber;
-
-    public BankAccount() {
-    }
 
     public BankAccount(String bankNumber, String branchNumber, String accountNumber) {
         this.bankNumber = bankNumber;

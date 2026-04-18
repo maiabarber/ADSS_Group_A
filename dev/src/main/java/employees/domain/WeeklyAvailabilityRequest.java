@@ -1,14 +1,16 @@
 package employees.domain;
 
-import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public class WeeklyAvailabilityRequest implements Serializable {
-    private static final long serialVersionUID = 1L;
+/**
+ * WeeklyAvailabilityRequest class represents an employee's weekly availability request.
+ * It includes a list of constraints, preferences, submission deadline, and the start date of the week.
+ */
+public class WeeklyAvailabilityRequest {
     private List<Constraint> constraints;
     private List<Preference> preferences;
     private LocalDate submissionDeadline;

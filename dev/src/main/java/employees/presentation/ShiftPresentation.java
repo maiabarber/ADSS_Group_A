@@ -7,6 +7,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+ * ShiftPresentation class serves as a presentation layer for handling shift input and creating Shift objects.
+ * It provides methods to read shift details from the console and convert them into a Shift object.
+ */
 public class ShiftPresentation {
     private LocalDate shiftDateInput;
     private ShiftType shiftTypeInput;
@@ -39,7 +43,6 @@ public class ShiftPresentation {
             System.out.println("Invalid selection, defaulting to MORNING");
             shiftTypeInput = ShiftType.MORNING;
         }
-
         requiredCashierInput = readPositiveInt(scanner, "Required cashiers: ");
         requiredStoreKeeperInput = readPositiveInt(scanner, "Required storekeepers: ");
 

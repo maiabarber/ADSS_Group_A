@@ -6,6 +6,10 @@ import employees.repository.SubmissionDeadlineRepository;
 import java.time.LocalDate;
 import java.util.Optional;
 
+/**
+ * InMemorySubmissionDeadlineRepository class provides an in-memory implementation of the SubmissionDeadlineRepository interface.
+ * It maintains a single LocalDate field to store the current submission deadline and allows for saving and retrieving it.
+ */
 public class InMemorySubmissionDeadlineRepository implements SubmissionDeadlineRepository {
     private LocalDate currentDeadline;
 
