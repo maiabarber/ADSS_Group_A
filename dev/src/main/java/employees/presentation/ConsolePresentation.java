@@ -466,9 +466,10 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
     private ShiftType readShiftType(Scanner scanner) {
         while (true) {
             System.out.println("Shift type:");
-            System.out.println("1. MORNING");
-            System.out.println("2. AFTERNOON");
-            System.out.println("3. NIGHT");
+            System.out.println("1. MORNING (6-14)");
+            System.out.println("2. MORNING_OVERTIME (6-16)");
+            System.out.println("3. EVENING (14-22)");
+            System.out.println("4. DOUBLE_SHIFT (full day)");
             System.out.print("Selection: ");
 
             String value = scanner.nextLine();
@@ -476,9 +477,11 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
                 case "1":
                     return ShiftType.MORNING;
                 case "2":
-                    return ShiftType.AFTERNOON;
+                    return ShiftType.MORNING_OVERTIME;
                 case "3":
-                    return ShiftType.NIGHT;
+                    return ShiftType.EVENING;
+                case "4":
+                    return ShiftType.DOUBLE_SHIFT;
                 default:
                     System.out.println("Invalid selection.");
             }

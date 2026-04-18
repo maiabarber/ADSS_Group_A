@@ -1,7 +1,11 @@
 package employees.presentation;
 
 import employees.domain.Employee;
+import employees.domain.HR_Manager;
+import employees.domain.Role;
 import employees.domain.Shift;
+import employees.domain.ShiftAssignment;
+import employees.domain.User;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,4 +54,15 @@ public class ShiftController {
 
         shiftHistory.add(shift);
     }
+
+    public void assignEmployeeToShift(User assignedBy, Employee employee, Shift shift, Role role) 
+    throws IllegalArgumentException {
+    if (!(assignedBy instanceof HR_Manager) || !((HR_Manager) assignedBy).isHRManager()) {
+        throw new IllegalArgumentException("Only CA manager can assign employees to shifts");
+    }
+    ShiftAssignment assignment = new ShiftAssignment(employee, shift, role);
+    shift.addAssignment(assignment);
+    }
+
+
 }

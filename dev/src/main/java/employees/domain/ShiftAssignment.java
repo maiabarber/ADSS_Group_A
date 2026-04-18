@@ -10,7 +10,7 @@ public class ShiftAssignment implements Serializable {
     public ShiftAssignment() {
     }
 
-    public ShiftAssignment(Employee employee, Role role) {
+    public ShiftAssignment(Employee employee, Shift shift, Role role) {
         this.employee = employee;
         this.role = role;
     }
