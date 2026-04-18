@@ -86,11 +86,14 @@ public class ConsolePresentation {
                     System.out.println("4. Fire employee");
                     System.out.println("5. Approve employee as shift manager");
                     System.out.println("6. Assign employee to shift");
-                    System.out.println("7. Logout");
+                    System.out.println("7. Substitute employee in shift");
+                    System.out.println("8. Handle cancellation requests");
+                    System.out.println("9. Logout");
                 } else {
                     System.out.println("1. Submit weekly constraints and preferences");
                     System.out.println("2. View and respond to pending shift assignments");
-                    System.out.println("3. Logout");
+                    System.out.println("3. Request shift cancellation");
+                    System.out.println("4. Logout");
                 }
                 System.out.print("Selection: ");
 
@@ -118,6 +121,12 @@ public class ConsolePresentation {
                             assignEmployeeToShiftFlow(scanner);
                             break;
                         case "7":
+                            substituteEmployeeFlow(scanner);
+                            break;
+                        case "8":
+                            handleCancellationRequestsFlow(scanner);
+                            break;
+                        case "9":
                             if (authenticationService.logout()) {
                                 System.out.println("You have been logged out.");
                             } else {
@@ -137,6 +146,9 @@ public class ConsolePresentation {
                             respondToPendingAssignmentsFlow(loggedInUser.get(), scanner);
                             break;
                         case "3":
+                            requestShiftCancellationFlow(loggedInUser.get(), scanner);
+                            break;
+                        case "4":
                             if (authenticationService.logout()) {
                                 System.out.println("You have been logged out.");
                             } else {
@@ -736,5 +748,222 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
         } catch (IllegalArgumentException e) {
             System.out.println("Error: " + e.getMessage());
         }
+    }
+
+    private void substituteEmployeeFlow(Scanner scanner) {
+        try {
+            Optional<User> currentUser = authenticationService.getCurrentUser();
+            if (!currentUser.isPresent()) {
+                System.out.println("No user is currently logged in.");
+                return;
+            }
+
+            System.out.println("\n=== Substitute Employee in Shift ===");
+
+            List<Shift> shifts = shiftController.getShifts();
+            if (shifts.isEmpty()) {
+                System.out.println("No shifts found.");
+                return;
+            }
+
+            System.out.println("Available shifts:");
+            for (int i = 0; i < shifts.size(); i++) {
+                Shift shift = shifts.get(i);
+                System.out.println((i + 1) + ". " + shift.getDate() + " - " + shift.getShiftType());
+            }
+            System.out.print("Select shift number: ");
+            int shiftChoice = Integer.parseInt(scanner.nextLine()) - 1;
+            if (shiftChoice < 0 || shiftChoice >= shifts.size()) {
+                System.out.println("Invalid selection.");
+                return;
+            }
+            Shift selectedShift = shifts.get(shiftChoice);
+
+            // Show currently assigned employees
+            List<ShiftAssignment> assignments = selectedShift.getAssignments();
+            if (assignments.isEmpty()) {
+                System.out.println("No employees assigned to this shift.");
+                return;
+            }
+            System.out.println("Currently assigned employees:");
+            for (int i = 0; i < assignments.size(); i++) {
+                ShiftAssignment a = assignments.get(i);
+                System.out.println((i + 1) + ". " + a.getEmployee().getName() + " (" + a.getRole() + ")");
+            }
+            System.out.print("Select employee to replace: ");
+            int origChoice = Integer.parseInt(scanner.nextLine()) - 1;
+            if (origChoice < 0 || origChoice >= assignments.size()) {
+                System.out.println("Invalid selection.");
+                return;
+            }
+            Employee originalEmployee = assignments.get(origChoice).getEmployee();
+
+            // Show available replacements (not already on shift)
+            List<Employee> allEmployees = userController.getEmployees();
+            List<Employee> available = new ArrayList<>();
+            for (Employee emp : allEmployees) {
+                if (!emp.isFired()) {
+                    boolean alreadyAssigned = false;
+                    for (ShiftAssignment a : selectedShift.getAssignments()) {
+                        if (a.getEmployee().getId().equals(emp.getId())) {
+                            alreadyAssigned = true;
+                            break;
+                        }
+                    }
+                    if (!alreadyAssigned) available.add(emp);
+                }
+            }
+
+            if (available.isEmpty()) {
+                System.out.println("No available employees for substitution.");
+                return;
+            }
+            System.out.println("Available replacements:");
+            for (int i = 0; i < available.size(); i++) {
+                System.out.println((i + 1) + ". " + available.get(i).getName());
+            }
+            System.out.print("Select replacement employee: ");
+            int replChoice = Integer.parseInt(scanner.nextLine()) - 1;
+            if (replChoice < 0 || replChoice >= available.size()) {
+                System.out.println("Invalid selection.");
+                return;
+            }
+            Employee replacement = available.get(replChoice);
+
+            shiftController.substituteEmployee(currentUser.get(), selectedShift, originalEmployee, replacement);
+            System.out.println(originalEmployee.getName() + " has been replaced by " + replacement.getName() + ".");
+
+        } catch (IllegalArgumentException e) {
+            System.out.println("Substitution failed: " + e.getMessage());
+        }
+    }
+
+    private void requestShiftCancellationFlow(User loggedInUser, Scanner scanner) {
+        if (!(loggedInUser instanceof Employee)) {
+            System.out.println("Only employees can request shift cancellation.");
+            return;
+        }
+
+        Employee employee = (Employee) loggedInUser;
+        List<ShiftAssignment> myAssignments = new ArrayList<>();
+        for (Shift shift : shiftController.getShifts()) {
+            for (ShiftAssignment assignment : shift.getAssignments()) {
+                if (assignment.getEmployee().getId().equals(employee.getId())) {
+                    myAssignments.add(assignment);
+                }
+            }
+        }
+
+        if (myAssignments.isEmpty()) {
+            System.out.println("You have no assigned shifts.");
+            return;
+        }
+
+        System.out.println("\n=== Request Shift Cancellation ===");
+        for (int i = 0; i < myAssignments.size(); i++) {
+            ShiftAssignment assignment = myAssignments.get(i);
+            String status = assignment.isCancellationRequested() ? "[REQUESTED]" : "";
+            System.out.println((i + 1) + ". " + assignment.getShift().getDate() +
+                " - " + assignment.getShift().getShiftType() +
+                " as " + assignment.getRole() + " " + status);
+        }
+
+        System.out.print("Select assignment number: ");
+        try {
+            int choice = Integer.parseInt(scanner.nextLine()) - 1;
+            if (choice < 0 || choice >= myAssignments.size()) {
+                System.out.println("Invalid selection.");
+                return;
+            }
+
+            ShiftAssignment selected = myAssignments.get(choice);
+            if (selected.isCancellationRequested()) {
+                System.out.println("Cancellation already requested for this shift.");
+                return;
+            }
+
+            shiftController.requestShiftCancellation(employee, selected.getShift());
+            System.out.println("Cancellation request submitted. The manager will handle a substitution.");
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid input.");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    private void handleCancellationRequestsFlow(Scanner scanner) {
+        try {
+            Optional<User> currentUser = authenticationService.getCurrentUser();
+            if (!currentUser.isPresent()) {
+                System.out.println("No user is currently logged in.");
+                return;
+            }
+
+            List<ShiftAssignment> requests = shiftController.getCancellationRequests();
+            if (requests.isEmpty()) {
+                System.out.println("No cancellation requests pending.");
+                return;
+            }
+
+            System.out.println("\n=== Cancellation Requests ===");
+            for (int i = 0; i < requests.size(); i++) {
+                ShiftAssignment request = requests.get(i);
+                System.out.println((i + 1) + ". " + request.getEmployee().getName() +
+                    " requested cancellation for " + request.getShift().getDate() +
+                    " - " + request.getShift().getShiftType() +
+                    " (" + request.getRole() + ")");
+            }
+
+            System.out.print("Select request number: ");
+            int requestChoice = Integer.parseInt(scanner.nextLine()) - 1;
+            if (requestChoice < 0 || requestChoice >= requests.size()) {
+                System.out.println("Invalid selection.");
+                return;
+            }
+
+            ShiftAssignment selectedRequest = requests.get(requestChoice);
+            Shift selectedShift = selectedRequest.getShift();
+
+            List<Employee> allEmployees = userController.getEmployees();
+            List<Employee> available = new ArrayList<>();
+            for (Employee emp : allEmployees) {
+                if (!emp.isFired()) {
+                    boolean alreadyAssigned = false;
+                    for (ShiftAssignment assignment : selectedShift.getAssignments()) {
+                        if (assignment.getEmployee().getId().equals(emp.getId())) {
+                            alreadyAssigned = true;
+                            break;
+                        }
+                    }
+                    if (!alreadyAssigned) {
+                        available.add(emp);
+                    }
+                }
+            }
+
+            if (available.isEmpty()) {
+                System.out.println("No available employees for substitution.");
+                return;
+            }
+
+            System.out.println("Available replacements:");
+            for (int i = 0; i < available.size(); i++) {
+                System.out.println((i + 1) + ". " + available.get(i).getName());
+            }
+
+            System.out.print("Select replacement employee: ");
+            int replacementChoice = Integer.parseInt(scanner.nextLine()) - 1;
+            if (replacementChoice < 0 || replacementChoice >= available.size()) {
+                System.out.println("Invalid selection.");
+                return;
+            }
+
+            Employee replacement = available.get(replacementChoice);
+            shiftController.handleCancellationWithSubstitution(currentUser.get(), selectedRequest, replacement);
+            System.out.println("Cancellation handled. Substitution completed.");
+
+        } catch (IllegalArgumentException e) {
+            System.out.println("Failed to handle cancellation: " + e.getMessage());
+        } 
     }
 }

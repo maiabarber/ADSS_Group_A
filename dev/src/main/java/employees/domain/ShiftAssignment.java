@@ -9,10 +9,12 @@ public class ShiftAssignment implements Serializable {
     private Role role;
     private boolean approved;
     private boolean requiresApproval;
+    private boolean cancellationRequested;
 
     public ShiftAssignment() {
         this.approved = false;
         this.requiresApproval = false;
+        this.cancellationRequested = false;
     }
 
     public ShiftAssignment(Employee employee, Shift shift, Role role) {
@@ -21,6 +23,7 @@ public class ShiftAssignment implements Serializable {
         this.role = role;
         this.approved = false;
         this.requiresApproval = false;
+        this.cancellationRequested = false;
     }
 
     public ShiftAssignment(Employee employee, Shift shift, Role role, boolean requiresApproval) {
@@ -29,6 +32,7 @@ public class ShiftAssignment implements Serializable {
         this.role = role;
         this.approved = false;
         this.requiresApproval = requiresApproval;
+        this.cancellationRequested = false;
     }
 
     public Employee getEmployee() {
@@ -76,6 +80,14 @@ public class ShiftAssignment implements Serializable {
         return requiresApproval && !approved;
     }
 
+    public boolean isCancellationRequested() {
+        return cancellationRequested;
+    }
+
+    public void setCancellationRequested(boolean cancellationRequested) {
+        this.cancellationRequested = cancellationRequested;
+    }
+
     @Override
     public String toString() {
         return "ShiftAssignment{" +
@@ -84,6 +96,7 @@ public class ShiftAssignment implements Serializable {
             ", role=" + role +
             ", requiresApproval=" + requiresApproval +
             ", approved=" + approved +
+            ", cancellationRequested=" + cancellationRequested +
             '}';
     }
 }
