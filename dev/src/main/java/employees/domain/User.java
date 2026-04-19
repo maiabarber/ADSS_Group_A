@@ -12,6 +12,7 @@ public class User {
 
     public User(String id, String password) {
         validateId(id);
+        validatePassword(password);
         this.id = id;
         this.password = password;
     }
@@ -25,10 +26,24 @@ public class User {
         this.id = id;
     }
 
-    private void validateId(String id) {
+    private static void validateId(String id) {
         if (id == null || !id.matches("\\d{9}")) {
             throw new IllegalArgumentException("ID must be exactly 9 digits");
         }
+    }
+
+    private static void validatePassword(String password) {
+        if (password == null || password.isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be empty");
+        }
+    }
+
+    public static void validateIdInput(String id) {
+        validateId(id);
+    }
+
+    public static void validatePasswordInput(String password) {
+        validatePassword(password);
     }
 
     public String getPassword() {

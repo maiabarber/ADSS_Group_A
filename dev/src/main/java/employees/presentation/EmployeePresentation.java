@@ -7,6 +7,7 @@ import employees.domain.EmploymentTerms;
 import employees.domain.EmploymentType;
 import employees.domain.Role;
 import employees.domain.Salary;
+import employees.domain.User;
 import employees.domain.WeeklyAvailabilityRequest;
 
 import java.time.LocalDate;
@@ -40,15 +41,15 @@ public class EmployeePresentation {
 
         idInput = readEmployeeId(scanner);
         passwordInput = readPassword(scanner);
-        nameInput = readNonEmptyString(scanner, "Employee full name: ");
+        nameInput = readEmployeeName(scanner);
 
         employeeTypeInput = readEmploymentType(scanner);
         jobRoleInput = readJobRole(scanner);
         canManageShiftInput = readYesNo(scanner, "Can manage shift? (y/n): ");
 
-        bankNumberInput = readNonEmptyString(scanner, "Bank number: ");
-        branchNumberInput = readNonEmptyString(scanner, "Branch number: ");
-        accountNumberInput = readNonEmptyString(scanner, "Account number: ");
+        bankNumberInput = readPositiveNumber(scanner, "Bank number: ");
+        branchNumberInput = readPositiveNumber(scanner, "Branch number: ");
+        accountNumberInput = readPositiveNumber(scanner, "Account number: ");
 
         globalSalaryInput = readPositiveDouble(scanner, "Base salary: ");
         hourlySalaryInput = readPositiveDouble(scanner, "Overtime hourly rate: ");
@@ -56,6 +57,8 @@ public class EmployeePresentation {
         workedHoursInput = 0;
         startDateInput = readLocalDate(scanner, "Start date (YYYY-MM-DD): ");
 
+        // Validators in domain constructors will throw IllegalArgumentException if data is invalid
+        BankAccount bankAccount = new BankAccount(bankNumberInput, branchNumberInput, accountNumberInput);
         Salary salary = new Salary(globalSalaryInput, hourlySalaryInput, workedHoursInput, employmentScopeInput);
         EmploymentTerms employmentTerms = new EmploymentTerms(
             startDateInput,
@@ -65,10 +68,11 @@ public class EmployeePresentation {
             DEFAULT_VACATION_DAYS
         );
 
+        // User constructor will validate ID and password
         Employee employee = new Employee(
             idInput,
             passwordInput,
-            new BankAccount(bankNumberInput, branchNumberInput, accountNumberInput),
+            bankAccount,
             nameInput,
             salary,
             employeeTypeInput,
@@ -85,19 +89,13 @@ public class EmployeePresentation {
     private String readEmployeeId(Scanner scanner) {
         while (true) {
             System.out.print("Employee id: ");
-            String id = scanner.nextLine().trim();
-            
-            if (id.isEmpty()) {
-                System.out.println("Error: Employee ID cannot be empty.");
-                continue;
+            String id = scanner.nextLine();
+            try {
+                User.validateIdInput(id);
+                return id;
+            } catch (IllegalArgumentException e) {
+                System.out.println("Error: " + e.getMessage());
             }
-            
-            if (!id.matches("\\d{9}")) {
-                System.out.println("Error: Employee ID must be exactly 9 digits.");
-                continue;
-            }
-            
-            return id;
         }
     }
 
@@ -105,48 +103,67 @@ public class EmployeePresentation {
         while (true) {
             System.out.print("Employee password: ");
             String password = scanner.nextLine();
-            
-            if (password.isEmpty()) {
-                System.out.println("Error: Password cannot be empty.");
-                continue;
+            try {
+                User.validatePasswordInput(password);
+                return password;
+            } catch (IllegalArgumentException e) {
+                System.out.println("Error: " + e.getMessage());
             }
-            return password;
         }
     }
 
-    private String readNonEmptyString(Scanner scanner, String prompt) {
+    private String readEmployeeName(Scanner scanner) {
+        while (true) {
+            System.out.print("Employee full name: ");
+            String name = scanner.nextLine();
+            try {
+                Employee.validateName(name);
+                return name;
+            } catch (IllegalArgumentException e) {
+                System.out.println("Error: " + e.getMessage());
+            }
+        }
+    }
+
+    private String readPositiveNumber(Scanner scanner, String prompt) {
         while (true) {
             System.out.print(prompt);
             String value = scanner.nextLine().trim();
             
-            if (value.isEmpty()) {
-                System.out.println("Error: This field cannot be empty.");
-                continue;
+            try {
+                validatePositiveNumberByField(prompt, value);
+                return value;
+            } catch (IllegalArgumentException e) {
+                System.out.println("Error: " + e.getMessage());
             }
-            
-            return value;
+        }
+    }
+
+    private void validatePositiveNumberByField(String prompt, String value) {
+        switch (prompt) {
+            case "Bank number: ":
+                BankAccount.validateBankNumber(value);
+                break;
+            case "Branch number: ":
+                BankAccount.validateBranchNumber(value);
+                break;
+            case "Account number: ":
+                BankAccount.validateAccountNumber(value);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported numeric field: " + prompt);
         }
     }
 
     private double readPositiveDouble(Scanner scanner, String prompt) {
         while (true) {
             System.out.print(prompt);
-            String value = scanner.nextLine().trim();
-            
-            if (value.isEmpty()) {
-                System.out.println("Error: This field cannot be empty.");
-                continue;
-            }
+            String value = scanner.nextLine();
             
             try {
-                double parsed = Double.parseDouble(value);
-                if (parsed < 0) {
-                    System.out.println("Error: Value must be non-negative.");
-                    continue;
-                }
-                return parsed;
-            } catch (NumberFormatException e) {
-                System.out.println("Error: Please enter a valid number.");
+                return Salary.parseNonNegativeAmount(value, prompt.trim());
+            } catch (IllegalArgumentException e) {
+                System.out.println("Error: " + e.getMessage());
             }
         }
     }
@@ -158,19 +175,13 @@ public class EmployeePresentation {
             System.out.println("2. PARENT");
             System.out.println("3. REGULAR");
             System.out.print("Selection: ");
-            String value = scanner.nextLine();
+            String value = scanner.nextLine().trim();
 
-            if ("1".equals(value)) {
-                return EmploymentType.STUDENT;
+            try {
+                return EmploymentType.fromSelection(value);
+            } catch (IllegalArgumentException e) {
+                System.out.println("Error: " + e.getMessage());
             }
-            if ("2".equals(value)) {
-                return EmploymentType.PARENT;
-            }
-            if ("3".equals(value)) {
-                return EmploymentType.REGULAR;
-            }
-
-            System.out.println("Invalid selection.");
         }
     }
 
@@ -180,34 +191,29 @@ public class EmployeePresentation {
             System.out.println("1. CASHIER");
             System.out.println("2. STOREKEEPER");
             System.out.print("Selection: ");
-            String value = scanner.nextLine();
+            String value = scanner.nextLine().trim();
 
-            if ("1".equals(value)) {
-                return Role.CASHIER;
+            try {
+                return Role.fromSelection(value);
+            } catch (IllegalArgumentException e) {
+                System.out.println("Error: " + e.getMessage());
             }
-            if ("2".equals(value)) {
-                return Role.STOREKEEPER;
-            }
-
-            System.out.println("Invalid selection.");
         }
     }
 
     private boolean readYesNo(Scanner scanner, String prompt) {
         while (true) {
             System.out.print(prompt);
-            String value = scanner.nextLine();
-            if ("y".equalsIgnoreCase(value)) {
+            String value = scanner.nextLine().trim().toLowerCase();
+            if ("y".equals(value)) {
                 return true;
             }
-            if ("n".equalsIgnoreCase(value)) {
+            if ("n".equals(value)) {
                 return false;
             }
-            System.out.println("Please enter y or n.");
+            System.out.println("Error: Please enter y or n.");
         }
     }
-
-
 
     private EmploymentScope readEmploymentScope(Scanner scanner) {
         while (true) {
@@ -215,27 +221,24 @@ public class EmployeePresentation {
             System.out.println("1. FULL_TIME");
             System.out.println("2. PART_TIME");
             System.out.print("Selection: ");
-            String value = scanner.nextLine();
+            String value = scanner.nextLine().trim();
 
-            if ("1".equals(value)) {
-                return EmploymentScope.FULL_TIME;
+            try {
+                return EmploymentScope.fromSelection(value);
+            } catch (IllegalArgumentException e) {
+                System.out.println("Error: " + e.getMessage());
             }
-            if ("2".equals(value)) {
-                return EmploymentScope.PART_TIME;
-            }
-
-            System.out.println("Invalid selection.");
         }
     }
 
     private LocalDate readLocalDate(Scanner scanner, String prompt) {
         while (true) {
             System.out.print(prompt);
-            String value = scanner.nextLine();
+            String value = scanner.nextLine().trim();
             try {
                 return LocalDate.parse(value);
             } catch (Exception e) {
-                System.out.println("Please enter a valid date in YYYY-MM-DD format.");
+                System.out.println("Error: Date must be in YYYY-MM-DD format.");
             }
         }
     }

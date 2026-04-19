@@ -595,24 +595,16 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
             System.out.println("7. SUNDAY");
             System.out.print("Selection: ");
 
-            String value = scanner.nextLine();
+            String value = scanner.nextLine().trim();
             switch (value) {
-                case "1":
-                    return DayOfWeek.MONDAY;
-                case "2":
-                    return DayOfWeek.TUESDAY;
-                case "3":
-                    return DayOfWeek.WEDNESDAY;
-                case "4":
-                    return DayOfWeek.THURSDAY;
-                case "5":
-                    return DayOfWeek.FRIDAY;
-                case "6":
-                    return DayOfWeek.SATURDAY;
-                case "7":
-                    return DayOfWeek.SUNDAY;
-                default:
-                    System.out.println("Invalid selection.");
+                case "1": return DayOfWeek.MONDAY;
+                case "2": return DayOfWeek.TUESDAY;
+                case "3": return DayOfWeek.WEDNESDAY;
+                case "4": return DayOfWeek.THURSDAY;
+                case "5": return DayOfWeek.FRIDAY;
+                case "6": return DayOfWeek.SATURDAY;
+                case "7": return DayOfWeek.SUNDAY;
+                default: System.out.println("Error: Day of week must be 1-7.");
             }
         }
     }
@@ -626,18 +618,13 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
             System.out.println("4. DOUBLE_SHIFT (full day)");
             System.out.print("Selection: ");
 
-            String value = scanner.nextLine();
+            String value = scanner.nextLine().trim();
             switch (value) {
-                case "1":
-                    return ShiftType.MORNING;
-                case "2":
-                    return ShiftType.MORNING_OVERTIME;
-                case "3":
-                    return ShiftType.EVENING;
-                case "4":
-                    return ShiftType.DOUBLE_SHIFT;
-                default:
-                    System.out.println("Invalid selection.");
+                case "1": return ShiftType.MORNING;
+                case "2": return ShiftType.MORNING_OVERTIME;
+                case "3": return ShiftType.EVENING;
+                case "4": return ShiftType.DOUBLE_SHIFT;
+                default: System.out.println("Error: Shift type must be 1-4.");
             }
         }
     }
@@ -645,17 +632,17 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
     private int readInt(Scanner scanner, String prompt) {
         while (true) {
             System.out.print(prompt);
-            String value = scanner.nextLine();
+            String value = scanner.nextLine().trim();
 
             try {
                 int parsed = Integer.parseInt(value);
                 if (parsed < 0) {
-                    System.out.println("Please enter a non-negative integer.");
+                    System.out.println("Error: Value must be non-negative.");
                     continue;
                 }
                 return parsed;
             } catch (NumberFormatException e) {
-                System.out.println("Please enter a valid integer.");
+                System.out.println("Error: Please enter a valid integer.");
             }
         }
     }
@@ -664,11 +651,11 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-uuuu");
         while (true) {
             System.out.print(prompt);
-            String value = scanner.nextLine();
+            String value = scanner.nextLine().trim();
             try {
                 return LocalDate.parse(value, formatter);
             } catch (Exception e) {
-                System.out.println("Please enter a valid date in DD-MM-YYYY format.");
+                System.out.println("Error: Date must be in DD-MM-YYYY format.");
             }
         }
     }
@@ -684,25 +671,17 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
             System.out.println("6. SATURDAY");
             System.out.println("7. SUNDAY");
             System.out.print("Selection: ");
-            String value = scanner.nextLine();
+            String value = scanner.nextLine().trim();
 
             switch (value) {
-                case "1":
-                    return DayOfWeek.MONDAY;
-                case "2":
-                    return DayOfWeek.TUESDAY;
-                case "3":
-                    return DayOfWeek.WEDNESDAY;
-                case "4":
-                    return DayOfWeek.THURSDAY;
-                case "5":
-                    return DayOfWeek.FRIDAY;
-                case "6":
-                    return DayOfWeek.SATURDAY;
-                case "7":
-                    return DayOfWeek.SUNDAY;
-                default:
-                    System.out.println("Invalid selection.");
+                case "1": return DayOfWeek.MONDAY;
+                case "2": return DayOfWeek.TUESDAY;
+                case "3": return DayOfWeek.WEDNESDAY;
+                case "4": return DayOfWeek.THURSDAY;
+                case "5": return DayOfWeek.FRIDAY;
+                case "6": return DayOfWeek.SATURDAY;
+                case "7": return DayOfWeek.SUNDAY;
+                default: System.out.println("Error: Day of week must be 1-7.");
             }
         }
     }

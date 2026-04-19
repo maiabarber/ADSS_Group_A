@@ -10,9 +10,39 @@ public class BankAccount {
     private String accountNumber;
 
     public BankAccount(String bankNumber, String branchNumber, String accountNumber) {
+        validatePositiveNumber(bankNumber, "Bank number");
+        validatePositiveNumber(branchNumber, "Branch number");
+        validatePositiveNumber(accountNumber, "Account number");
         this.bankNumber = bankNumber;
         this.branchNumber = branchNumber;
         this.accountNumber = accountNumber;
+    }
+
+    private static void validatePositiveNumber(String value, String fieldName) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException(fieldName + " cannot be empty");
+        }
+
+        try {
+            long number = Long.parseLong(value.trim());
+            if (number <= 0) {
+                throw new IllegalArgumentException(fieldName + " must be a positive number");
+            }
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(fieldName + " must be a valid positive number");
+        }
+    }
+
+    public static void validateBankNumber(String bankNumber) {
+        validatePositiveNumber(bankNumber, "Bank number");
+    }
+
+    public static void validateBranchNumber(String branchNumber) {
+        validatePositiveNumber(branchNumber, "Branch number");
+    }
+
+    public static void validateAccountNumber(String accountNumber) {
+        validatePositiveNumber(accountNumber, "Account number");
     }
 
     public String getBankNumber() {

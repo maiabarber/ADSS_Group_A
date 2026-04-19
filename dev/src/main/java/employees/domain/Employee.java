@@ -39,6 +39,7 @@ public class Employee extends User {
         WeeklyAvailabilityRequest weeklyAvailabilityRequest
     ) {
         super(id, password);
+        validateName(name);
         this.bankAccount = bankAccount;
         this.name = name;
         this.salary = salary;
@@ -51,6 +52,31 @@ public class Employee extends User {
             setFixedDayOff(fixedDayOff);
         }
         this.weeklyAvailabilityRequest = weeklyAvailabilityRequest;
+    }
+
+    public static void validateName(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Employee name cannot be empty");
+        }
+
+        String trimmedName = name.trim();
+        if (trimmedName.length() < 2) {
+            throw new IllegalArgumentException("Employee name must have at least 2 characters");
+        }
+
+        if (trimmedName.length() > 100) {
+            throw new IllegalArgumentException("Employee name cannot exceed 100 characters");
+        }
+
+        if (!trimmedName.contains(" ")) {
+            throw new IllegalArgumentException("Employee name must include first name and last name");
+        }
+
+        if (!trimmedName.matches("[a-zA-Z0-9\\u0590-\\u05FF\\s'._-]+")) {
+            throw new IllegalArgumentException(
+                "Employee name can only contain letters, numbers, spaces, apostrophes, dots, underscores and hyphens"
+            );
+        }
     }
 
     public BankAccount getBankAccount() {
@@ -66,6 +92,7 @@ public class Employee extends User {
     }
 
     public void setName(String name) {
+        validateName(name);
         this.name = name;
     }
 

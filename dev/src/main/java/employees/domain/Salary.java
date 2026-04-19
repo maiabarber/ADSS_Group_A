@@ -17,11 +17,38 @@ public class Salary {
     }
 
     public Salary(double globalSalary, double hourlySalary, double workedHours, EmploymentScope employmentScope) {
+        validateNonNegative(globalSalary, "Global salary");
+        validateNonNegative(hourlySalary, "Hourly salary");
+        validateNonNegative(workedHours, "Worked hours");
         this.globalSalary = globalSalary;
         this.hourlySalary = hourlySalary;
         this.workedHours = workedHours;
         this.employmentScope = employmentScope;
         recalculateFinalSalary();
+    }
+
+    private void validateNonNegative(double value, String fieldName) {
+        if (value < 0) {
+            throw new IllegalArgumentException(fieldName + " cannot be negative");
+        }
+    }
+
+    public static double parseNonNegativeAmount(String rawValue, String fieldName) {
+        if (rawValue == null || rawValue.trim().isEmpty()) {
+            throw new IllegalArgumentException(fieldName + " cannot be empty");
+        }
+
+        double parsed;
+        try {
+            parsed = Double.parseDouble(rawValue.trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(fieldName + " must be a valid number");
+        }
+
+        if (parsed < 0) {
+            throw new IllegalArgumentException(fieldName + " cannot be negative");
+        }
+        return parsed;
     }
 
     public double getGlobalSalary() {

@@ -17,4 +17,19 @@ public enum EmploymentScope {
     public int getRequiredHours() {
         return requiredHours;
     }
+
+    public static EmploymentScope fromSelection(String selection) {
+        if (selection == null || selection.trim().isEmpty()) {
+            throw new IllegalArgumentException("Employment scope selection cannot be empty");
+        }
+
+        switch (selection.trim()) {
+            case "1":
+                return FULL_TIME;
+            case "2":
+                return PART_TIME;
+            default:
+                throw new IllegalArgumentException("Employment scope must be 1 (FULL_TIME) or 2 (PART_TIME)");
+        }
+    }
 }
