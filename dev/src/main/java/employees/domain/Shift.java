@@ -1,7 +1,6 @@
 package employees.domain;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.Collections;
@@ -15,7 +14,6 @@ public class Shift {
     private final Map<Role, Integer> requiredRoleCounts;
     private List<ShiftAssignment> assignments;
     private boolean cancellationCardTransferred;
-    private LocalDateTime cancellationCardTransferTime;
     private Employee cancellationCardTransferredBy;
 
     public Shift() {
@@ -135,9 +133,7 @@ public class Shift {
         return cancellationCardTransferred;
     }
 
-    public LocalDateTime getCancellationCardTransferTime() {
-        return cancellationCardTransferTime;
-    }
+    
 
     public Employee getCancellationCardTransferredBy() {
         return cancellationCardTransferredBy;
@@ -158,7 +154,6 @@ public class Shift {
         }
 
         this.cancellationCardTransferred = true;
-        this.cancellationCardTransferTime = LocalDateTime.now();
         this.cancellationCardTransferredBy = requestedBy;
     }
 
@@ -171,7 +166,6 @@ public class Shift {
             ", requiredRoleCounts=" + requiredRoleCounts +
             ", assignments=" + assignments +
             ", cancellationCardTransferred=" + cancellationCardTransferred +
-            ", cancellationCardTransferTime=" + cancellationCardTransferTime +
             ", cancellationCardTransferredBy=" + cancellationCardTransferredBy +
             '}';
     }

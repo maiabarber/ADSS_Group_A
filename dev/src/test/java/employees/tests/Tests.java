@@ -2,7 +2,6 @@ package employees.tests;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import employees.domain.BankAccount;
@@ -146,7 +145,6 @@ public class Tests {
 		shift.transferCancellationCard(shiftManager);
 		assertTrue("Cancellation card should be transferred by shift manager", shift.isCancellationCardTransferred());
 		assertEquals("Transfer actor should be the shift manager", shiftManager.getId(), shift.getCancellationCardTransferredBy().getId());
-		assertNotNull("Transfer time should be recorded", shift.getCancellationCardTransferTime());
 	}
 
 	@Test
