@@ -1,5 +1,10 @@
 package employees.tests;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import employees.domain.BankAccount;
 import employees.domain.Constraint;
 import employees.domain.Employee;
@@ -22,88 +27,41 @@ import employees.repository.impl.InMemorySubmissionDeadlineRepository;
 import employees.repository.impl.InMemoryUserRepository;
 import employees.service.AuthenticationService;
 
+import org.junit.Test;
+
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 public class Tests {
-	private static int passed = 0;
-	private static int failed = 0;
-
-	public static void main(String[] args) {
-		run("easy_salaryNoOvertime_whenWorkedBelowThreshold", Tests::easy_salaryNoOvertime_whenWorkedBelowThreshold);
-		run("easy_salaryOvertime_forPartTimeEmployee", Tests::easy_salaryOvertime_forPartTimeEmployee);
-		run("easy_salaryRejectsNullEmploymentScope", Tests::easy_salaryRejectsNullEmploymentScope);
-		run("easy_weeklyAvailabilityReset_clearsData", Tests::easy_weeklyAvailabilityReset_clearsData);
-		run("easy_shiftAssignmentPendingLogic", Tests::easy_shiftAssignmentPendingLogic);
-		run("hard_employeeVacationConsumption_reducesBalance", Tests::hard_employeeVacationConsumption_reducesBalance);
-		run("hard_employeeVacationConsumption_rejectsOveruse", Tests::hard_employeeVacationConsumption_rejectsOveruse);
-		run("hard_employeeFixedDayOff_canOnlyBeSetOnce", Tests::hard_employeeFixedDayOff_canOnlyBeSetOnce);
-		run("hard_shiftAssignManager_requiresHrManager", Tests::hard_shiftAssignManager_requiresHrManager);
-		run("hard_shiftAssignManager_requiresCertifiedCandidate", Tests::hard_shiftAssignManager_requiresCertifiedCandidate);
-		run("hard_shiftConfigureRoleCounts_requiresHrManager", Tests::hard_shiftConfigureRoleCounts_requiresHrManager);
-		run("hard_shiftTransferCancellationCard_onlyCurrentManager", Tests::hard_shiftTransferCancellationCard_onlyCurrentManager);
-
-		run("easy_authenticationLogin_success", Tests::easy_authenticationLogin_success);
-		run("easy_authenticationLogin_blocksFiredEmployee", Tests::easy_authenticationLogin_blocksFiredEmployee);
-		run("easy_employeeRepositorySaveFindDelete_cycle", Tests::easy_employeeRepositorySaveFindDelete_cycle);
-		run("easy_submissionDeadlineRepository_roundTrip", Tests::easy_submissionDeadlineRepository_roundTrip);
-
-		run("hard_shiftController_assignNoConflict_autoApproved", Tests::hard_shiftController_assignNoConflict_autoApproved);
-		run("hard_shiftController_assignConstraintConflict_pending", Tests::hard_shiftController_assignConstraintConflict_pending);
-		run("hard_shiftController_respondReject_removesAssignment", Tests::hard_shiftController_respondReject_removesAssignment);
-		run("hard_shiftController_doubleShiftRequiresPreference", Tests::hard_shiftController_doubleShiftRequiresPreference);
-		run("hard_shiftController_substituteRoleMismatch_rejected", Tests::hard_shiftController_substituteRoleMismatch_rejected);
-		run("hard_shiftController_cancellationRequestAndHandleWithSubstitution", Tests::hard_shiftController_cancellationRequestAndHandleWithSubstitution);
-		run("hard_shiftController_recalculateSalaryFromApprovedAssignments", Tests::hard_shiftController_recalculateSalaryFromApprovedAssignments);
-
-		System.out.println("\n----------------------------------------------");
-		System.out.println("Total tests: " + (passed + failed));
-		System.out.println("Passed: " + passed);
-		System.out.println("Failed: " + failed);
-		System.out.println("----------------------------------------------");
-
-		if (failed > 0) {
-			throw new AssertionError("Some tests failed");
-		}
-	}
-
-	private static void run(String name, Runnable test) {
-		try {
-			test.run();
-			passed++;
-			System.out.println("[PASS] " + name);
-		} catch (Throwable t) {
-			failed++;
-			System.out.println("[FAIL] " + name + " -> " + t.getMessage());
-		}
-	}
-
-	private static void easy_salaryNoOvertime_whenWorkedBelowThreshold() {
+	@Test
+	public void easy_salaryNoOvertime_whenWorkedBelowThreshold() {
 		Salary salary = new Salary(5000, 50, 120, EmploymentScope.FULL_TIME);
 
-		assertEquals(0.0, salary.getOvertimeHours(), 0.0001, "Overtime should be zero for full-time under 190h");
-		assertEquals(5000.0, salary.getFinalSalary(), 0.0001, "Final salary should equal base when no overtime");
+		assertEquals("Overtime should be zero for full-time under 190h", 0.0, salary.getOvertimeHours(), 0.0001);
+		assertEquals("Final salary should equal base when no overtime", 5000.0, salary.getFinalSalary(), 0.0001);
 	}
 
-	private static void easy_salaryOvertime_forPartTimeEmployee() {
+	@Test
+	public void easy_salaryOvertime_forPartTimeEmployee() {
 		Salary salary = new Salary(3000, 40, 100, EmploymentScope.PART_TIME);
 
-		assertEquals(5.0, salary.getOvertimeHours(), 0.0001, "Part-time overtime should be workedHours - 95");
-		assertEquals(3200.0, salary.getFinalSalary(), 0.0001, "Final salary should include overtime pay");
+		assertEquals("Part-time overtime should be workedHours - 95", 5.0, salary.getOvertimeHours(), 0.0001);
+		assertEquals("Final salary should include overtime pay", 3200.0, salary.getFinalSalary(), 0.0001);
 	}
 
-	private static void easy_salaryRejectsNullEmploymentScope() {
+	@Test
+	public void easy_salaryRejectsNullEmploymentScope() {
 		Salary salary = new Salary(3000, 30, 100);
 
 		assertThrows(IllegalArgumentException.class, () -> salary.setEmploymentScope(null));
 	}
 
-	private static void easy_weeklyAvailabilityReset_clearsData() {
+	@Test
+	public void easy_weeklyAvailabilityReset_clearsData() {
 		WeeklyAvailabilityRequest request = new WeeklyAvailabilityRequest();
 		request.addConstraint(new employees.domain.Constraint(DayOfWeek.SUNDAY, ShiftType.MORNING));
 		request.addPreference(new employees.domain.Preference(DayOfWeek.MONDAY, ShiftType.EVENING));
@@ -111,58 +69,65 @@ public class Tests {
 		LocalDate newWeek = LocalDate.of(2026, 4, 20);
 		request.resetForWeek(newWeek);
 
-		assertTrue(request.getConstraints().isEmpty(), "Constraints should be cleared after reset");
-		assertTrue(request.getPreferences().isEmpty(), "Preferences should be cleared after reset");
-		assertEquals(newWeek, request.getWeekStartDate(), "Week start date should be updated");
+		assertTrue("Constraints should be cleared after reset", request.getConstraints().isEmpty());
+		assertTrue("Preferences should be cleared after reset", request.getPreferences().isEmpty());
+		assertEquals("Week start date should be updated", newWeek, request.getWeekStartDate());
 	}
 
-	private static void easy_shiftAssignmentPendingLogic() {
+	@Test
+	public void easy_shiftAssignmentPendingLogic() {
 		ShiftAssignment assignment = new ShiftAssignment(null, null, Role.CASHIER, true);
 
-		assertTrue(assignment.isPending(), "Assignment requiring approval should start as pending");
+		assertTrue("Assignment requiring approval should start as pending", assignment.isPending());
 
 		assignment.setApproved(true);
-		assertTrue(!assignment.isPending(), "Approved assignment should no longer be pending");
+		assertFalse("Approved assignment should no longer be pending", assignment.isPending());
 	}
 
-	private static void hard_employeeVacationConsumption_reducesBalance() {
+	@Test
+	public void hard_employeeVacationConsumption_reducesBalance() {
 		Employee employee = buildEmployee("e1", false, 10);
 
 		employee.consumeVacationDays(3);
 
-		assertEquals(7, employee.getVacationDaysBalance(), "Vacation balance should decrease by consumed amount");
+		assertEquals("Vacation balance should decrease by consumed amount", 7, employee.getVacationDaysBalance());
 	}
 
-	private static void hard_employeeVacationConsumption_rejectsOveruse() {
+	@Test
+	public void hard_employeeVacationConsumption_rejectsOveruse() {
 		Employee employee = buildEmployee("e2", false, 2);
 
 		assertThrows(IllegalArgumentException.class, () -> employee.consumeVacationDays(3));
 	}
 
-	private static void hard_employeeFixedDayOff_canOnlyBeSetOnce() {
+	@Test
+	public void hard_employeeFixedDayOff_canOnlyBeSetOnce() {
 		Employee employee = buildEmployee("e3", false, 10);
 
 		employee.setFixedDayOff(DayOfWeek.SUNDAY);
-		assertEquals(DayOfWeek.SUNDAY, employee.getFixedDayOff(), "Fixed day off should be set the first time");
+		assertEquals("Fixed day off should be set the first time", DayOfWeek.SUNDAY, employee.getFixedDayOff());
 
 		assertThrows(IllegalStateException.class, () -> employee.setFixedDayOff(DayOfWeek.MONDAY));
 	}
 
-	private static void hard_shiftAssignManager_requiresHrManager() {
+	@Test
+	public void hard_shiftAssignManager_requiresHrManager() {
 		Employee candidate = buildEmployee("m1", true, 10);
 		Shift shift = new Shift();
 
 		assertThrows(IllegalArgumentException.class, () -> shift.assignShiftManager(new employees.domain.User("u1", "p"), candidate));
 	}
 
-	private static void hard_shiftAssignManager_requiresCertifiedCandidate() {
+	@Test
+	public void hard_shiftAssignManager_requiresCertifiedCandidate() {
 		Employee notCertified = buildEmployee("m2", false, 10);
 		Shift shift = new Shift();
 
 		assertThrows(IllegalArgumentException.class, () -> shift.assignShiftManager(new HR_Manager("hr1", "pass"), notCertified));
 	}
 
-	private static void hard_shiftConfigureRoleCounts_requiresHrManager() {
+	@Test
+	public void hard_shiftConfigureRoleCounts_requiresHrManager() {
 		Shift shift = new Shift();
 		Map<Role, Integer> customCounts = new EnumMap<>(Role.class);
 		customCounts.put(Role.CASHIER, 3);
@@ -170,7 +135,8 @@ public class Tests {
 		assertThrows(IllegalArgumentException.class, () -> shift.configureRequiredRoleCounts(new employees.domain.User("u2", "p"), customCounts));
 	}
 
-	private static void hard_shiftTransferCancellationCard_onlyCurrentManager() {
+	@Test
+	public void hard_shiftTransferCancellationCard_onlyCurrentManager() {
 		Employee shiftManager = buildEmployee("manager", true, 10);
 		Employee otherEmployee = buildEmployee("other", true, 10);
 		Shift shift = new Shift(LocalDate.now(), ShiftType.MORNING, shiftManager, 2, 1);
@@ -178,12 +144,13 @@ public class Tests {
 		assertThrows(IllegalArgumentException.class, () -> shift.transferCancellationCard(otherEmployee));
 
 		shift.transferCancellationCard(shiftManager);
-		assertTrue(shift.isCancellationCardTransferred(), "Cancellation card should be transferred by shift manager");
-		assertEquals(shiftManager.getId(), shift.getCancellationCardTransferredBy().getId(), "Transfer actor should be the shift manager");
-		assertTrue(shift.getCancellationCardTransferTime() != null, "Transfer time should be recorded");
+		assertTrue("Cancellation card should be transferred by shift manager", shift.isCancellationCardTransferred());
+		assertEquals("Transfer actor should be the shift manager", shiftManager.getId(), shift.getCancellationCardTransferredBy().getId());
+		assertNotNull("Transfer time should be recorded", shift.getCancellationCardTransferTime());
 	}
 
-	private static void easy_authenticationLogin_success() {
+	@Test
+	public void easy_authenticationLogin_success() {
 		AuthenticationService auth = new AuthenticationService(new InMemoryUserRepository());
 		User user = new User("u-login", "secret");
 
@@ -193,11 +160,12 @@ public class Tests {
 			throw new RuntimeException(e);
 		}
 
-		assertTrue(auth.login("u-login", "secret").isPresent(), "Login should succeed for valid credentials");
-		assertTrue(auth.isLoggedIn(), "Auth state should be logged-in after successful login");
+		assertTrue("Login should succeed for valid credentials", auth.login("u-login", "secret").isPresent());
+		assertTrue("Auth state should be logged-in after successful login", auth.isLoggedIn());
 	}
 
-	private static void easy_authenticationLogin_blocksFiredEmployee() {
+	@Test
+	public void easy_authenticationLogin_blocksFiredEmployee() {
 		AuthenticationService auth = new AuthenticationService(new InMemoryUserRepository());
 		Employee firedEmployee = buildEmployee("fired-1", false, 10);
 		firedEmployee.setFired(true);
@@ -208,37 +176,40 @@ public class Tests {
 			throw new RuntimeException(e);
 		}
 
-		assertTrue(!auth.login("fired-1", "pass").isPresent(), "Fired employee should be blocked from login");
-		assertTrue(auth.isFiredCredentials("fired-1", "pass"), "Fired credentials should be detected");
+		assertFalse("Fired employee should be blocked from login", auth.login("fired-1", "pass").isPresent());
+		assertTrue("Fired credentials should be detected", auth.isFiredCredentials("fired-1", "pass"));
 	}
 
-	private static void easy_employeeRepositorySaveFindDelete_cycle() {
+	@Test
+	public void easy_employeeRepositorySaveFindDelete_cycle() {
 		InMemoryEmployeeRepository repository = new InMemoryEmployeeRepository();
 		Employee employee = buildEmployee("repo-1", false, 10);
 
 		try {
 			repository.save(employee);
-			assertTrue(repository.findById("repo-1").isPresent(), "Saved employee should be retrievable by id");
+			assertTrue("Saved employee should be retrievable by id", repository.findById("repo-1").isPresent());
 			repository.deleteById("repo-1");
-			assertTrue(!repository.findById("repo-1").isPresent(), "Deleted employee should no longer exist");
+			assertFalse("Deleted employee should no longer exist", repository.findById("repo-1").isPresent());
 		} catch (RepositoryException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	private static void easy_submissionDeadlineRepository_roundTrip() {
+	@Test
+	public void easy_submissionDeadlineRepository_roundTrip() {
 		InMemorySubmissionDeadlineRepository repository = new InMemorySubmissionDeadlineRepository();
 		LocalDate deadline = LocalDate.of(2026, 4, 25);
 
 		try {
 			repository.save(deadline);
-			assertEquals(deadline, repository.findCurrent().orElse(null), "Saved deadline should be loaded back");
+			assertEquals("Saved deadline should be loaded back", deadline, repository.findCurrent().orElse(null));
 		} catch (RepositoryException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	private static void hard_shiftController_assignNoConflict_autoApproved() {
+	@Test
+	public void hard_shiftController_assignNoConflict_autoApproved() {
 		ShiftController controller = new ShiftController();
 		HR_Manager hr = new HR_Manager("hr-a1", "p");
 		Employee employee = buildEmployee("assign-1", false, 10);
@@ -246,11 +217,12 @@ public class Tests {
 
 		controller.assignEmployeeToShift(hr, employee, shift, Role.CASHIER);
 
-		assertEquals(1, shift.getAssignments().size(), "Shift should have one assignment");
-		assertTrue(shift.getAssignments().get(0).isApproved(), "No-conflict assignment should be auto-approved");
+		assertEquals("Shift should have one assignment", 1, shift.getAssignments().size());
+		assertTrue("No-conflict assignment should be auto-approved", shift.getAssignments().get(0).isApproved());
 	}
 
-	private static void hard_shiftController_assignConstraintConflict_pending() {
+	@Test
+	public void hard_shiftController_assignConstraintConflict_pending() {
 		ShiftController controller = new ShiftController();
 		HR_Manager hr = new HR_Manager("hr-a2", "p");
 		Employee employee = buildEmployee("assign-2", false, 10);
@@ -263,11 +235,12 @@ public class Tests {
 		controller.assignEmployeeToShift(hr, employee, shift, Role.CASHIER);
 
 		ShiftAssignment assignment = shift.getAssignments().get(0);
-		assertTrue(assignment.isPending(), "Conflict assignment should stay pending employee response");
-		assertTrue(!assignment.isApproved(), "Pending assignment should not be approved yet");
+		assertTrue("Conflict assignment should stay pending employee response", assignment.isPending());
+		assertFalse("Pending assignment should not be approved yet", assignment.isApproved());
 	}
 
-	private static void hard_shiftController_respondReject_removesAssignment() {
+	@Test
+	public void hard_shiftController_respondReject_removesAssignment() {
 		ShiftController controller = new ShiftController();
 		HR_Manager hr = new HR_Manager("hr-a3", "p");
 		Employee employee = buildEmployee("assign-3", false, 10);
@@ -282,10 +255,11 @@ public class Tests {
 		ShiftAssignment pending = shift.getAssignments().get(0);
 		controller.respondToAssignment(employee, pending, false);
 
-		assertEquals(0, shift.getAssignments().size(), "Rejected pending assignment should be removed from shift");
+		assertEquals("Rejected pending assignment should be removed from shift", 0, shift.getAssignments().size());
 	}
 
-	private static void hard_shiftController_doubleShiftRequiresPreference() {
+	@Test
+	public void hard_shiftController_doubleShiftRequiresPreference() {
 		ShiftController controller = new ShiftController();
 		HR_Manager hr = new HR_Manager("hr-a4", "p");
 		Employee employee = buildEmployee("assign-4", false, 10);
@@ -297,10 +271,11 @@ public class Tests {
 			new Preference(shift.getDate().getDayOfWeek(), ShiftType.DOUBLE_SHIFT)
 		);
 		controller.assignEmployeeToShift(hr, employee, shift, Role.CASHIER);
-		assertEquals(1, shift.getAssignments().size(), "Assignment should succeed after matching preference is provided");
+		assertEquals("Assignment should succeed after matching preference is provided", 1, shift.getAssignments().size());
 	}
 
-	private static void hard_shiftController_substituteRoleMismatch_rejected() {
+	@Test
+	public void hard_shiftController_substituteRoleMismatch_rejected() {
 		ShiftController controller = new ShiftController();
 		HR_Manager hr = new HR_Manager("hr-a5", "p");
 		Employee original = buildEmployee("orig-1", false, 10);
@@ -311,7 +286,8 @@ public class Tests {
 		assertThrows(IllegalArgumentException.class, () -> controller.substituteEmployee(hr, shift, original, replacement));
 	}
 
-	private static void hard_shiftController_cancellationRequestAndHandleWithSubstitution() {
+	@Test
+	public void hard_shiftController_cancellationRequestAndHandleWithSubstitution() {
 		ShiftController controller = new ShiftController();
 		HR_Manager hr = new HR_Manager("hr-a6", "p");
 		Employee original = buildEmployee("orig-2", false, 10);
@@ -325,11 +301,12 @@ public class Tests {
 		ShiftAssignment request = controller.getCancellationRequests().get(0);
 		controller.handleCancellationWithSubstitution(hr, request, replacement);
 
-		assertEquals(1, shift.getAssignments().size(), "After handling cancellation, shift should still have one assignment");
-		assertEquals("repl-2", shift.getAssignments().get(0).getEmployee().getId(), "Replacement employee should be assigned");
+		assertEquals("After handling cancellation, shift should still have one assignment", 1, shift.getAssignments().size());
+		assertEquals("Replacement employee should be assigned", "repl-2", shift.getAssignments().get(0).getEmployee().getId());
 	}
 
-	private static void hard_shiftController_recalculateSalaryFromApprovedAssignments() {
+	@Test
+	public void hard_shiftController_recalculateSalaryFromApprovedAssignments() {
 		ShiftController controller = new ShiftController();
 		HR_Manager hr = new HR_Manager("hr-a7", "p");
 		Employee employee = buildEmployee("salary-1", false, 10);
@@ -344,8 +321,8 @@ public class Tests {
 		double workedHours = controller.calculateWorkedHoursForEmployee(employee);
 		double finalSalary = controller.recalculateEmployeeSalary(employee);
 
-		assertEquals(16.0, workedHours, 0.0001, "Two approved regular shifts should total 16 worked hours");
-		assertEquals(5000.0, finalSalary, 0.0001, "16h is below full-time overtime threshold so salary stays base");
+		assertEquals("Two approved regular shifts should total 16 worked hours", 16.0, workedHours, 0.0001);
+		assertEquals("16h is below full-time overtime threshold so salary stays base", 5000.0, finalSalary, 0.0001);
 	}
 
 	private static Employee buildEmployee(String id, boolean canManageShift, int vacationDays) {
@@ -414,29 +391,5 @@ public class Tests {
 			);
 		}
 		throw new AssertionError("Expected exception " + expected.getSimpleName() + " but nothing was thrown");
-	}
-
-	private static void assertEquals(Object expected, Object actual, String message) {
-		if (!Objects.equals(expected, actual)) {
-			throw new AssertionError(message + " (expected=" + expected + ", actual=" + actual + ")");
-		}
-	}
-
-	private static void assertEquals(double expected, double actual, double delta, String message) {
-		if (Math.abs(expected - actual) > delta) {
-			throw new AssertionError(message + " (expected=" + expected + ", actual=" + actual + ")");
-		}
-	}
-
-	private static void assertEquals(int expected, int actual, String message) {
-		if (expected != actual) {
-			throw new AssertionError(message + " (expected=" + expected + ", actual=" + actual + ")");
-		}
-	}
-
-	private static void assertTrue(boolean condition, String message) {
-		if (!condition) {
-			throw new AssertionError(message);
-		}
 	}
 }
