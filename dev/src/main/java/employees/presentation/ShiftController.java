@@ -103,9 +103,14 @@ public class ShiftController {
         }
     }
     
+    WeeklyAvailabilityRequest availability = employee.getWeeklyAvailabilityRequest();
+    if (isFullDayVacationConstraint(availability, shift.getDate().getDayOfWeek())) {
+        throw new IllegalArgumentException("Employee " + employee.getName() +
+            " is on vacation on " + shift.getDate().getDayOfWeek() + " and cannot be assigned");
+    }
+
     // Check if assignment conflicts with employee constraints or fixed day off
     boolean hasConstraintConflict = false;
-    WeeklyAvailabilityRequest availability = employee.getWeeklyAvailabilityRequest();
     if (availability != null) {
         for (Constraint constraint : availability.getConstraints()) {
             if (constraint.getDay() == shift.getDate().getDayOfWeek() &&
@@ -206,6 +211,10 @@ public class ShiftController {
         // Check constraints for replacement (req #3 behaviour applies here too)
         boolean hasConstraintConflict = false;
         WeeklyAvailabilityRequest availability = replacement.getWeeklyAvailabilityRequest();
+        if (isFullDayVacationConstraint(availability, shift.getDate().getDayOfWeek())) {
+            throw new IllegalArgumentException(replacement.getName() +
+                " is on vacation on " + shift.getDate().getDayOfWeek() + " and cannot be assigned");
+        }
         if (availability != null) {
             for (Constraint constraint : availability.getConstraints()) {
                 if (constraint.getDay() == shift.getDate().getDayOfWeek() &&
@@ -338,5 +347,40 @@ public class ShiftController {
             throw new IllegalArgumentException("Shift is required");
         }
         shift.transferCancellationCard(shiftManager);
+    }
+
+    private boolean isFullDayVacationConstraint(WeeklyAvailabilityRequest availability, java.time.DayOfWeek day) {
+        if (availability == null) {
+            return false;
+        }
+
+        boolean hasMorning = false;
+        boolean hasMorningOvertime = false;
+        boolean hasEvening = false;
+        boolean hasDoubleShift = false;
+
+        for (Constraint constraint : availability.getConstraints()) {
+            if (constraint.getDay() != day) {
+                continue;
+            }
+            switch (constraint.getShiftType()) {
+                case MORNING:
+                    hasMorning = true;
+                    break;
+                case MORNING_OVERTIME:
+                    hasMorningOvertime = true;
+                    break;
+                case EVENING:
+                    hasEvening = true;
+                    break;
+                case DOUBLE_SHIFT:
+                    hasDoubleShift = true;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        return hasMorning && hasMorningOvertime && hasEvening && hasDoubleShift;
     }
 }

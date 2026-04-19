@@ -24,6 +24,8 @@ import employees.repository.impl.InMemoryShiftRepository;
 import employees.repository.impl.InMemorySubmissionDeadlineRepository;
 import employees.repository.impl.InMemoryUserRepository;
 import employees.service.AuthenticationService;
+import employees.service.SubmissionDeadlineService;
+import employees.service.WeeklyAvailabilityService;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -51,6 +53,8 @@ public class ConsolePresentation {
     private final ShiftController shiftController;
     private final ShiftRepository shiftRepository;
     private final SubmissionDeadlineRepository submissionDeadlineRepository;
+    private final SubmissionDeadlineService submissionDeadlineService;
+    private final WeeklyAvailabilityService weeklyAvailabilityService;
     private int lastVacationResetYear = -1;
 
     public ConsolePresentation() {
@@ -63,6 +67,8 @@ public class ConsolePresentation {
         this.shiftController = new ShiftController();
         this.shiftRepository = new InMemoryShiftRepository();
         this.submissionDeadlineRepository = new InMemorySubmissionDeadlineRepository();
+        this.submissionDeadlineService = new SubmissionDeadlineService();
+        this.weeklyAvailabilityService = new WeeklyAvailabilityService(submissionDeadlineRepository, employeeRepository);
     }
 
     public void run() {
@@ -285,24 +291,6 @@ private void submitWeeklyAvailabilityFlow(User loggedInUser, Scanner scanner) {
     Employee employee = (Employee) loggedInUser;
     ensureWeeklyAvailabilityCurrent(employee);
 
-    Optional<LocalDate> configuredDeadline;
-    try {
-        configuredDeadline = submissionDeadlineRepository.findCurrent();
-    } catch (RepositoryException e) {
-        System.out.println("Failed to load submission deadline: " + e.getMessage());
-        return;
-    }
-
-    if (!configuredDeadline.isPresent()) {
-        System.out.println("No submission deadline is configured yet. Please contact HR manager.");
-        return;
-    }
-
-    if (LocalDate.now().isAfter(configuredDeadline.get())) {
-        System.out.println("Submission deadline has passed for this week.");
-        return;
-    }
-
     WeeklyAvailabilityRequest weeklyAvailabilityRequest = employee.getWeeklyAvailabilityRequest();
     if (weeklyAvailabilityRequest == null) {
         weeklyAvailabilityRequest = new WeeklyAvailabilityRequest();
@@ -312,35 +300,41 @@ private void submitWeeklyAvailabilityFlow(User loggedInUser, Scanner scanner) {
 
     List<Constraint> constraints = readConstraints(scanner);
     List<Preference> preferences = readPreferences(scanner);
-    int currentVacationBalance = employee.getVacationDaysBalance();
-    System.out.println("Current vacation days balance: " + currentVacationBalance);
+    System.out.println("Current vacation days balance: " + employee.getVacationDaysBalance());
     int vacationDaysToUse = readInt(scanner, "Vacation days to use this week: ");
-    if (vacationDaysToUse > currentVacationBalance) {
-        System.out.println("Cannot use more vacation days than available balance.");
-        return;
-    }
+
+    List<DayOfWeek> selectedVacationDays = readVacationDaysToUse(scanner, vacationDaysToUse);
 
     try {
-        employee.consumeVacationDays(vacationDaysToUse);
-    } catch (IllegalArgumentException e) {
-        System.out.println("Vacation days update failed: " + e.getMessage());
-        return;
-    }
-
-    weeklyAvailabilityRequest.setConstraints(constraints);
-    weeklyAvailabilityRequest.setPreferences(preferences);
-    weeklyAvailabilityRequest.setSubmissionDeadline(configuredDeadline.get());
-
-    try {
-        employeeRepository.save(employee);
+        int remainingVacationDays = weeklyAvailabilityService.submitWeeklyAvailability(
+            employee,
+            constraints,
+            preferences,
+            vacationDaysToUse,
+            selectedVacationDays,
+            LocalDate.now()
+        );
         System.out.println(
             "Weekly constraints and preferences were submitted successfully. Remaining vacation days: " +
-            employee.getVacationDaysBalance() + "."
+            remainingVacationDays + "."
         );
+    } catch (IllegalArgumentException e) {
+        System.out.println(e.getMessage());
     } catch (RepositoryException e) {
         System.out.println("Failed to save weekly submission: " + e.getMessage());
     }
 }
+
+    private List<DayOfWeek> readVacationDaysToUse(Scanner scanner, int daysToUse) {
+        List<DayOfWeek> selectedDays = new ArrayList<>();
+        for (int i = 0; i < daysToUse; i++) {
+            System.out.println("Choose vacation day #" + (i + 1) + ":");
+            DayOfWeek chosenDay = readDayOfWeek(scanner);
+            selectedDays.add(chosenDay);
+        }
+
+        return selectedDays;
+    }
 
     private void resetVacationDaysForCurrentYear() {
         int currentYear = Year.now().getValue();
@@ -390,8 +384,10 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
         );
 
         try {
-            submissionDeadlineRepository.save(newDeadline);
+            submissionDeadlineService.setWeeklySubmissionDeadline(newDeadline, submissionDeadlineRepository);
             System.out.println("Weekly submission deadline was set to " + newDeadline + ".");
+        } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
         } catch (RepositoryException e) {
             System.out.println("Failed to save weekly submission deadline: " + e.getMessage());
         }

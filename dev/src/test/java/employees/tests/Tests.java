@@ -240,6 +240,22 @@ public class Tests {
 	}
 
 	@Test
+	public void hard_shiftController_assignVacationDay_blockedForManager() {
+		ShiftController controller = new ShiftController();
+		HR_Manager hr = new HR_Manager("hr-v1", "p");
+		Employee employee = buildEmployee("vac-1", false, 10);
+		Shift shift = new Shift(LocalDate.of(2026, 4, 22), ShiftType.MORNING, buildEmployee("mgr-v1", true, 10), 1, 1);
+
+		DayOfWeek vacationDay = shift.getDate().getDayOfWeek();
+		employee.getWeeklyAvailabilityRequest().addConstraint(new Constraint(vacationDay, ShiftType.MORNING));
+		employee.getWeeklyAvailabilityRequest().addConstraint(new Constraint(vacationDay, ShiftType.MORNING_OVERTIME));
+		employee.getWeeklyAvailabilityRequest().addConstraint(new Constraint(vacationDay, ShiftType.EVENING));
+		employee.getWeeklyAvailabilityRequest().addConstraint(new Constraint(vacationDay, ShiftType.DOUBLE_SHIFT));
+
+		assertThrows(IllegalArgumentException.class, () -> controller.assignEmployeeToShift(hr, employee, shift, Role.CASHIER));
+	}
+
+	@Test
 	public void hard_shiftController_respondReject_removesAssignment() {
 		ShiftController controller = new ShiftController();
 		HR_Manager hr = new HR_Manager("hr-a3", "p");
