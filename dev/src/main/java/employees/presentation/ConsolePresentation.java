@@ -277,9 +277,9 @@ public class ConsolePresentation {
             userController.addEmployee(currentUser.get(), employee);
             System.out.println("Employee added successfully.");
         } catch (RepositoryException e) {
-            System.out.println("Failed to add employee: " + e.getMessage());
+            System.out.println("Error: Failed to add employee: " + e.getMessage());
         } catch (IllegalArgumentException e) {
-            System.out.println("Not authorized: " + e.getMessage());
+            System.out.println("Error: " + e.getMessage());
         }
     }
 

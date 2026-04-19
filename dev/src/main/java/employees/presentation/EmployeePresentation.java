@@ -38,30 +38,20 @@ public class EmployeePresentation {
     public Employee readEmployeeInput(Scanner scanner) {
         System.out.println("\nAdd new employee");
 
-        System.out.print("Employee id: ");
-        idInput = scanner.nextLine();
-
-        System.out.print("Employee password: ");
-        passwordInput = scanner.nextLine();
-
-        System.out.print("Employee full name: ");
-        nameInput = scanner.nextLine();
+        idInput = readEmployeeId(scanner);
+        passwordInput = readPassword(scanner);
+        nameInput = readNonEmptyString(scanner, "Employee full name: ");
 
         employeeTypeInput = readEmploymentType(scanner);
         jobRoleInput = readJobRole(scanner);
         canManageShiftInput = readYesNo(scanner, "Can manage shift? (y/n): ");
 
-        System.out.print("Bank number: ");
-        bankNumberInput = scanner.nextLine();
+        bankNumberInput = readNonEmptyString(scanner, "Bank number: ");
+        branchNumberInput = readNonEmptyString(scanner, "Branch number: ");
+        accountNumberInput = readNonEmptyString(scanner, "Account number: ");
 
-        System.out.print("Branch number: ");
-        branchNumberInput = scanner.nextLine();
-
-        System.out.print("Account number: ");
-        accountNumberInput = scanner.nextLine();
-
-        globalSalaryInput = readDouble(scanner, "Base salary: ");
-        hourlySalaryInput = readDouble(scanner, "Overtime hourly rate: ");
+        globalSalaryInput = readPositiveDouble(scanner, "Base salary: ");
+        hourlySalaryInput = readPositiveDouble(scanner, "Overtime hourly rate: ");
         employmentScopeInput = readEmploymentScope(scanner);
         workedHoursInput = 0;
         startDateInput = readLocalDate(scanner, "Start date (YYYY-MM-DD): ");
@@ -90,6 +80,75 @@ public class EmployeePresentation {
             new WeeklyAvailabilityRequest()
         );
         return employee;
+    }
+
+    private String readEmployeeId(Scanner scanner) {
+        while (true) {
+            System.out.print("Employee id: ");
+            String id = scanner.nextLine().trim();
+            
+            if (id.isEmpty()) {
+                System.out.println("Error: Employee ID cannot be empty.");
+                continue;
+            }
+            
+            if (!id.matches("\\d{9}")) {
+                System.out.println("Error: Employee ID must be exactly 9 digits.");
+                continue;
+            }
+            
+            return id;
+        }
+    }
+
+    private String readPassword(Scanner scanner) {
+        while (true) {
+            System.out.print("Employee password: ");
+            String password = scanner.nextLine();
+            
+            if (password.isEmpty()) {
+                System.out.println("Error: Password cannot be empty.");
+                continue;
+            }
+            return password;
+        }
+    }
+
+    private String readNonEmptyString(Scanner scanner, String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String value = scanner.nextLine().trim();
+            
+            if (value.isEmpty()) {
+                System.out.println("Error: This field cannot be empty.");
+                continue;
+            }
+            
+            return value;
+        }
+    }
+
+    private double readPositiveDouble(Scanner scanner, String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String value = scanner.nextLine().trim();
+            
+            if (value.isEmpty()) {
+                System.out.println("Error: This field cannot be empty.");
+                continue;
+            }
+            
+            try {
+                double parsed = Double.parseDouble(value);
+                if (parsed < 0) {
+                    System.out.println("Error: Value must be non-negative.");
+                    continue;
+                }
+                return parsed;
+            } catch (NumberFormatException e) {
+                System.out.println("Error: Please enter a valid number.");
+            }
+        }
     }
 
     private EmploymentType readEmploymentType(Scanner scanner) {
@@ -148,17 +207,7 @@ public class EmployeePresentation {
         }
     }
 
-    private double readDouble(Scanner scanner, String prompt) {
-        while (true) {
-            System.out.print(prompt);
-            String value = scanner.nextLine();
-            try {
-                return Double.parseDouble(value);
-            } catch (NumberFormatException e) {
-                System.out.println("Please enter a valid number.");
-            }
-        }
-    }
+
 
     private EmploymentScope readEmploymentScope(Scanner scanner) {
         while (true) {
