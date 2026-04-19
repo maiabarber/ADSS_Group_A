@@ -19,7 +19,6 @@ import java.util.Optional;
  */
 public class UserController {
     public static final int DEFAULT_VACATION_DAYS = 10;
-    private final List<Employee> employees = new ArrayList<>();
     private final AuthenticationService authenticationService;
     private final EmployeeRepository employeeRepository;
     private HR_Manager manager;
