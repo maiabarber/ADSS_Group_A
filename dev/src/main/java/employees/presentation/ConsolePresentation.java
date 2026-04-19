@@ -74,128 +74,148 @@ public class ConsolePresentation {
         }
 
         try (Scanner scanner = new Scanner(System.in)) {
-            loginPresentation.readLoginInput(scanner);
+            boolean appRunning = true;
+            while (appRunning) {
+                System.out.println("\nLogin screen");
+                loginPresentation.readLoginInput(scanner);
 
-            Optional<User> loggedInUser = authenticationService.login(
-                loginPresentation.getIdInput(),
-                loginPresentation.getPasswordInput()
-            );
-            if (!loggedInUser.isPresent()) {
-                if (authenticationService.isFiredCredentials(
+                Optional<User> loggedInUser = authenticationService.login(
                     loginPresentation.getIdInput(),
                     loginPresentation.getPasswordInput()
-                )) {
-                    System.out.println("Login blocked: this employee is marked as fired.");
-                    return;
-                }
-                System.out.println("Invalid credentials.");
-                return;
-            }
-
-            resetVacationDaysForCurrentYear();
-
-            if (isHrManager(loggedInUser.get())) {
-                userController.setManager((HR_Manager) loggedInUser.get());
-            } else if (loggedInUser.get() instanceof Employee) {
-                Employee employee = (Employee) loggedInUser.get();
-                promptForFixedDayOffIfNeeded(employee, scanner);
-                ensureWeeklyAvailabilityCurrent(employee);
-            }
-
-            System.out.println("Login successful. Welcome " + loggedInUser.get().getId() + ".");
-
-            boolean running = true;
-            while (running) {
-                System.out.println("\nChoose action:");
-                if (isHrManager(loggedInUser.get())) {
-                    System.out.println("1. Set weekly submission deadline");
-                    System.out.println("2. Add new employee");
-                    System.out.println("3. Update employee details");
-                    System.out.println("4. Fire employee");
-                    System.out.println("5. Approve employee as shift manager");
-                    System.out.println("6. Create shift");
-                    System.out.println("7. Assign employee to shift");
-                    System.out.println("8. Substitute employee in shift");
-                    System.out.println("9. Handle cancellation requests");
-                    System.out.println("10. Calculate employee salary from shifts");
-                    System.out.println("11. Logout");
-                } else {
-                    System.out.println("1. Submit weekly constraints and preferences");
-                    System.out.println("2. View and respond to pending shift assignments");
-                    System.out.println("3. Request shift cancellation");
-                    System.out.println("4. Transfer cancellation card at cash register");
-                    System.out.println("5. Logout");
-                }
-                System.out.print("Selection: ");
-
-                String choice = scanner.nextLine();
-                if (isHrManager(loggedInUser.get())) {
-                    switch (choice) {
-                        case "1":
-                            setSubmissionDeadlineFlow(scanner);
-                            break;
-                        case "2":
-                            addNewEmployeeFlow(scanner);
-                            break;
-                        case "3":
-                            updateEmployeeDetailsFlow(scanner);
-                            break;
-                        case "4":
-                            fireEmployeeFlow(scanner);
-                            break;
-                        case "5":
-                            approveAsShiftManagerFlow(scanner);
-                            break;
-                        case "6":
-                            createShiftFlow(scanner);
-                            break;
-                        case "7":
-                            assignEmployeeToShiftFlow(scanner);
-                            break;
-                        case "8":
-                            substituteEmployeeFlow(scanner);
-                            break;
-                        case "9":
-                            handleCancellationRequestsFlow(scanner);
-                            break;
-                        case "10":
-                            calculateEmployeeSalaryFlow(scanner);
-                            break;
-                        case "11":
-                            if (authenticationService.logout()) {
-                                System.out.println("You have been logged out.");
-                            } else {
-                                System.out.println("No user is currently logged in.");
-                            }
-                            running = false;
-                            break;
-                        default:
-                            System.out.println("Invalid selection.");
+                );
+                if (!loggedInUser.isPresent()) {
+                    if (authenticationService.isFiredCredentials(
+                        loginPresentation.getIdInput(),
+                        loginPresentation.getPasswordInput()
+                    )) {
+                        System.out.println("Login blocked: this employee is marked as fired.");
+                        continue;
                     }
-                } else {
-                    switch (choice) {
-                        case "1":
-                            submitWeeklyAvailabilityFlow(loggedInUser.get(), scanner);
-                            break;
-                        case "2":
-                            respondToPendingAssignmentsFlow(loggedInUser.get(), scanner);
-                            break;
-                        case "3":
-                            requestShiftCancellationFlow(loggedInUser.get(), scanner);
-                            break;
-                        case "4":
-                            transferCancellationCardFlow(loggedInUser.get(), scanner);
-                            break;
-                        case "5":
-                            if (authenticationService.logout()) {
+                    System.out.println("Invalid credentials.");
+                    continue;
+                }
+
+                resetVacationDaysForCurrentYear();
+
+                if (isHrManager(loggedInUser.get())) {
+                    userController.setManager((HR_Manager) loggedInUser.get());
+                } else if (loggedInUser.get() instanceof Employee) {
+                    Employee employee = (Employee) loggedInUser.get();
+                    promptForFixedDayOffIfNeeded(employee, scanner);
+                    ensureWeeklyAvailabilityCurrent(employee);
+                }
+
+                System.out.println("Login successful. Welcome " + loggedInUser.get().getId() + ".");
+
+                boolean sessionActive = true;
+                while (sessionActive && appRunning) {
+                    System.out.println("\nChoose action:");
+                    if (isHrManager(loggedInUser.get())) {
+                        System.out.println("1. Set weekly submission deadline");
+                        System.out.println("2. Add new employee");
+                        System.out.println("3. Update employee details");
+                        System.out.println("4. Fire employee");
+                        System.out.println("5. Approve employee as shift manager");
+                        System.out.println("6. Create shift");
+                        System.out.println("7. Assign employee to shift");
+                        System.out.println("8. Substitute employee in shift");
+                        System.out.println("9. Handle cancellation requests");
+                        System.out.println("10. Calculate employee salary from shifts");
+                        System.out.println("11. Logout");
+                        System.out.println("12. Exit");
+                    } else {
+                        System.out.println("1. Submit weekly constraints and preferences");
+                        System.out.println("2. View and respond to pending shift assignments");
+                        System.out.println("3. Request shift cancellation");
+                        System.out.println("4. Transfer cancellation card at cash register");
+                        System.out.println("5. Logout");
+                        System.out.println("6. Exit");
+                    }
+                    System.out.print("Selection: ");
+
+                    String choice = scanner.nextLine();
+                    if (isHrManager(loggedInUser.get())) {
+                        switch (choice) {
+                            case "1":
+                                setSubmissionDeadlineFlow(scanner);
+                                break;
+                            case "2":
+                                addNewEmployeeFlow(scanner);
+                                break;
+                            case "3":
+                                updateEmployeeDetailsFlow(scanner);
+                                break;
+                            case "4":
+                                fireEmployeeFlow(scanner);
+                                break;
+                            case "5":
+                                approveAsShiftManagerFlow(scanner);
+                                break;
+                            case "6":
+                                createShiftFlow(scanner);
+                                break;
+                            case "7":
+                                assignEmployeeToShiftFlow(scanner);
+                                break;
+                            case "8":
+                                substituteEmployeeFlow(scanner);
+                                break;
+                            case "9":
+                                handleCancellationRequestsFlow(scanner);
+                                break;
+                            case "10":
+                                calculateEmployeeSalaryFlow(scanner);
+                                break;
+                            case "11":
+                                if (authenticationService.logout()) {
+                                    System.out.println("You have been logged out.");
+                                } else {
+                                    System.out.println("No user is currently logged in.");
+                                }
+                                sessionActive = false;
+                                break;
+                            case "12":
+                                authenticationService.logout();
                                 System.out.println("You have been logged out.");
-                            } else {
-                                System.out.println("No user is currently logged in.");
-                            }
-                            running = false;
-                            break;
-                        default:
-                            System.out.println("Invalid selection.");
+                                System.out.println("Application terminated.");
+                                sessionActive = false;
+                                appRunning = false;
+                                break;
+                            default:
+                                System.out.println("Invalid selection.");
+                        }
+                    } else {
+                        switch (choice) {
+                            case "1":
+                                submitWeeklyAvailabilityFlow(loggedInUser.get(), scanner);
+                                break;
+                            case "2":
+                                respondToPendingAssignmentsFlow(loggedInUser.get(), scanner);
+                                break;
+                            case "3":
+                                requestShiftCancellationFlow(loggedInUser.get(), scanner);
+                                break;
+                            case "4":
+                                transferCancellationCardFlow(loggedInUser.get(), scanner);
+                                break;
+                            case "5":
+                                if (authenticationService.logout()) {
+                                    System.out.println("You have been logged out.");
+                                } else {
+                                    System.out.println("No user is currently logged in.");
+                                }
+                                sessionActive = false;
+                                break;
+                            case "6":
+                                authenticationService.logout();
+                                System.out.println("You have been logged out.");
+                                System.out.println("Application terminated.");
+                                sessionActive = false;
+                                appRunning = false;
+                                break;
+                            default:
+                                System.out.println("Invalid selection.");
+                        }
                     }
                 }
             }
