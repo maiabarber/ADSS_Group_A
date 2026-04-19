@@ -227,4 +227,8 @@ public class Employee extends User {
         }
         this.canManageShift = true;
     }
+
+    public Set<Role> getRoles() {
+        return Collections.unmodifiableSet(authorizedRoles);
+    }
 }

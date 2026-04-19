@@ -11,6 +11,7 @@ public class User {
     private String password;
 
     public User(String id, String password) {
+        validateId(id);
         this.id = id;
         this.password = password;
     }
@@ -20,7 +21,14 @@ public class User {
     }
 
     public void setId(String id) {
+        validateId(id);
         this.id = id;
+    }
+
+    private void validateId(String id) {
+        if (id == null || !id.matches("\\d{9}")) {
+            throw new IllegalArgumentException("ID must be exactly 9 digits");
+        }
     }
 
     public String getPassword() {

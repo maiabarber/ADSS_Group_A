@@ -30,6 +30,7 @@ import employees.service.WeeklyAvailabilityService;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.Year;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
@@ -82,7 +83,7 @@ public class ConsolePresentation {
         try (Scanner scanner = new Scanner(System.in)) {
             boolean appRunning = true;
             while (appRunning) {
-                System.out.println("\nLogin screen");
+                System.out.println("\nWelcome to the \"Super Lee\" employee scheduling system!");
                 loginPresentation.readLoginInput(scanner);
 
                 Optional<User> loggedInUser = authenticationService.login(
@@ -233,10 +234,10 @@ public class ConsolePresentation {
     }
 
     private void registerDemoUsers() throws RepositoryException {
-        authenticationService.registerUser(new HR_Manager("hr001", "hrpass"));
+        authenticationService.registerUser(new HR_Manager("100000201", "hrpass"));
 
         Employee demoEmployee = new Employee(
-            "employee1",
+            "100000202",
             "pass123",
             new BankAccount("10", "123", "555555"),
             "Demo Employee",
@@ -380,7 +381,7 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
     private void setSubmissionDeadlineFlow(Scanner scanner) {
         LocalDate newDeadline = readLocalDate(
             scanner,
-            "Deadline for submitting constraints and preferences for the upcoming week (YYYY-MM-DD): "
+            "Deadline for submitting constraints and preferences for the upcoming week (DD-MM-YYYY): "
         );
 
         try {
@@ -660,13 +661,14 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
     }
 
     private LocalDate readLocalDate(Scanner scanner, String prompt) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-uuuu");
         while (true) {
             System.out.print(prompt);
             String value = scanner.nextLine();
             try {
-                return LocalDate.parse(value);
+                return LocalDate.parse(value, formatter);
             } catch (Exception e) {
-                System.out.println("Please enter a valid date in YYYY-MM-DD format.");
+                System.out.println("Please enter a valid date in DD-MM-YYYY format.");
             }
         }
     }

@@ -52,7 +52,7 @@ public class ShiftController {
         }
     }
 
-    private void addToShiftHistory(Shift shift) {
+    public void addToShiftHistory(Shift shift) {
         String shiftId = shift.getDate() + ":" + shift.getShiftType();
 
         for (Shift existingShift : shiftHistory) {
