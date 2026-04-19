@@ -20,6 +20,7 @@ public class EmploymentTerms {
         double hourlySalary,
         int vacationDays
     ) {
+        validateStartDate(startDate, LocalDate.now());
         this.startDate = startDate;
         this.employmentScope = employmentScope;
         this.globalSalary = globalSalary;
@@ -32,7 +33,20 @@ public class EmploymentTerms {
     }
 
     public void setStartDate(LocalDate startDate) {
+        validateStartDate(startDate, LocalDate.now());
         this.startDate = startDate;
+    }
+
+    public static void validateStartDate(LocalDate startDate, LocalDate today) {
+        if (startDate == null) {
+            throw new IllegalArgumentException("Start date cannot be empty");
+        }
+        if (today == null) {
+            throw new IllegalArgumentException("Current date is required");
+        }
+        if (startDate.isBefore(today)) {
+            throw new IllegalArgumentException("Start date cannot be in the past");
+        }
     }
 
     public EmploymentScope getEmploymentScope() {

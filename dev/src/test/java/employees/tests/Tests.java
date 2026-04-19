@@ -111,7 +111,7 @@ public class Tests {
 		assertEquals("Week 1 should have 1 preference", 1, request.getPreferences().size());
 
 		// Reset for week 2
-		request.resetForWeek(LocalDate.of(2026, 4, 27));
+		request.resetForWeek(LocalDate.of(2026, 7, 27));
 		assertTrue("Constraints should be cleared for week 2", request.getConstraints().isEmpty());
 		assertTrue("Preferences should be cleared for week 2", request.getPreferences().isEmpty());
 
@@ -162,7 +162,7 @@ public class Tests {
 
 		try {
 			employeeRepository.save(employee);
-			deadlineRepository.save(LocalDate.of(2026, 4, 25));
+			deadlineRepository.save(LocalDate.of(2026, 7, 25));
 			List<Constraint> constraints = new ArrayList<>();
 			constraints.add(new Constraint(DayOfWeek.MONDAY, ShiftType.MORNING));
 			List<Preference> preferences = Collections.singletonList(new Preference(DayOfWeek.FRIDAY, ShiftType.EVENING));
@@ -174,7 +174,7 @@ public class Tests {
 				preferences,
 				1,
 				selectedVacationDays,
-				LocalDate.of(2026, 4, 20)
+				LocalDate.of(2026, 7, 20)
 			);
 
 			WeeklyAvailabilityRequest request = employee.getWeeklyAvailabilityRequest();
@@ -433,7 +433,7 @@ public class Tests {
 	public void hard_employeeFixedDayOff_canBeChosenAtHiring() {
 		Salary salary = new Salary(5000, 50, 0, EmploymentScope.FULL_TIME);
 		EmploymentTerms terms = new EmploymentTerms(
-			LocalDate.of(2024, 1, 1),
+			LocalDate.of(2026, 4, 21),
 			EmploymentScope.FULL_TIME,
 			salary.getGlobalSalary(),
 			salary.getHourlySalary(),
@@ -862,7 +862,7 @@ public class Tests {
 
 	@Test
 	public void easy_employeeDetails_startDate() {
-		LocalDate startDate = LocalDate.of(2024, 1, 1);
+		LocalDate startDate = LocalDate.of(2026, 4, 21);
 		Employee employee = buildEmployee("100000067", false, 10);
 
 		assertEquals("Employee start date should match the value set at construction", startDate, employee.getStartDate());
@@ -1322,7 +1322,7 @@ public class Tests {
 	private static Employee buildEmployee(String id, boolean canManageShift, int vacationDays) {
 		Salary salary = new Salary(5000, 50, 0, EmploymentScope.FULL_TIME);
 		EmploymentTerms terms = new EmploymentTerms(
-			LocalDate.of(2024, 1, 1),
+			LocalDate.of(2026, 4, 21),
 			EmploymentScope.FULL_TIME,
 			salary.getGlobalSalary(),
 			salary.getHourlySalary(),
@@ -1350,7 +1350,7 @@ public class Tests {
 	private static Employee buildEmployeeWithRoles(String id, boolean canManageShift, int vacationDays, Set<Role> roles) {
 		Salary salary = new Salary(5000, 50, 0, EmploymentScope.FULL_TIME);
 		EmploymentTerms terms = new EmploymentTerms(
-			LocalDate.of(2024, 1, 1),
+			LocalDate.of(2026, 4, 21),
 			EmploymentScope.FULL_TIME,
 			salary.getGlobalSalary(),
 			salary.getHourlySalary(),

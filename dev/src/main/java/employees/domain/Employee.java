@@ -122,6 +122,7 @@ public class Employee extends User {
     }
 
     public void setStartDate(LocalDate startDate) {
+        EmploymentTerms.validateStartDate(startDate, LocalDate.now());
         this.startDate = startDate;
         if (employmentTerms != null) {
             employmentTerms.setStartDate(startDate);

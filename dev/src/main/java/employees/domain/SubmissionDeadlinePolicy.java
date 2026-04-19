@@ -15,11 +15,14 @@ public class SubmissionDeadlinePolicy {
         if (today == null) {
             throw new IllegalArgumentException("Current date is required");
         }
+        if (newDeadline.isBefore(today)) {
+            throw new IllegalArgumentException("Invalid deadline: it cannot be in the past.");
+        }
 
         LocalDate maxAllowedDeadline = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SATURDAY));
         if (newDeadline.isAfter(maxAllowedDeadline)) {
             throw new IllegalArgumentException(
-                "Invalid deadline: it exceeds this week's Saturday and belongs to next week."
+                "Invalid deadline: it exceeds this week's."
             );
         }
     }
