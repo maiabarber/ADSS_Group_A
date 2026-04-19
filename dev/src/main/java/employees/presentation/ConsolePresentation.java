@@ -379,18 +379,23 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
 }
 
     private void setSubmissionDeadlineFlow(Scanner scanner) {
-        LocalDate newDeadline = readLocalDate(
-            scanner,
-            "Deadline for submitting constraints and preferences for the upcoming week (DD-MM-YYYY): "
-        );
+        while (true) {
+            LocalDate newDeadline = readLocalDate(
+                scanner,
+                "Deadline for submitting constraints and preferences for the upcoming week (DD-MM-YYYY): "
+            );
 
-        try {
-            submissionDeadlineService.setWeeklySubmissionDeadline(newDeadline, submissionDeadlineRepository);
-            System.out.println("Weekly submission deadline was set to " + newDeadline + ".");
-        } catch (IllegalArgumentException e) {
-            System.out.println(e.getMessage());
-        } catch (RepositoryException e) {
-            System.out.println("Failed to save weekly submission deadline: " + e.getMessage());
+            try {
+                submissionDeadlineService.setWeeklySubmissionDeadline(newDeadline, submissionDeadlineRepository);
+                System.out.println("Weekly submission deadline was set to " + newDeadline + ".");
+                return;
+            } catch (IllegalArgumentException e) {
+                System.out.println(e.getMessage());
+                System.out.println("Please enter the deadline again.");
+            } catch (RepositoryException e) {
+                System.out.println("Failed to save weekly submission deadline: " + e.getMessage());
+                return;
+            }
         }
     }
 

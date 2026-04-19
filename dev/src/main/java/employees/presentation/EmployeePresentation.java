@@ -39,51 +39,55 @@ public class EmployeePresentation {
     public Employee readEmployeeInput(Scanner scanner) {
         System.out.println("\nAdd new employee");
 
-        idInput = readEmployeeId(scanner);
-        passwordInput = readPassword(scanner);
-        nameInput = readEmployeeName(scanner);
+        while (true) {
+            idInput = readEmployeeId(scanner);
+            passwordInput = readPassword(scanner);
+            nameInput = readEmployeeName(scanner);
 
-        employeeTypeInput = readEmploymentType(scanner);
-        jobRoleInput = readJobRole(scanner);
-        canManageShiftInput = readYesNo(scanner, "Can manage shift? (y/n): ");
+            employeeTypeInput = readEmploymentType(scanner);
+            jobRoleInput = readJobRole(scanner);
+            canManageShiftInput = readYesNo(scanner, "Can manage shift? (y/n): ");
 
-        bankNumberInput = readPositiveNumber(scanner, "Bank number: ");
-        branchNumberInput = readPositiveNumber(scanner, "Branch number: ");
-        accountNumberInput = readPositiveNumber(scanner, "Account number: ");
+            bankNumberInput = readPositiveNumber(scanner, "Bank number: ");
+            branchNumberInput = readPositiveNumber(scanner, "Branch number: ");
+            accountNumberInput = readPositiveNumber(scanner, "Account number: ");
 
-        globalSalaryInput = readPositiveDouble(scanner, "Base salary: ");
-        hourlySalaryInput = readPositiveDouble(scanner, "Overtime hourly rate: ");
-        employmentScopeInput = readEmploymentScope(scanner);
-        workedHoursInput = 0;
-        startDateInput = readLocalDate(scanner, "Start date (YYYY-MM-DD): ");
+            globalSalaryInput = readPositiveDouble(scanner, "Base salary: ");
+            hourlySalaryInput = readPositiveDouble(scanner, "Overtime hourly rate: ");
+            employmentScopeInput = readEmploymentScope(scanner);
+            workedHoursInput = 0;
+            startDateInput = readStartDate(scanner, "Start date (YYYY-MM-DD): ");
 
-        // Validators in domain constructors will throw IllegalArgumentException if data is invalid
-        BankAccount bankAccount = new BankAccount(bankNumberInput, branchNumberInput, accountNumberInput);
-        Salary salary = new Salary(globalSalaryInput, hourlySalaryInput, workedHoursInput, employmentScopeInput);
-        EmploymentTerms employmentTerms = new EmploymentTerms(
-            startDateInput,
-            employmentScopeInput,
-            globalSalaryInput,
-            hourlySalaryInput,
-            DEFAULT_VACATION_DAYS
-        );
+            try {
+                BankAccount bankAccount = new BankAccount(bankNumberInput, branchNumberInput, accountNumberInput);
+                Salary salary = new Salary(globalSalaryInput, hourlySalaryInput, workedHoursInput, employmentScopeInput);
+                EmploymentTerms employmentTerms = new EmploymentTerms(
+                    startDateInput,
+                    employmentScopeInput,
+                    globalSalaryInput,
+                    hourlySalaryInput,
+                    DEFAULT_VACATION_DAYS
+                );
 
-        // User constructor will validate ID and password
-        Employee employee = new Employee(
-            idInput,
-            passwordInput,
-            bankAccount,
-            nameInput,
-            salary,
-            employeeTypeInput,
-            employmentTerms,
-            Collections.singleton(jobRoleInput),
-            canManageShiftInput,
-            false,
-            null,
-            new WeeklyAvailabilityRequest()
-        );
-        return employee;
+                return new Employee(
+                    idInput,
+                    passwordInput,
+                    bankAccount,
+                    nameInput,
+                    salary,
+                    employeeTypeInput,
+                    employmentTerms,
+                    Collections.singleton(jobRoleInput),
+                    canManageShiftInput,
+                    false,
+                    null,
+                    new WeeklyAvailabilityRequest()
+                );
+            } catch (IllegalArgumentException e) {
+                System.out.println("Error: " + e.getMessage());
+                System.out.println("Please enter the employee details again.");
+            }
+        }
     }
 
     private String readEmployeeId(Scanner scanner) {
@@ -231,14 +235,16 @@ public class EmployeePresentation {
         }
     }
 
-    private LocalDate readLocalDate(Scanner scanner, String prompt) {
+    private LocalDate readStartDate(Scanner scanner, String prompt) {
         while (true) {
             System.out.print(prompt);
             String value = scanner.nextLine().trim();
             try {
-                return LocalDate.parse(value);
+                LocalDate parsed = LocalDate.parse(value);
+                EmploymentTerms.validateStartDate(parsed, LocalDate.now());
+                return parsed;
             } catch (Exception e) {
-                System.out.println("Error: Date must be in YYYY-MM-DD format.");
+                System.out.println("Error: " + e.getMessage());
             }
         }
     }
