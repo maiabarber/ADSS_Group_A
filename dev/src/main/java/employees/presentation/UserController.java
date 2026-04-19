@@ -7,7 +7,6 @@ import employees.repository.EmployeeRepository;
 import employees.repository.RepositoryException;
 import employees.service.AuthenticationService;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
