@@ -82,6 +82,12 @@ public class WeeklyAvailabilityRequest {
         this.weekStartDate = weekStartDate;
     }
 
+    public void applySubmission(List<Constraint> constraints, List<Preference> preferences, LocalDate submissionDeadline) {
+        setConstraints(constraints);
+        setPreferences(preferences);
+        setSubmissionDeadline(submissionDeadline);
+    }
+
     @Override
     public String toString() {
         return "WeeklyAvailabilityRequest{" +

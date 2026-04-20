@@ -4,7 +4,6 @@ import employees.domain.Constraint;
 import employees.domain.Employee;
 import employees.domain.Preference;
 import employees.domain.SubmissionDeadlinePolicy;
-import employees.domain.WeeklyAvailabilityRequest;
 import employees.domain.WeeklyAvailabilityRules;
 import employees.repository.EmployeeRepository;
 import employees.repository.RepositoryException;
@@ -41,32 +40,19 @@ public class WeeklyAvailabilityService {
         List<DayOfWeek> selectedVacationDays,
         LocalDate today
     ) throws RepositoryException {
-        if (employee == null) {
-            throw new IllegalArgumentException("Employee is required");
-        }
-
         LocalDate configuredDeadline = submissionDeadlineRepository.findCurrent().orElse(null);
         LocalDate activeDeadline = deadlinePolicy.resolveOpenSubmissionDeadline(configuredDeadline, today);
 
-        weeklyAvailabilityRules.validateVacationUsage(employee, vacationDaysToUse, selectedVacationDays);
-        List<Constraint> mergedConstraints = weeklyAvailabilityRules.mergeConstraintsWithVacationDays(
+        int remainingBalance = employee.submitWeeklyAvailability(
             constraints,
-            selectedVacationDays
+            preferences,
+            vacationDaysToUse,
+            selectedVacationDays,
+            activeDeadline,
+            weeklyAvailabilityRules
         );
 
-        employee.consumeVacationDays(vacationDaysToUse);
-
-        WeeklyAvailabilityRequest request = employee.getWeeklyAvailabilityRequest();
-        if (request == null) {
-            request = new WeeklyAvailabilityRequest();
-            employee.setWeeklyAvailabilityRequest(request);
-        }
-
-        request.setConstraints(mergedConstraints);
-        request.setPreferences(preferences);
-        request.setSubmissionDeadline(activeDeadline);
-
         employeeRepository.save(employee);
-        return employee.getVacationDaysBalance();
+        return remainingBalance;
     }
 }

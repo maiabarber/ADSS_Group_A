@@ -46,6 +46,12 @@ public class User {
         validatePassword(password);
     }
 
+    public static void ensureRegisterable(User user) {
+        if (user == null || user.getId() == null) {
+            throw new IllegalArgumentException("User and user id must not be null");
+        }
+    }
+
     public String getPassword() {
         return password;
     }
@@ -56,5 +62,9 @@ public class User {
 
     public boolean matchesCredentials(String id, String password) {
         return Objects.equals(this.id, id) && Objects.equals(this.password, password);
+    }
+
+    public boolean canAuthenticate(String id, String password) {
+        return matchesCredentials(id, password);
     }
 }

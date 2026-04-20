@@ -4,6 +4,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -208,6 +209,15 @@ public class Employee extends User {
         this.weeklyAvailabilityRequest = weeklyAvailabilityRequest;
     }
 
+    @Override
+    public boolean canAuthenticate(String id, String password) {
+        return matchesCredentials(id, password) && !isFired();
+    }
+
+    public boolean matchesFiredCredentials(String id, String password) {
+        return matchesCredentials(id, password) && isFired();
+    }
+
     public int getVacationDaysBalance() {
         if (employmentTerms == null) {
             return 0;
@@ -258,5 +268,38 @@ public class Employee extends User {
 
     public Set<Role> getRoles() {
         return Collections.unmodifiableSet(authorizedRoles);
+    }
+
+    public int submitWeeklyAvailability(
+        List<Constraint> constraints,
+        List<Preference> preferences,
+        int vacationDaysToUse,
+        List<DayOfWeek> selectedVacationDays,
+        LocalDate activeDeadline,
+        WeeklyAvailabilityRules weeklyAvailabilityRules
+    ) {
+        if (weeklyAvailabilityRules == null) {
+            throw new IllegalArgumentException("Weekly availability rules are required");
+        }
+
+        weeklyAvailabilityRules.validateVacationUsage(this, vacationDaysToUse, selectedVacationDays);
+        List<Constraint> mergedConstraints = weeklyAvailabilityRules.mergeConstraintsWithVacationDays(
+            constraints,
+            selectedVacationDays
+        );
+
+        consumeVacationDays(vacationDaysToUse);
+
+        WeeklyAvailabilityRequest request = getOrCreateWeeklyAvailabilityRequest();
+        request.applySubmission(mergedConstraints, preferences, activeDeadline);
+
+        return getVacationDaysBalance();
+    }
+
+    private WeeklyAvailabilityRequest getOrCreateWeeklyAvailabilityRequest() {
+        if (weeklyAvailabilityRequest == null) {
+            weeklyAvailabilityRequest = new WeeklyAvailabilityRequest();
+        }
+        return weeklyAvailabilityRequest;
     }
 }

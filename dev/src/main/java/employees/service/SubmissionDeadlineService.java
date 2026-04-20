@@ -14,10 +14,6 @@ public class SubmissionDeadlineService {
 
     public void setWeeklySubmissionDeadline(LocalDate newDeadline, SubmissionDeadlineRepository repository)
         throws RepositoryException {
-        if (repository == null) {
-            throw new IllegalArgumentException("Submission deadline repository is required");
-        }
-
         deadlinePolicy.validateManagerDeadline(newDeadline, LocalDate.now());
 
         repository.save(newDeadline);

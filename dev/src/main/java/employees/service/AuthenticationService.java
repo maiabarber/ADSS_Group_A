@@ -20,17 +20,14 @@ public class AuthenticationService {
     }
 
     public void registerUser(User user) throws RepositoryException {
-        if (user == null || user.getId() == null) {
-            throw new IllegalArgumentException("User and user id must not be null");
-        }
+        User.ensureRegisterable(user);
         userRepository.save(user);
     }
 
     public Optional<User> login(String id, String password) {
         try {
             Optional<User> matchedUser = userRepository.findById(id)
-                .filter(user -> user.matchesCredentials(id, password))
-                .filter(user -> !(user instanceof Employee) || !((Employee) user).isFired());
+                .filter(user -> user.canAuthenticate(id, password));
 
             matchedUser.ifPresent(user -> currentUser = user);
             return matchedUser;
@@ -42,9 +39,8 @@ public class AuthenticationService {
     public boolean isFiredCredentials(String id, String password) {
         try {
             return userRepository.findById(id)
-                .filter(user -> user.matchesCredentials(id, password))
                 .filter(user -> user instanceof Employee)
-                .map(user -> ((Employee) user).isFired())
+                .map(user -> ((Employee) user).matchesFiredCredentials(id, password))
                 .orElse(false);
         } catch (RepositoryException e) {
             return false;
