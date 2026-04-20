@@ -1,5 +1,3 @@
-package dev;
-
 import employees.presentation.ConsolePresentation;
 
 public class Main {
