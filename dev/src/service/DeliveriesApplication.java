@@ -36,9 +36,7 @@ public class DeliveriesApplication {
         return deliveryManager;
     }
 
-    // =========================
-    // Initialization
-    // =========================
+    // ============================== Initialization ==============================
 
     public void initializeEmpty() {
         deliveryManager.clearAllData();
@@ -48,9 +46,7 @@ public class DeliveriesApplication {
         deliveryManager.loadSampleData();
     }
 
-    // =========================
-    // Read-only accessors
-    // =========================
+    // ============================== Read-only accessors ==============================
 
     public List<Delivery> getAllDeliveries() {
         return deliveryManager.getDeliveries();
@@ -102,9 +98,7 @@ public class DeliveriesApplication {
         return shippingZones.get(index);
     }
 
-    // =========================
-    // Finders
-    // =========================
+    // ============================== Finders ==============================
 
     public Site findSiteByName(String siteName) {
         return deliveryManager.findSiteByName(siteName);
@@ -122,9 +116,7 @@ public class DeliveriesApplication {
         return deliveryManager.findShippingZoneByCode(zoneCode);
     }
 
-    // =========================
-    // Registration / setup
-    // =========================
+    // ============================== Registration / setup ==============================
 
     public void addShippingZone(ShippingZone shippingZone) {
         deliveryManager.addShippingZone(shippingZone);
@@ -142,9 +134,7 @@ public class DeliveriesApplication {
         deliveryManager.addDriver(driver);
     }
 
-    // =========================
-    // Business helper methods
-    // =========================
+    // ============================== Business helper methods ==============================
 
     public boolean canAssignDriverToTruck(Driver driver, Truck truck) {
         return deliveryManager.canAssignDriverToTruck(driver, truck);
@@ -176,9 +166,7 @@ public class DeliveriesApplication {
         return new DeliveryStop(stopOrder, StopType.DROPOFF, site, createDocument(new ArrayList<>()));
     }
 
-    // =========================
-    // Delivery lifecycle
-    // =========================
+    // ============================== Delivery lifecycle ==============================
 
     public Delivery planDelivery(LocalDate deliveryDate,
                                  Site source,
@@ -237,9 +225,7 @@ public class DeliveriesApplication {
         deliveryManager.dispatchDelivery(delivery);
     }
 
-    // =========================
-    // Convenience methods for UI
-    // =========================
+    // ============================== Convenience methods for UI ==============================
 
     public String getDeliverySummary(Delivery delivery) {
         if (delivery == null) {

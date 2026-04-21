@@ -552,11 +552,6 @@ public class DeliveriesUI {
         return false;
     }
 
-
-
-
-
-
     private List<Site> getSitesByZone(ShippingZone shippingZone) {
         List<Site> result = new ArrayList<>();
 

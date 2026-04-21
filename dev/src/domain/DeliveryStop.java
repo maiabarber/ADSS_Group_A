@@ -7,9 +7,6 @@ public class DeliveryStop {
     private Site site;
     private DeliveryDocument document;
 
-    /**
-     * Legacy constructor kept for backward compatibility.
-     */
     public DeliveryStop(int stopOrder, StopType stopType, Site site) {
         this(stopOrder, stopType, site, null);
     }

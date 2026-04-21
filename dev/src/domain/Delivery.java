@@ -18,9 +18,6 @@ public class Delivery {
     private DeliveryStatus status;
     private DeliveryForm deliveryForm;
 
-    /**
-     * New constructor that matches the updated domain model.
-     */
     public Delivery(LocalDate deliveryDate,
                     Site source,
                     List<DeliveryStop> stops,
@@ -51,12 +48,6 @@ public class Delivery {
         }
     }
 
-    /**
-     * Legacy constructor kept for backward compatibility with the existing code/tests.
-     * It maps the old single-document model into the new structure by attaching the document
-     * to the first stop, assigning the first stop's site as the source, and using default values
-     * for the new fields.
-     */
     public Delivery(LocalDate deliveryDate,
                     List<DeliveryStop> stops,
                     LocalTime departureTime,
@@ -124,9 +115,6 @@ public class Delivery {
         return finalMeasuredWeightBeforeDeparture;
     }
 
-    /**
-     * Legacy getter kept for backward compatibility with the current code/tests.
-     */
     public double getActualWeightAtDeparture() {
         return getFinalMeasuredWeightBeforeDeparture();
     }
@@ -151,10 +139,6 @@ public class Delivery {
         return deliveryForm;
     }
 
-    /**
-     * Legacy getter kept for backward compatibility with the old model.
-     * Returns the document of the first stop if one exists.
-     */
     public DeliveryDocument getDocument() {
         if (stops.isEmpty()) {
             return null;
@@ -203,9 +187,6 @@ public class Delivery {
         deliveryForm.addWeightMeasurement(finalMeasuredWeightBeforeDeparture);
     }
 
-    /**
-     * Legacy setter kept for backward compatibility with the current code/tests.
-     */
     public void setActualWeightAtDeparture(double actualWeightAtDeparture) {
         setFinalMeasuredWeightBeforeDeparture(actualWeightAtDeparture);
     }

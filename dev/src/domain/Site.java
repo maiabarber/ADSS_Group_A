@@ -11,10 +11,6 @@ public class Site {
     private String contactName;
     private ShippingZone shippingZone;
 
-    /**
-     * Legacy constructor kept for backward compatibility with the current code.
-     * It automatically assigns a default shipping zone until the rest of the code is migrated.
-     */
     public Site(String siteName, String address, String phoneNumber, String contactName) {
         this(siteName, address, phoneNumber, contactName, DEFAULT_SHIPPING_ZONE);
     }

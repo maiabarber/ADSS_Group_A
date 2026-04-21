@@ -31,9 +31,6 @@ public class DeliveryDocument {
         return new ArrayList<>(items);
     }
 
-    /**
-     * Legacy getter kept for backward compatibility with older code/tests.
-     */
     public List<DeliveryItem> getItemsDelivered() {
         return getItems();
     }
