@@ -1,8 +1,9 @@
 package domain;
 
 public enum LicenseType {
+
     B,
-    C1,
     C,
+    C1,
     OTHER
 }

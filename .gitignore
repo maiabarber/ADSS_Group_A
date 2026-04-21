@@ -1,4 +1,5 @@
 **/.vscode/
+**/target/
+**/*.class
+**/.idea/
 target/
-*.class
-.idea/
