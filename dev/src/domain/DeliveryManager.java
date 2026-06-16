@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import employees.presentation.ShiftController;
 import employees.domain.Shift;
@@ -67,16 +68,11 @@ public class DeliveryManager {
         if (truck == null) {
             throw new IllegalArgumentException("truck cannot be null");
         }
-
-        List<Shift> shifts = shiftController.getShifts();
-
-        Shift matchingShift = null;
-        for (Shift shift : shifts) {
-            if (shift.getDate().equals(date) && shift.getShiftType() == getShiftTypeByTime(time)) {
-                matchingShift = shift;
-                break;
-            }
+        if (shiftController == null) {
+            throw new IllegalStateException("shiftController was not initialized");
         }
+
+        Shift matchingShift = findMatchingShift(date, time);
 
         if (matchingShift == null) {
             return new ArrayList<>();
@@ -96,9 +92,7 @@ public class DeliveryManager {
                     boolean approved = assignment.isApproved();
                     String employeeId = employee.getId();
 
-                    if (employeeId.equals(driverEmployeeId)
-                            && role == Role.DRIVER
-                            && approved) {
+                    if (employeeId.equals(driverEmployeeId) && role == Role.DRIVER && approved) {
                         availableDrivers.add(driver);
                         break;
                     }
@@ -109,11 +103,49 @@ public class DeliveryManager {
         return availableDrivers;
     }
 
-    private ShiftType getShiftTypeByTime(LocalTime time) {
-        if (time.isBefore(LocalTime.of(14, 0))) {
-            return ShiftType.MORNING;
+    private Shift findMatchingShift(LocalDate date, LocalTime time) {
+        if (shiftController == null) {
+            throw new IllegalStateException("shiftController was not initialized");
         }
-        return ShiftType.EVENING;
+        for (Shift shift : shiftController.getShifts()) {
+            if (shift.getDate().equals(date) && shiftCoversTime(shift, time)) {
+                return shift;
+            }
+        }
+
+        return null;
+    }
+
+    private boolean shiftCoversTime(Shift shift, LocalTime time) {
+        ShiftType type = shift.getShiftType();
+
+        switch (type) {
+            case MORNING:
+                return !time.isBefore(LocalTime.of(6, 0))
+                        && time.isBefore(LocalTime.of(14, 0));
+
+            case MORNING_OVERTIME:
+                return !time.isBefore(LocalTime.of(6, 0))
+                        && time.isBefore(LocalTime.of(16, 0));
+
+            case DOUBLE_SHIFT:
+                return !time.isBefore(LocalTime.of(6, 0))
+                        && time.isBefore(LocalTime.of(20, 0));
+
+            case EVENING:
+                return !time.isBefore(LocalTime.of(14, 0))
+                        && time.isBefore(LocalTime.of(22, 0));
+
+            default:
+                return false;
+        }
+    }
+
+    public void setShiftController(ShiftController shiftController) {
+        if (shiftController == null) {
+            throw new IllegalArgumentException("shiftController cannot be null");
+        }
+        this.shiftController = shiftController;
     }
 
     public void addDelivery(Delivery delivery) {
@@ -297,6 +329,14 @@ public class DeliveryManager {
             throw new IllegalArgumentException("driver is not licensed for the selected truck");
         }
 
+        if (!isDriverAssignedToShift(driver, deliveryDate, departureTime)) {
+            throw new IllegalArgumentException("driver is not assigned to the relevant shift");
+        }
+
+        if (!hasStorekeeperAssignedToShift(deliveryDate, departureTime)) {
+            throw new IllegalArgumentException("no storekeeper is assigned to the delivery shift");
+        }
+
         if (!canPlanDeliveryInZone(source, stops, shippingZone)) {
             throw new IllegalArgumentException("source and all stops must belong to the selected shipping zone");
         }
@@ -327,6 +367,12 @@ public class DeliveryManager {
         return delivery;
     }
 
+    public void cancelDelivery(Delivery delivery) {
+        validateRegisteredDelivery(delivery);
+        ensureDeliveryIsStillModifiable(delivery);
+        delivery.setStatus(DeliveryStatus.CANCELLED);
+    }
+
     public void recordWeightMeasurement(Delivery delivery, double weight) {
         validateRegisteredDelivery(delivery);
         ensureDeliveryIsStillModifiable(delivery);
@@ -337,6 +383,45 @@ public class DeliveryManager {
     public boolean isOverweight(Delivery delivery) {
         validateRegisteredDelivery(delivery);
         return delivery.isOverweight();
+    }
+
+    private boolean isDriverAssignedToShift(Driver driver, LocalDate date, LocalTime time) {
+        Shift matchingShift = findMatchingShift(date, time);
+
+        if (matchingShift == null) {
+            return false;
+        }
+
+        String driverEmployeeId = driver.getEmployeeId();
+
+        for (ShiftAssignment assignment : matchingShift.getAssignments()) {
+            Employee employee = assignment.getEmployee();
+
+            if (employee.getId().equals(driverEmployeeId)
+                    && assignment.getRole() == Role.DRIVER
+                    && assignment.isApproved()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean hasStorekeeperAssignedToShift(LocalDate date, LocalTime time) {
+        Shift matchingShift = findMatchingShift(date, time);
+
+        if (matchingShift == null) {
+            return false;
+        }
+
+        for (ShiftAssignment assignment : matchingShift.getAssignments()) {
+            if (assignment.getRole() == Role.STOREKEEPER
+                    && assignment.isApproved()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public void markDeliveryForReplan(Delivery delivery) {
