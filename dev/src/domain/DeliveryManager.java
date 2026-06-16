@@ -7,6 +7,13 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
+import employees.presentation.ShiftController;
+import employees.domain.Shift;
+import employees.domain.ShiftAssignment;
+import employees.domain.Employee;
+import employees.domain.Role;
+import employees.domain.ShiftType;
+
 public class DeliveryManager {
 
     private List<Delivery> deliveries;
@@ -15,6 +22,7 @@ public class DeliveryManager {
     private List<Driver> drivers;
     private List<ShippingZone> shippingZones;
     private int nextDocumentNumber;
+    private ShiftController shiftController; // Module Employyee
 
     public DeliveryManager() {
         this.deliveries = new ArrayList<>();
@@ -47,6 +55,65 @@ public class DeliveryManager {
 
     public int getNextDocumentNumber() {
         return nextDocumentNumber;
+    }
+
+    public List<Driver> getAvailableDriversForDelivery(LocalDate date, LocalTime time, Truck truck) {
+        if (date == null) {
+            throw new IllegalArgumentException("date cannot be null");
+        }
+        if (time == null) {
+            throw new IllegalArgumentException("time cannot be null");
+        }
+        if (truck == null) {
+            throw new IllegalArgumentException("truck cannot be null");
+        }
+
+        List<Shift> shifts = shiftController.getShifts();
+
+        Shift matchingShift = null;
+        for (Shift shift : shifts) {
+            if (shift.getDate().equals(date) && shift.getShiftType() == getShiftTypeByTime(time)) {
+                matchingShift = shift;
+                break;
+            }
+        }
+
+        if (matchingShift == null) {
+            return new ArrayList<>();
+        }
+
+        List<ShiftAssignment> assignments = matchingShift.getAssignments();
+        List<Driver> availableDrivers = new ArrayList<>();
+
+        for (Driver driver : drivers) {
+            Set<LicenseType> licenseTypes = driver.getLicenseTypes();
+            String driverEmployeeId = driver.getEmployeeId();
+
+            if (licenseTypes.contains(truck.getRequiredLicenseType())) {
+                for (ShiftAssignment assignment : assignments) {
+                    Employee employee = assignment.getEmployee();
+                    Role role = assignment.getRole();
+                    boolean approved = assignment.isApproved();
+                    String employeeId = employee.getId();
+
+                    if (employeeId.equals(driverEmployeeId)
+                            && role == Role.DRIVER
+                            && approved) {
+                        availableDrivers.add(driver);
+                        break;
+                    }
+                }
+            }
+        }
+
+        return availableDrivers;
+    }
+
+    private ShiftType getShiftTypeByTime(LocalTime time) {
+        if (time.isBefore(LocalTime.of(14, 0))) {
+            return ShiftType.MORNING;
+        }
+        return ShiftType.EVENING;
     }
 
     public void addDelivery(Delivery delivery) {

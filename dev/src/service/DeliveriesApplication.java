@@ -98,6 +98,10 @@ public class DeliveriesApplication {
         return shippingZones.get(index);
     }
 
+    public List<Driver> getAvailableDriversForDelivery(LocalDate date, LocalTime time, Truck truck) {
+        return deliveryManager.getAvailableDriversForDelivery(date, time, truck);
+    }
+
     // ============================== Finders ==============================
 
     public Site findSiteByName(String siteName) {
