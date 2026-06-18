@@ -1,0 +1,122 @@
+package employees.domain;
+
+public class ShiftAssignment {
+    private Employee employee;
+    private Shift shift;
+    private Role role;
+    private boolean approved;
+    private boolean requiresApproval;
+    private boolean cancellationRequested;
+    private boolean conflictsWithFixedDayOff;
+
+    public ShiftAssignment() {
+        this.approved = false;
+        this.requiresApproval = false;
+        this.cancellationRequested = false;
+        this.conflictsWithFixedDayOff = false;
+    }
+
+    public ShiftAssignment(Employee employee, Shift shift, Role role) {
+        this.employee = employee;
+        this.shift = shift;
+        this.role = role;
+        this.approved = false;
+        this.requiresApproval = false;
+        this.cancellationRequested = false;
+        this.conflictsWithFixedDayOff = false;
+    }
+
+    public ShiftAssignment(Employee employee, Shift shift, Role role, boolean requiresApproval) {
+        this(employee, shift, role, requiresApproval, false);
+    }
+
+    public ShiftAssignment(
+        Employee employee,
+        Shift shift,
+        Role role,
+        boolean requiresApproval,
+        boolean conflictsWithFixedDayOff
+    ) {
+        this.employee = employee;
+        this.shift = shift;
+        this.role = role;
+        this.approved = false;
+        this.requiresApproval = requiresApproval;
+        this.cancellationRequested = false;
+        this.conflictsWithFixedDayOff = conflictsWithFixedDayOff;
+    }
+
+    public Employee getEmployee() {
+        return employee;
+    }
+
+    public void setEmployee(Employee employee) {
+        this.employee = employee;
+    }
+
+    public Shift getShift() {
+        return shift;
+    }
+
+    public void setShift(Shift shift) {
+        this.shift = shift;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
+    public boolean isApproved() {
+        return approved;
+    }
+
+    public void setApproved(boolean approved) {
+        this.approved = approved;
+    }
+
+    public boolean isRequiresApproval() {
+        return requiresApproval;
+    }
+
+    public void setRequiresApproval(boolean requiresApproval) {
+        this.requiresApproval = requiresApproval;
+    }
+
+    /** Returns true if the assignment is waiting for the employee to respond */
+    public boolean isPending() {
+        return requiresApproval && !approved;
+    }
+
+    public boolean isCancellationRequested() {
+        return cancellationRequested;
+    }
+
+    public void setCancellationRequested(boolean cancellationRequested) {
+        this.cancellationRequested = cancellationRequested;
+    }
+
+    public boolean isConflictsWithFixedDayOff() {
+        return conflictsWithFixedDayOff;
+    }
+
+    public void setConflictsWithFixedDayOff(boolean conflictsWithFixedDayOff) {
+        this.conflictsWithFixedDayOff = conflictsWithFixedDayOff;
+    }
+
+    @Override
+    public String toString() {
+        return "ShiftAssignment{" +
+            "employee=" + employee +
+            ", shift=" + shift +
+            ", role=" + role +
+            ", requiresApproval=" + requiresApproval +
+            ", approved=" + approved +
+            ", cancellationRequested=" + cancellationRequested +
+            ", conflictsWithFixedDayOff=" + conflictsWithFixedDayOff +
+            '}';
+    }
+}
