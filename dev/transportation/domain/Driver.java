@@ -5,10 +5,12 @@ import java.util.Set;
 
 public class Driver {
 
+    private String employeeId;
     private String driverName;
     private Set<LicenseType> licenseTypes;
 
-    public Driver(String driverName, Set<LicenseType> licenseTypes) {
+    public Driver(String employeeId, String driverName, Set<LicenseType> licenseTypes) {
+        validateEmployeeId(employeeId);
         validateDriverName(driverName);
 
         if (licenseTypes == null) {
@@ -18,6 +20,7 @@ public class Driver {
             throw new IllegalArgumentException("licenseTypes cannot be empty");
         }
 
+        this.employeeId = employeeId;
         this.driverName = driverName;
         this.licenseTypes = new HashSet<>(licenseTypes);
     }
@@ -28,6 +31,10 @@ public class Driver {
 
     public Set<LicenseType> getLicenseTypes() {
         return new HashSet<>(licenseTypes);
+    }
+
+    public String getEmployeeId() {
+        return employeeId;
     }
 
     public boolean hasLicenseType(LicenseType licenseType) {
@@ -64,6 +71,12 @@ public class Driver {
         licenseTypes.remove(licenseType);
     }
 
+    private void validateEmployeeId(String employeeId) {
+        if (employeeId == null || !employeeId.matches("\\d{9}")) {
+            throw new IllegalArgumentException("employeeId must be exactly 9 digits");
+        }
+    }
+
     private void validateDriverName(String driverName) {
         if (driverName == null || driverName.isBlank()) {
             throw new IllegalArgumentException("driverName cannot be empty");
@@ -73,7 +86,8 @@ public class Driver {
     @Override
     public String toString() {
         return "Driver{" +
-                "driverName='" + driverName + '\'' +
+                "employeeId='" + employeeId + '\'' +
+                ", driverName='" + driverName + '\'' +
                 ", licenseTypes=" + licenseTypes +
                 '}';
     }

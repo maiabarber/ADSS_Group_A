@@ -5,6 +5,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import employees.presentation.ShiftController;
 import domain.Delivery;
 import domain.DeliveryDocument;
 import domain.DeliveryItem;
@@ -98,6 +99,14 @@ public class DeliveriesApplication {
         return shippingZones.get(index);
     }
 
+    public List<Driver> getAvailableDriversForDelivery(LocalDate date, LocalTime time, Truck truck) {
+        return deliveryManager.getAvailableDriversForDelivery(date, time, truck);
+    }
+
+    public void setShiftController(ShiftController shiftController) {
+        deliveryManager.setShiftController(shiftController);
+    }
+
     // ============================== Finders ==============================
 
     public Site findSiteByName(String siteName) {
@@ -168,7 +177,7 @@ public class DeliveriesApplication {
 
     // ============================== Delivery lifecycle ==============================
 
-    public Delivery planDelivery(LocalDate deliveryDate,
+    public Delivery createDelivery(LocalDate deliveryDate,
                                  Site source,
                                  List<DeliveryStop> stops,
                                  LocalTime departureTime,
@@ -187,6 +196,10 @@ public class DeliveriesApplication {
                 driver,
                 shippingZone
         );
+    }
+
+    public void cancelDelivery(Delivery delivery) {
+        deliveryManager.cancelDelivery(delivery);
     }
 
     public void recordWeightMeasurement(Delivery delivery, double weight) {
