@@ -1,4 +1,4 @@
-package domain;
+package employee.domain;
 
 /**
  * EmploymentScope enum represents the scope of employment for an employee.

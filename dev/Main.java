@@ -1,5 +1,5 @@
-import presentation.ConsolePresentation;
-import presentation.DeliveriesUI;
+import employee.presentation.ConsolePresentation;
+import transportation.presentation.DeliveriesUI;
 import java.util.Scanner;
 
 public class Main {

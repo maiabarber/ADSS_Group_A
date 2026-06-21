@@ -1,11 +1,11 @@
-package presentation;
+﻿package employee.presentation;
 
-import domain.Employee;
-import domain.HR_Manager;
-import domain.User;
-import repository.EmployeeRepository;
-import repository.RepositoryException;
-import service.AuthenticationService;
+import employee.domain.Employee;
+import employee.domain.HR_Manager;
+import employee.domain.User;
+import employee.repository.EmployeeRepository;
+import employee.repository.RepositoryException;
+import employee.service.AuthenticationService;
 
 import java.util.Collections;
 import java.util.List;

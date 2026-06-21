@@ -1,4 +1,4 @@
-package domain;
+package employee.domain;
 
 public class ShiftAssignment {
     private Employee employee;

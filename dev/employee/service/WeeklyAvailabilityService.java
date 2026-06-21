@@ -1,13 +1,13 @@
-package service;
+﻿package employee.service;
 
-import domain.Constraint;
-import domain.Employee;
-import domain.Preference;
-import domain.SubmissionDeadlinePolicy;
-import domain.WeeklyAvailabilityRules;
-import repository.EmployeeRepository;
-import repository.RepositoryException;
-import repository.SubmissionDeadlineRepository;
+import employee.domain.Constraint;
+import employee.domain.Employee;
+import employee.domain.Preference;
+import employee.domain.SubmissionDeadlinePolicy;
+import employee.domain.WeeklyAvailabilityRules;
+import employee.repository.EmployeeRepository;
+import employee.repository.RepositoryException;
+import employee.repository.SubmissionDeadlineRepository;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;

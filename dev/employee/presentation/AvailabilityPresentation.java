@@ -1,8 +1,8 @@
-package presentation;
+package employee.presentation;
 
-import domain.Constraint;
-import domain.Preference;
-import domain.WeeklyAvailabilityRequest;
+import employee.domain.Constraint;
+import employee.domain.Preference;
+import employee.domain.WeeklyAvailabilityRequest;
 
 import java.time.LocalDate;
 import java.util.ArrayList;

@@ -1,11 +1,11 @@
-package domain;
+package employee.domain;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
