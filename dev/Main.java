@@ -1,7 +1,24 @@
 import employees.presentation.ConsolePresentation;
+import presentation.DeliveriesUI;
+import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        new ConsolePresentation().run();
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Select subsystem:");
+        System.out.println("1. Employees");
+        System.out.println("2. Deliveries");
+        System.out.print("Enter choice: ");
+        String choice = scanner.nextLine().trim();
+        switch (choice) {
+            case "1":
+                new ConsolePresentation().run();
+                break;
+            case "2":
+                new DeliveriesUI().start();
+                break;
+            default:
+                System.out.println("Invalid choice.");
+        }
     }
 }
