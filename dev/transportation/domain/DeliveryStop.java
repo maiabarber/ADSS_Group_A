@@ -61,6 +61,17 @@ public class DeliveryStop {
         this.plannedArrivalDateTime = plannedArrivalDateTime;
     }
 
+    public LocalDateTime getPlannedArrivalDateTime() {
+        return plannedArrivalDateTime;
+    }
+
+    public void setPlannedArrivalDateTime(LocalDateTime plannedArrivalDateTime) {
+        if (plannedArrivalDateTime == null) {
+            throw new IllegalArgumentException("plannedArrivalDateTime cannot be null");
+        }
+        this.plannedArrivalDateTime = plannedArrivalDateTime;
+    }
+
     public void setStopOrder(int stopOrder) {
         validateStopOrder(stopOrder);
         this.stopOrder = stopOrder;
