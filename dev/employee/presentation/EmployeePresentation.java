@@ -1,6 +1,7 @@
 ﻿package employee.presentation;
 
 import employee.domain.BankAccount;
+import employee.domain.Branch;
 import employee.domain.Employee;
 import employee.domain.EmploymentScope;
 import employee.domain.EmploymentTerms;
@@ -35,6 +36,7 @@ public class EmployeePresentation {
     private double hourlySalaryInput;
     private double workedHoursInput;
     private EmploymentScope employmentScopeInput;
+    private Branch branchInput;
 
     public Employee readEmployeeInput(Scanner scanner) {
         System.out.println("\nAdd new employee");
@@ -57,6 +59,7 @@ public class EmployeePresentation {
             employmentScopeInput = readEmploymentScope(scanner);
             workedHoursInput = 0;
             startDateInput = readStartDate(scanner, "Start date (YYYY-MM-DD): ");
+            branchInput = readBranchInput(scanner);
 
             try {
                 BankAccount bankAccount = new BankAccount(bankNumberInput, branchNumberInput, accountNumberInput);
@@ -81,7 +84,8 @@ public class EmployeePresentation {
                     canManageShiftInput,
                     false,
                     null,
-                    new WeeklyAvailabilityRequest()
+                    new WeeklyAvailabilityRequest(),
+                    branchInput
                 );
             } catch (IllegalArgumentException e) {
                 System.out.println("Error: " + e.getMessage());
@@ -245,6 +249,23 @@ public class EmployeePresentation {
                 EmploymentTerms.validateStartDate(parsed, LocalDate.now());
                 return parsed;
             } catch (Exception e) {
+                System.out.println("Error: " + e.getMessage());
+            }
+        }
+    }
+
+    private Branch readBranchInput(Scanner scanner) {
+        while (true) {
+            System.out.print("Branch ID: ");
+            String branchId = scanner.nextLine().trim();
+            System.out.print("Branch name: ");
+            String branchName = scanner.nextLine().trim();
+            System.out.print("Branch location: ");
+            String location = scanner.nextLine().trim();
+
+            try {
+                return new Branch(branchId, branchName, location);
+            } catch (IllegalArgumentException e) {
                 System.out.println("Error: " + e.getMessage());
             }
         }
