@@ -9,32 +9,32 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import employees.presentation.ShiftController;
-import employees.domain.Shift;
-import employees.domain.ShiftAssignment;
-import employees.domain.Employee;
-import employees.domain.Role;
-import employees.domain.ShiftType;
+import employee.service.EmployeeTransportationService;
+import employee.domain.DriverAssignmentRequest;
 
 public class DeliveryManager {
 
-    private int deliveryId;
     private List<Delivery> deliveries;
+    int nextDeliveryId;
     private List<Site> sites;
     private List<Truck> trucks;
     private List<Driver> drivers;
     private List<ShippingZone> shippingZones;
     private int nextDocumentNumber;
-    private ShiftController shiftController; // Module Employyee
+    private final EmployeeTransportationService employeeTransportationService;
 
-    public DeliveryManager() {
-        this.deliveryId = 1; // hashcode (change to hashcode!!!!!!!!!!!!!!!!)
+    public DeliveryManager(EmployeeTransportationService employeeTransportationService) {
+        if (employeeTransportationService == null) {
+            throw new IllegalArgumentException("employeeTransportationService cannot be null");
+        }
+        this.nextDeliveryId = 1;
         this.deliveries = new ArrayList<>();
         this.sites = new ArrayList<>();
         this.trucks = new ArrayList<>();
         this.drivers = new ArrayList<>();
         this.shippingZones = new ArrayList<>();
         this.nextDocumentNumber = 1;
+        this.employeeTransportationService = employeeTransportationService;
     }
 
     public List<Delivery> getDeliveries() {
@@ -106,50 +106,50 @@ public class DeliveryManager {
         return availableDrivers;
     }
 
-    private Shift findMatchingShift(LocalDate date, LocalTime time) {
-        if (shiftController == null) {
-            throw new IllegalStateException("shiftController was not initialized");
-        }
-        for (Shift shift : shiftController.getShifts()) {
-            if (shift.getDate().equals(date) && shiftCoversTime(shift, time)) {
-                return shift;
-            }
-        }
+    // private Shift findMatchingShift(LocalDate date, LocalTime time) {
+    //     if (shiftController == null) {
+    //         throw new IllegalStateException("shiftController was not initialized");
+    //     }
+    //     for (Shift shift : shiftController.getShifts()) {
+    //         if (shift.getDate().equals(date) && shiftCoversTime(shift, time)) {
+    //             return shift;
+    //         }
+    //     }
 
-        return null;
-    }
+    //     return null;
+    // }
 
-    private boolean shiftCoversTime(Shift shift, LocalTime time) {
-        ShiftType type = shift.getShiftType();
+    // private boolean shiftCoversTime(Shift shift, LocalTime time) {
+    //     ShiftType type = shift.getShiftType();
 
-        switch (type) {
-            case MORNING:
-                return !time.isBefore(LocalTime.of(6, 0))
-                        && time.isBefore(LocalTime.of(14, 0));
+    //     switch (type) {
+    //         case MORNING:
+    //             return !time.isBefore(LocalTime.of(6, 0))
+    //                     && time.isBefore(LocalTime.of(14, 0));
 
-            case MORNING_OVERTIME:
-                return !time.isBefore(LocalTime.of(6, 0))
-                        && time.isBefore(LocalTime.of(16, 0));
+    //         case MORNING_OVERTIME:
+    //             return !time.isBefore(LocalTime.of(6, 0))
+    //                     && time.isBefore(LocalTime.of(16, 0));
 
-            case DOUBLE_SHIFT:
-                return !time.isBefore(LocalTime.of(6, 0))
-                        && time.isBefore(LocalTime.of(20, 0));
+    //         case DOUBLE_SHIFT:
+    //             return !time.isBefore(LocalTime.of(6, 0))
+    //                     && time.isBefore(LocalTime.of(20, 0));
 
-            case EVENING:
-                return !time.isBefore(LocalTime.of(14, 0))
-                        && time.isBefore(LocalTime.of(22, 0));
+    //         case EVENING:
+    //             return !time.isBefore(LocalTime.of(14, 0))
+    //                     && time.isBefore(LocalTime.of(22, 0));
 
-            default:
-                return false;
-        }
-    }
+    //         default:
+    //             return false;
+    //     }
+    // }
 
-    public void setShiftController(ShiftController shiftController) {
-        if (shiftController == null) {
-            throw new IllegalArgumentException("shiftController cannot be null");
-        }
-        this.shiftController = shiftController;
-    }
+    // public void setShiftController(ShiftController shiftController) {
+    //     if (shiftController == null) {
+    //         throw new IllegalArgumentException("shiftController cannot be null");
+    //     }
+    //     this.shiftController = shiftController;
+    // }
 
     public void addDelivery(Delivery delivery) {
         if (delivery == null) {
@@ -297,7 +297,8 @@ public class DeliveryManager {
         return new DeliveryDocument(generateNextDocumentNumber(), items);
     }
 
-    public Delivery createDelivery(LocalDate deliveryDate,
+    public Delivery createDelivery(int deliveryId, 
+                                   LocalDate deliveryDate,
                                    Site source,
                                    List<DeliveryStop> stops,
                                    LocalTime departureTime,
@@ -306,6 +307,9 @@ public class DeliveryManager {
                                    Driver driver,
                                    ShippingZone shippingZone) {
 
+        if (deliveryId <= 0 || deliveryId < this.nextDeliveryId) {
+            throw new IllegalArgumentException("invalid deliveryId");
+        }
         if (deliveryDate == null) {
             throw new IllegalArgumentException("deliveryDate cannot be null");
         }
@@ -350,16 +354,23 @@ public class DeliveryManager {
         deliveryForm.addWeightMeasurement(initialWeight);
 
         Delivery delivery = new Delivery(
-                deliveryDate,
-                source,
-                stops,
-                departureTime,
-                initialWeight,
-                truck,
-                driver,
-                shippingZone,
-                DeliveryStatus.PLANNED,
-                deliveryForm
+            deliveryId,
+            deliveryDate,
+            source,
+            stops,
+            departureTime,
+            initialWeight,
+            truck,
+            driver,
+            shippingZone,
+            DeliveryStatus.PLANNED,
+            deliveryForm
+        );
+
+        employeeTransportationService.createDriverAssignmentRequest(
+            driver.getEmployeeId(),
+            delivery.getDeliveryId(),
+            LocalDateTime.of(delivery.getDeliveryDate(), delivery.getDepartureTime())
         );
 
         if (delivery.isOverweight()) {
@@ -389,11 +400,11 @@ public class DeliveryManager {
     }
 
     private boolean isDriverAssignedToShift(Driver driver, LocalDate date, LocalTime time) {
-        Shift matchingShift = findMatchingShift(date, time);
+        // Shift matchingShift = findMatchingShift(date, time);
 
-        if (matchingShift == null) {
-            return false;
-        }
+        // if (matchingShift == null) {
+        //     return false;
+        // }
 
         String driverEmployeeId = driver.getEmployeeId();
 
@@ -543,6 +554,22 @@ public class DeliveryManager {
 
         if (delivery.isOverweight()) {
             throw new IllegalStateException("cannot dispatch delivery: delivery is overweight");
+        }
+
+        LocalDateTime departureDateTime =
+        LocalDateTime.of(delivery.getDeliveryDate(), delivery.getDepartureTime());
+
+        if (!employeeTransportationService.isDriverAssignedToShift(
+                delivery.getDriver().getEmployeeId(),
+                departureDateTime)) {
+            throw new IllegalStateException("Driver is not assigned to the delivery shift");
+        }
+
+        for (DeliveryStop stop : delivery.getStops()) {
+            if (!employeeTransportationService.hasStorekeeperInShift(
+                    stop.getPlannedArrivalDateTime())) {
+                throw new IllegalStateException("No storekeeper assigned for delivery arrival time");
+            }
         }
 
         delivery.markAsDispatched();

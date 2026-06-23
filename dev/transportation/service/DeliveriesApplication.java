@@ -5,6 +5,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import employee.service.EmployeeTransportationService;
 import employees.presentation.ShiftController;
 import domain.Delivery;
 import domain.DeliveryDocument;
@@ -22,8 +23,8 @@ public class DeliveriesApplication {
 
     private DeliveryManager deliveryManager;
 
-    public DeliveriesApplication() {
-        this.deliveryManager = new DeliveryManager();
+    public DeliveriesApplication(EmployeeTransportationService employeeTransportationService) {
+        this.deliveryManager = new DeliveryManager(employeeTransportationService);
     }
 
     public DeliveriesApplication(DeliveryManager deliveryManager) {

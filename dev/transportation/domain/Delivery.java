@@ -8,6 +8,7 @@ import java.util.List;
 
 public class Delivery {
 
+    private int deliveryId;
     private LocalDate deliveryDate;
     private List<DeliveryStop> stops;
     private LocalTime departureTime;
@@ -19,7 +20,8 @@ public class Delivery {
     private DeliveryStatus status;
     private DeliveryForm deliveryForm;
 
-    public Delivery(LocalDate deliveryDate,
+    public Delivery(int deliveryId, 
+                    LocalDate deliveryDate,
                     Site source,
                     List<DeliveryStop> stops,
                     LocalTime departureTime,
@@ -30,7 +32,7 @@ public class Delivery {
                     DeliveryStatus status,
                     DeliveryForm deliveryForm) {
 
-        validateCoreFields(deliveryDate, source, stops, departureTime, truck, driver, shippingZone, status, deliveryForm);
+        validateCoreFields(deliveryId, deliveryDate, source, stops, departureTime, truck, driver, shippingZone, status, deliveryForm);
         validateWeight(finalMeasuredWeightBeforeDeparture);
 
         this.deliveryDate = deliveryDate;
@@ -101,6 +103,10 @@ public class Delivery {
     //     this.deliveryForm.addWeightMeasurement(actualWeightAtDeparture);
     // }
 
+    public int getDeliveryId() {
+        return deliveryId;
+    }
+    
     public LocalDate getDeliveryDate() {
         return deliveryDate;
     }
@@ -254,7 +260,8 @@ public class Delivery {
         return source.belongsToZone(shippingZone);
     }
 
-    private void validateCoreFields(LocalDate deliveryDate,
+    private void validateCoreFields(int deliveryId, 
+                                    LocalDate deliveryDate,
                                     Site source,
                                     List<DeliveryStop> stops,
                                     LocalTime departureTime,
@@ -262,8 +269,10 @@ public class Delivery {
                                     Driver driver,
                                     ShippingZone shippingZone,
                                     DeliveryStatus status,
-                                    DeliveryForm deliveryForm) {
-
+                                    DeliveryForm deliveryForm) {    
+        if (deliveryId <= 0) {
+            throw new IllegalArgumentException("deliveryId must be positive");
+        }
         if (deliveryDate == null) {
             throw new IllegalArgumentException("deliveryDate cannot be null");
         }
