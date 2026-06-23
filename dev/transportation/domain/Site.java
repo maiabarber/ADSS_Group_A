@@ -1,5 +1,7 @@
 package domain;
 
+import employee.domain.Branch;
+
 public class Site {
 
     private static final ShippingZone DEFAULT_SHIPPING_ZONE =
@@ -10,12 +12,18 @@ public class Site {
     private String phoneNumber;
     private String contactName;
     private ShippingZone shippingZone;
+    private SiteType siteType;
+    private Branch branch;
 
     public Site(String siteName, String address, String phoneNumber, String contactName) {
-        this(siteName, address, phoneNumber, contactName, DEFAULT_SHIPPING_ZONE);
+        this(siteName, address, phoneNumber, contactName, DEFAULT_SHIPPING_ZONE, SiteType.REGULAR, null);
     }
 
     public Site(String siteName, String address, String phoneNumber, String contactName, ShippingZone shippingZone) {
+        this(siteName, address, phoneNumber, contactName, shippingZone, SiteType.REGULAR, null);
+    }
+
+    public Site(String siteName, String address, String phoneNumber, String contactName, ShippingZone shippingZone, SiteType siteType, Branch branch) {
         validateSiteName(siteName);
         validateAddress(address);
         validatePhoneNumber(phoneNumber);
@@ -24,12 +32,16 @@ public class Site {
         if (shippingZone == null) {
             throw new IllegalArgumentException("shippingZone cannot be null");
         }
-
+        if (siteType == null) {
+            throw new IllegalArgumentException("siteType cannot be null");
+        }
         this.siteName = siteName;
         this.address = address;
         this.phoneNumber = phoneNumber;
         this.contactName = contactName;
         this.shippingZone = shippingZone;
+        this.siteType = branch != null ? SiteType.BRANCH : siteType;
+        this.branch = branch;
     }
 
     public String getSiteName() {
@@ -52,6 +64,14 @@ public class Site {
         return shippingZone;
     }
 
+    public SiteType getSiteType() {
+        return siteType;
+    }
+
+    public Branch getBranch() {
+        return branch;
+    }
+
     public void setAddress(String address) {
         validateAddress(address);
         this.address = address;
@@ -72,6 +92,23 @@ public class Site {
             throw new IllegalArgumentException("shippingZone cannot be null");
         }
         this.shippingZone = shippingZone;
+    }
+
+    public void setSiteType(SiteType siteType) {
+        if (siteType == null) {
+            throw new IllegalArgumentException("siteType cannot be null");
+        }
+        if (siteType != SiteType.BRANCH) {
+            this.branch = null;
+        }
+        this.siteType = siteType;
+    }
+
+    public void setBranch(Branch branch) {
+        this.branch = branch;
+        if (branch != null) {
+            this.siteType = SiteType.BRANCH;
+        }
     }
 
     public boolean belongsToZone(ShippingZone shippingZone) {
@@ -113,6 +150,8 @@ public class Site {
                 ", phoneNumber='" + phoneNumber + '\'' +
                 ", contactName='" + contactName + '\'' +
                 ", shippingZone=" + shippingZone.getZoneCode() +
+                ", siteType=" + siteType +
+                ", branch=" + (branch != null ? branch.getBranchName() : "null") +
                 '}';
     }
 }

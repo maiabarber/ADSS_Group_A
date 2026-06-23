@@ -1,6 +1,6 @@
 package employee.domain;
 
-import transportation.domain.Site;
+import domain.Site;
 import java.util.Objects;
 
 /**
@@ -21,10 +21,16 @@ public class Branch {
         validateBranchId(branchId);
         validateBranchName(branchName);
         validateLocation(location);
+        if (deliveryStop != null && deliveryStop.getSiteType() != domain.SiteType.BRANCH) {
+            throw new IllegalArgumentException("Branch delivery stop must be a branch site");
+        }
         this.branchId = branchId;
         this.branchName = branchName;
         this.location = location;
         this.deliveryStop = deliveryStop;
+        if (this.deliveryStop != null) {
+            this.deliveryStop.setBranch(this);
+        }
     }
 
     private static void validateBranchId(String branchId) {
@@ -75,7 +81,13 @@ public class Branch {
     }
 
     public void setDeliveryStop(Site deliveryStop) {
+        if (deliveryStop != null && deliveryStop.getSiteType() != domain.SiteType.BRANCH) {
+            throw new IllegalArgumentException("Branch delivery stop must be a branch site");
+        }
         this.deliveryStop = deliveryStop;
+        if (this.deliveryStop != null) {
+            this.deliveryStop.setBranch(this);
+        }
     }
 
     @Override

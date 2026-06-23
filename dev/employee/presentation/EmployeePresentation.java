@@ -39,6 +39,10 @@ public class EmployeePresentation {
     private Branch branchInput;
 
     public Employee readEmployeeInput(Scanner scanner) {
+        return readEmployeeInput(scanner, null);
+    }
+
+    public Employee readEmployeeInput(Scanner scanner, Branch currentBranch) {
         System.out.println("\nAdd new employee");
 
         while (true) {
@@ -59,7 +63,7 @@ public class EmployeePresentation {
             employmentScopeInput = readEmploymentScope(scanner);
             workedHoursInput = 0;
             startDateInput = readStartDate(scanner, "Start date (YYYY-MM-DD): ");
-            branchInput = readBranchInput(scanner);
+            branchInput = resolveBranchForEmployee(scanner, currentBranch);
 
             try {
                 BankAccount bankAccount = new BankAccount(bankNumberInput, branchNumberInput, accountNumberInput);
@@ -92,6 +96,18 @@ public class EmployeePresentation {
                 System.out.println("Please enter the employee details again.");
             }
         }
+    }
+
+    private Branch resolveBranchForEmployee(Scanner scanner, Branch currentBranch) {
+        if (jobRoleInput == Role.DRIVER) {
+            return null;
+        }
+
+        if (currentBranch != null) {
+            return currentBranch;
+        }
+
+        throw new IllegalArgumentException("Select or create a branch workspace before adding cashiers or storekeepers");
     }
 
     private String readEmployeeId(Scanner scanner) {

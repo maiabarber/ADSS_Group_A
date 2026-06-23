@@ -1,4 +1,4 @@
-package domain;
+package transportation.domain;
 
 import java.util.Objects;
 

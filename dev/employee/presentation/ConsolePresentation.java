@@ -14,6 +14,7 @@ import employee.domain.Shift;
 import employee.domain.ShiftAssignment;
 import employee.domain.ShiftType;
 import employee.domain.DriverAssignmentRequest;
+import employee.domain.BranchManager;
 import employee.domain.User;
 import employee.domain.WeeklyAvailabilityRequest;
 import employee.repository.EmployeeRepository;
@@ -40,6 +41,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
+import domain.Site;
+import domain.SiteType;
+import domain.ShippingZone;
 
 /**
  * ConsolePresentation class provides a console-based user interface for the
@@ -63,6 +67,8 @@ public class ConsolePresentation {
     private final SubmissionDeadlineService submissionDeadlineService;
     private final WeeklyAvailabilityService weeklyAvailabilityService;
     private final EmployeeTransportationService employeeTransportationService;
+    private final BranchManager branchManager;
+    private Branch activeBranch;
     private int lastVacationResetYear = -1;
 
     public ConsolePresentation() {
@@ -79,6 +85,8 @@ public class ConsolePresentation {
         this.weeklyAvailabilityService = new WeeklyAvailabilityService(submissionDeadlineRepository,
                 employeeRepository);
         this.employeeTransportationService = new EmployeeTransportationService(shiftRepository, employeeRepository);
+        this.branchManager = new BranchManager();
+        this.activeBranch = null;
     }
 
     public void run() {
@@ -124,6 +132,9 @@ public class ConsolePresentation {
                 boolean sessionActive = true;
                 while (sessionActive && appRunning) {
                     System.out.println("\nChoose action:");
+                    if (activeBranch != null) {
+                        System.out.println("Current branch workspace: " + activeBranch.getBranchName());
+                    }
                     if (isHrManager(loggedInUser.get())) {
                         System.out.println("1. Set weekly submission deadline");
                         System.out.println("2. Add new employee");
@@ -138,6 +149,7 @@ public class ConsolePresentation {
                         System.out.println("11. Logout");
                         System.out.println("12. Exit");
                         System.out.println("13. Handle driver assignment requests");
+                        System.out.println("14. Manage branches / select branch workspace");
                     } else {
                         System.out.println("1. Submit weekly constraints and preferences");
                         System.out.println("2. View and respond to pending shift assignments");
@@ -198,6 +210,9 @@ public class ConsolePresentation {
                                 break;
                             case "13":
                                 handleDriverAssignmentRequestsFlow(scanner);
+                                break;
+                            case "14":
+                                manageBranchWorkspaceFlow(scanner);
                                 break;
                             default:
                                 System.out.println("Invalid selection.");
@@ -273,7 +288,7 @@ public class ConsolePresentation {
                 return;
             }
 
-            Employee employee = employeePresentation.readEmployeeInput(scanner);
+            Employee employee = employeePresentation.readEmployeeInput(scanner, activeBranch);
             Optional<LocalDate> configuredDeadline = submissionDeadlineRepository.findCurrent();
             if (configuredDeadline.isPresent()) {
                 WeeklyAvailabilityRequest weeklyAvailabilityRequest = employee.getWeeklyAvailabilityRequest();
@@ -772,8 +787,13 @@ public class ConsolePresentation {
                 return;
             }
 
+            if (activeBranch == null) {
+                System.out.println("Select or create a branch workspace before creating shifts.");
+                return;
+            }
+
             shiftPresentation.readShiftInput(scanner);
-            List<Employee> employees = userController.getEmployees();
+            List<Employee> employees = getEmployeesForCurrentScope(false);
 
             Employee manager = null;
             String managerId = shiftPresentation.getSelectManagerIdInput();
@@ -794,7 +814,8 @@ public class ConsolePresentation {
                     shiftPresentation.getShiftTypeInput(),
                     null,
                     shiftPresentation.getRequiredCashierInput(),
-                    shiftPresentation.getRequiredStoreKeeperInput());
+                    shiftPresentation.getRequiredStoreKeeperInput(),
+                    activeBranch);
             shift.assignShiftManager(currentUser.get(), manager);
             shiftController.addShift(shift);
             shiftRepository.save(shift);
@@ -815,9 +836,14 @@ public class ConsolePresentation {
                 return;
             }
 
+            if (activeBranch == null) {
+                System.out.println("Select or create a branch workspace before assigning employees to shifts.");
+                return;
+            }
+
             System.out.println("\n=== Assign Employee to Shift ===");
 
-            List<Employee> employees = userController.getEmployees();
+            List<Employee> employees = getEmployeesForCurrentScope(false);
             if (employees.isEmpty()) {
                 System.out.println("No employees found.");
                 return;
@@ -839,7 +865,7 @@ public class ConsolePresentation {
 
             Employee selectedEmployee = employees.get(employeeChoice);
 
-            List<Shift> shifts = shiftController.getShifts();
+            List<Shift> shifts = getShiftsForCurrentScope();
             if (shifts.isEmpty()) {
                 System.out.println("No shifts found.");
                 return;
@@ -900,7 +926,7 @@ public class ConsolePresentation {
         }
 
         Employee employee = (Employee) loggedInUser;
-        List<ShiftAssignment> pending = shiftController.getPendingApprovalsForEmployee(employee);
+        List<ShiftAssignment> pending = getPendingApprovalsForEmployeeInEmployeeBranch(employee);
 
         if (pending.isEmpty()) {
             System.out.println("You have no pending shift assignments.");
@@ -954,9 +980,14 @@ public class ConsolePresentation {
                 return;
             }
 
+            if (activeBranch == null) {
+                System.out.println("Select or create a branch workspace before substituting employees.");
+                return;
+            }
+
             System.out.println("\n=== Substitute Employee in Shift ===");
 
-            List<Shift> shifts = shiftController.getShifts();
+            List<Shift> shifts = getShiftsForCurrentScope();
             if (shifts.isEmpty()) {
                 System.out.println("No shifts found.");
                 return;
@@ -995,7 +1026,7 @@ public class ConsolePresentation {
             Employee originalEmployee = assignments.get(origChoice).getEmployee();
 
             // Show available replacements (not already on shift)
-            List<Employee> allEmployees = userController.getEmployees();
+            List<Employee> allEmployees = getEmployeesForCurrentScope(false);
             List<Employee> available = new ArrayList<>();
             for (Employee emp : allEmployees) {
                 if (!emp.isFired()) {
@@ -1046,7 +1077,7 @@ public class ConsolePresentation {
 
         Employee employee = (Employee) loggedInUser;
         List<ShiftAssignment> myAssignments = new ArrayList<>();
-        for (Shift shift : shiftController.getShifts()) {
+        for (Shift shift : getShiftsForEmployeeBranch(employee)) {
             for (ShiftAssignment assignment : shift.getAssignments()) {
                 if (assignment.getEmployee().getId().equals(employee.getId())) {
                     myAssignments.add(assignment);
@@ -1102,7 +1133,7 @@ public class ConsolePresentation {
                 return;
             }
 
-            List<ShiftAssignment> requests = shiftController.getCancellationRequests();
+            List<ShiftAssignment> requests = getCancellationRequestsForCurrentScope();
             if (requests.isEmpty()) {
                 System.out.println("No cancellation requests pending.");
                 return;
@@ -1127,7 +1158,7 @@ public class ConsolePresentation {
             ShiftAssignment selectedRequest = requests.get(requestChoice);
             Shift selectedShift = selectedRequest.getShift();
 
-            List<Employee> allEmployees = userController.getEmployees();
+            List<Employee> allEmployees = getEmployeesForCurrentScope(false);
             List<Employee> available = new ArrayList<>();
             for (Employee emp : allEmployees) {
                 if (!emp.isFired()) {
@@ -1181,7 +1212,12 @@ public class ConsolePresentation {
                 return;
             }
 
-            List<Employee> employees = userController.getEmployees();
+            if (activeBranch == null) {
+                System.out.println("Select or create a branch workspace before calculating salaries.");
+                return;
+            }
+
+            List<Employee> employees = getEmployeesForCurrentScope(false);
             if (employees.isEmpty()) {
                 System.out.println("No employees found.");
                 return;
@@ -1222,7 +1258,12 @@ public class ConsolePresentation {
         }
 
         Employee employee = (Employee) loggedInUser;
-        List<Shift> managedShifts = shiftController.getShiftsManagedBy(employee);
+        if (activeBranch == null) {
+            System.out.println("Select or create a branch workspace before transferring cancellation cards.");
+            return;
+        }
+
+        List<Shift> managedShifts = getManagedShiftsForCurrentScope(employee);
         if (managedShifts.isEmpty()) {
             System.out.println("You are not assigned as shift manager on any shift.");
             return;
@@ -1355,5 +1396,196 @@ public class ConsolePresentation {
         } catch (IllegalArgumentException e) {
             System.out.println("Driver assignment failed: " + e.getMessage());
         }
+    }
+
+    private void manageBranchWorkspaceFlow(Scanner scanner) {
+        while (true) {
+            System.out.println("\n=== Branch Management ===");
+            System.out.println("1. Create branch");
+            System.out.println("2. Select branch workspace");
+            System.out.println("3. Clear active branch workspace");
+            System.out.println("4. Back");
+            System.out.print("Selection: ");
+
+            String choice = scanner.nextLine();
+            switch (choice) {
+                case "1":
+                    createBranchFlow(scanner);
+                    break;
+                case "2":
+                    selectBranchWorkspaceFlow(scanner);
+                    break;
+                case "3":
+                    activeBranch = null;
+                    System.out.println("Branch workspace cleared.");
+                    break;
+                case "4":
+                    return;
+                default:
+                    System.out.println("Invalid selection.");
+            }
+        }
+    }
+
+    private void createBranchFlow(Scanner scanner) {
+        try {
+            Branch branch = readBranch(scanner);
+            branchManager.addBranch(branch);
+            System.out.println("Branch created successfully: " + branch.getBranchName());
+        } catch (IllegalArgumentException e) {
+            System.out.println("Failed to create branch: " + e.getMessage());
+        }
+    }
+
+    private void selectBranchWorkspaceFlow(Scanner scanner) {
+        List<Branch> branches = branchManager.getAllBranches();
+        if (branches.isEmpty()) {
+            System.out.println("No branches available. Create one first.");
+            return;
+        }
+
+        for (int i = 0; i < branches.size(); i++) {
+            Branch branch = branches.get(i);
+            System.out.println((i + 1) + ". " + branch.getBranchName() + " (" + branch.getLocation() + ")");
+        }
+
+        int selection = readInt(scanner, "Select branch number: ");
+        if (selection < 1 || selection > branches.size()) {
+            System.out.println("Invalid selection.");
+            return;
+        }
+
+        activeBranch = branches.get(selection - 1);
+        System.out.println("Active branch workspace: " + activeBranch.getBranchName());
+    }
+
+    private Branch readBranch(Scanner scanner) {
+        System.out.print("Branch ID: ");
+        String branchId = scanner.nextLine();
+        System.out.print("Branch name: ");
+        String branchName = scanner.nextLine();
+        System.out.print("Branch location: ");
+        String location = scanner.nextLine();
+        System.out.println("Enter delivery stop details for this branch:");
+        Site stop = readSite(scanner, SiteType.BRANCH, null);
+        Branch branch = new Branch(branchId, branchName, location, stop);
+        stop.setBranch(branch);
+        return branch;
+    }
+
+    private Site readSite(Scanner scanner, SiteType siteType, Branch branch) {
+        System.out.print("Site name: ");
+        String siteName = scanner.nextLine();
+        System.out.print("Address: ");
+        String address = scanner.nextLine();
+        System.out.print("Phone number: ");
+        String phoneNumber = scanner.nextLine();
+        System.out.print("Contact name: ");
+        String contactName = scanner.nextLine();
+        System.out.print("Shipping zone code: ");
+        String zoneCode = scanner.nextLine();
+        System.out.print("Shipping zone name: ");
+        String zoneName = scanner.nextLine();
+
+        return new Site(siteName, address, phoneNumber, contactName, new ShippingZone(zoneCode, zoneName), siteType, branch);
+    }
+
+    private List<Employee> getEmployeesForCurrentScope(boolean includeGlobalDrivers) {
+        List<Employee> employees = userController.getEmployees();
+        if (activeBranch == null) {
+            return employees;
+        }
+
+        List<Employee> scopedEmployees = new ArrayList<>();
+        for (Employee employee : employees) {
+            if (employee.getBranch() != null && employee.getBranch().equals(activeBranch)) {
+                scopedEmployees.add(employee);
+                continue;
+            }
+
+            if (includeGlobalDrivers && isGlobalDriver(employee)) {
+                scopedEmployees.add(employee);
+            }
+        }
+        return scopedEmployees;
+    }
+
+    private List<Shift> getShiftsForCurrentScope() {
+        List<Shift> shifts = shiftController.getShifts();
+        if (activeBranch == null) {
+            return shifts;
+        }
+
+        List<Shift> scopedShifts = new ArrayList<>();
+        for (Shift shift : shifts) {
+            if (shift.getBranch() != null && activeBranch.equals(shift.getBranch())) {
+                scopedShifts.add(shift);
+            }
+        }
+        return scopedShifts;
+    }
+
+    private List<ShiftAssignment> getCancellationRequestsForCurrentScope() {
+        List<ShiftAssignment> requests = shiftController.getCancellationRequests();
+        if (activeBranch == null) {
+            return requests;
+        }
+
+        List<ShiftAssignment> scopedRequests = new ArrayList<>();
+        for (ShiftAssignment request : requests) {
+            if (request.getShift().getBranch() != null && activeBranch.equals(request.getShift().getBranch())) {
+                scopedRequests.add(request);
+            }
+        }
+        return scopedRequests;
+    }
+
+    private List<Shift> getManagedShiftsForCurrentScope(Employee employee) {
+        List<Shift> managedShifts = shiftController.getShiftsManagedBy(employee);
+        if (activeBranch == null) {
+            return managedShifts;
+        }
+
+        List<Shift> scopedShifts = new ArrayList<>();
+        for (Shift shift : managedShifts) {
+            if (shift.getBranch() != null && activeBranch.equals(shift.getBranch())) {
+                scopedShifts.add(shift);
+            }
+        }
+        return scopedShifts;
+    }
+
+    private List<Shift> getShiftsForEmployeeBranch(Employee employee) {
+        List<Shift> shifts = shiftController.getShifts();
+        if (employee == null || employee.getBranch() == null) {
+            return new ArrayList<>();
+        }
+
+        List<Shift> scopedShifts = new ArrayList<>();
+        for (Shift shift : shifts) {
+            if (employee.getBranch().equals(shift.getBranch())) {
+                scopedShifts.add(shift);
+            }
+        }
+        return scopedShifts;
+    }
+
+    private List<ShiftAssignment> getPendingApprovalsForEmployeeInEmployeeBranch(Employee employee) {
+        List<ShiftAssignment> pending = shiftController.getPendingApprovalsForEmployee(employee);
+        List<ShiftAssignment> scopedPending = new ArrayList<>();
+        for (ShiftAssignment assignment : pending) {
+            if (employee.getBranch() != null && employee.getBranch().equals(assignment.getShift().getBranch())) {
+                scopedPending.add(assignment);
+            }
+        }
+        return scopedPending;
+    }
+
+    private boolean isGlobalDriver(Employee employee) {
+        return employee != null
+                && employee.getAuthorizedRoles().contains(Role.DRIVER)
+                && !employee.getAuthorizedRoles().contains(Role.CASHIER)
+                && !employee.getAuthorizedRoles().contains(Role.STOREKEEPER)
+                && employee.getBranch() == null;
     }
 }

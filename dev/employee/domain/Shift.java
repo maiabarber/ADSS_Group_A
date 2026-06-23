@@ -11,6 +11,7 @@ public class Shift {
     private LocalDate date;
     private ShiftType shiftType;
     private Employee shiftManager;
+    private Branch branch;
     private final Map<Role, Integer> requiredRoleCounts;
     private List<ShiftAssignment> assignments;
     private boolean cancellationCardTransferred;
@@ -33,6 +34,12 @@ public class Shift {
         setRequiredStorekeepers(requiredStorekeepers);
     }
 
+    public Shift(LocalDate date, ShiftType shiftType, Employee shiftManager, int requiredCashiers,
+            int requiredStorekeepers, Branch branch) {
+        this(date, shiftType, shiftManager, requiredCashiers, requiredStorekeepers);
+        this.branch = branch;
+    }
+
     public LocalDate getDate() {
         return date;
     }
@@ -53,9 +60,17 @@ public class Shift {
         return shiftManager;
     }
 
+    public Branch getBranch() {
+        return branch;
+    }
+
     public void setShiftManager(Employee shiftManager) {
         validateQualifiedShiftManager(shiftManager);
         this.shiftManager = shiftManager;
+    }
+
+    public void setBranch(Branch branch) {
+        this.branch = branch;
     }
 
     public void assignShiftManager(User selectedBy, Employee candidateShiftManager) {
@@ -161,6 +176,7 @@ public class Shift {
         return "Shift{" +
                 "date=" + date +
                 ", shiftType=" + shiftType +
+                ", branch=" + branch +
                 ", shiftManager=" + shiftManager +
                 ", requiredRoleCounts=" + requiredRoleCounts +
                 ", assignments=" + assignments +
