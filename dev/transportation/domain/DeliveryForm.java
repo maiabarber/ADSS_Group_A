@@ -43,12 +43,19 @@ public class DeliveryForm {
         return !weightMeasurements.isEmpty();
     }
 
-    private void validateMeasurement(Double measurement) {
-        if (measurement == null) {
+    private void validateMeasurement(double measurement) {
+        if (measurement < 0) {
             throw new IllegalArgumentException("weight measurement cannot be null");
         }
         if (measurement < 0) {
             throw new IllegalArgumentException("weight measurement cannot be negative");
         }
+    }
+
+    @Override
+    public String toString() {
+        return "DeliveryForm{" +
+                "weightMeasurements=" + weightMeasurements +
+                '}';
     }
 }

@@ -72,8 +72,8 @@ public class Driver {
     }
 
     private void validateEmployeeId(String employeeId) {
-        if (employeeId == null || !employeeId.matches("\\d{9}")) {
-            throw new IllegalArgumentException("employeeId must be exactly 9 digits");
+        if (employeeId == null || employeeId.isBlank()) {
+            throw new IllegalArgumentException("employeeId cannot be empty");
         }
     }
 

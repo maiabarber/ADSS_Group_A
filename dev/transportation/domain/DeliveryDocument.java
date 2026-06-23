@@ -31,10 +31,6 @@ public class DeliveryDocument {
         return new ArrayList<>(items);
     }
 
-    public List<DeliveryItem> getItemsDelivered() {
-        return getItems();
-    }
-
     public void addItem(DeliveryItem item) {
         if (item == null) {
             throw new IllegalArgumentException("item cannot be null");

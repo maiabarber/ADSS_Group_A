@@ -35,6 +35,7 @@ public class Delivery {
         validateCoreFields(deliveryId, deliveryDate, source, stops, departureTime, truck, driver, shippingZone, status, deliveryForm);
         validateWeight(finalMeasuredWeightBeforeDeparture);
 
+        this.deliveryId = deliveryId;
         this.deliveryDate = deliveryDate;
         this.source = source;
         this.stops = new ArrayList<>(stops);
@@ -55,53 +56,6 @@ public class Delivery {
             throw new IllegalArgumentException("all stops and source must belong to the delivery shipping zone");
         }
     }
-
-    // public Delivery(LocalDate deliveryDate,
-    //                 List<DeliveryStop> stops,
-    //                 LocalTime departureTime,
-    //                 double actualWeightAtDeparture,
-    //                 Truck truck,
-    //                 Driver driver,
-    //                 DeliveryDocument document) {
-
-    //     if (document == null) {
-    //         throw new IllegalArgumentException("document cannot be null");
-    //     }
-    //     if (stops == null) {
-    //         throw new IllegalArgumentException("stops cannot be null");
-    //     }
-    //     if (stops.isEmpty()) {
-    //         throw new IllegalArgumentException("stops cannot be empty in legacy constructor");
-    //     }
-
-   //     DeliveryStop firstStop = stops.get(0);
-    //     firstStop.setDocument(document);
-
-    //     validateCoreFields(
-    //             deliveryDate,
-    //             firstStop.getSite(),
-    //             stops,
-    //             departureTime,
-    //             truck,
-    //             driver,
-    //             firstStop.getSite().getShippingZone(),
-    //             DeliveryStatus.PLANNED,
-    //             new DeliveryForm()
-    //     );
-    //     validateWeight(actualWeightAtDeparture);
-
-    //     this.deliveryDate = deliveryDate;
-    //     this.source = firstStop.getSite();
-    //     this.stops = new ArrayList<>(stops);
-    //     this.departureTime = departureTime;
-    //     this.finalMeasuredWeightBeforeDeparture = actualWeightAtDeparture;
-    //     this.truck = truck;
-    //     this.driver = driver;
-    //     this.shippingZone = firstStop.getSite().getShippingZone();
-    //     this.status = DeliveryStatus.PLANNED;
-    //     this.deliveryForm = new DeliveryForm();
-    //     this.deliveryForm.addWeightMeasurement(actualWeightAtDeparture);
-    // }
 
     public int getDeliveryId() {
         return deliveryId;
@@ -179,6 +133,9 @@ public class Delivery {
         if (source == null) {
             throw new IllegalArgumentException("source cannot be null");
         }
+        if (!source.belongsToZone(shippingZone)) {
+            throw new IllegalArgumentException("source must belong to the delivery shipping zone");
+        }
         this.source = source;
     }
 
@@ -187,7 +144,14 @@ public class Delivery {
         if (shippingZone == null) {
             throw new IllegalArgumentException("shippingZone cannot be null");
         }
+
+        ShippingZone oldShippingZone = this.shippingZone;
         this.shippingZone = shippingZone;
+
+        if (!allStopsBelongToShippingZone()) {
+            this.shippingZone = oldShippingZone;
+            throw new IllegalArgumentException("all stops and source must belong to the new shipping zone");
+        }
     }
 
     public void setStatus(DeliveryStatus status) {
@@ -210,17 +174,43 @@ public class Delivery {
 
     public void addStop(DeliveryStop stop) {
         ensureCanStillBeModified();
+
         if (stop == null) {
             throw new IllegalArgumentException("stop cannot be null");
         }
+
+        LocalDateTime departureDateTime = LocalDateTime.of(deliveryDate, departureTime);
+
+        if (stop.getPlannedArrivalDateTime() == null) {
+            throw new IllegalArgumentException("stop planned arrival time cannot be null");
+        }
+
+        if (stop.getPlannedArrivalDateTime().isBefore(departureDateTime)) {
+            throw new IllegalArgumentException("stop arrival time cannot be before delivery departure time");
+        }
+
+        if (!stop.belongsToZone(shippingZone)) {
+            throw new IllegalArgumentException("stop must belong to the delivery shipping zone");
+        }
+
         this.stops.add(stop);
     }
 
     public void removeStop(DeliveryStop stop) {
         ensureCanStillBeModified();
+
         if (stop == null) {
             throw new IllegalArgumentException("stop cannot be null");
         }
+
+        if (!stops.contains(stop)) {
+            throw new IllegalArgumentException("stop does not belong to this delivery");
+        }
+
+        if (stops.size() == 1) {
+            throw new IllegalStateException("delivery must contain at least one stop");
+        }
+
         this.stops.remove(stop);
     }
 
@@ -316,6 +306,10 @@ public class Delivery {
         LocalDateTime departureDateTime = LocalDateTime.of(deliveryDate, departureTime);
 
         for (DeliveryStop stop : stops) {
+            if (stop.getPlannedArrivalDateTime() == null) {
+                throw new IllegalArgumentException("stop planned arrival time cannot be null");
+            }
+
             if (stop.getPlannedArrivalDateTime().isBefore(departureDateTime)) {
                 throw new IllegalArgumentException("stop arrival time cannot be before delivery departure time");
             }
@@ -331,15 +325,16 @@ public class Delivery {
     @Override
     public String toString() {
         return "Delivery{" +
-                "deliveryDate=" + deliveryDate +
-                ", departureTime=" + departureTime +
-                ", finalMeasuredWeightBeforeDeparture=" + finalMeasuredWeightBeforeDeparture +
-                ", truck=" + truck.getLicenseNumber() +
-                ", driver=" + driver.getDriverName() +
-                ", source=" + source.getSiteName() +
-                ", shippingZone=" + shippingZone.getZoneCode() +
-                ", status=" + status +
-                ", stopsCount=" + stops.size() +
+                "deliveryId = " + deliveryId +
+                ", deliveryDate = " + deliveryDate +
+                ", departureTime = " + departureTime +
+                ", finalMeasuredWeightBeforeDeparture = " + finalMeasuredWeightBeforeDeparture +
+                ", truck = " + truck.getLicenseNumber() +
+                ", driver = " + driver.getDriverName() +
+                ", source = " + source.getSiteName() +
+                ", shippingZone = " + shippingZone.getZoneCode() +
+                ", status = " + status +
+                ", stopsCount = " + stops.size() +
                 '}';
     }
 }

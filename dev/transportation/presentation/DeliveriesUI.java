@@ -21,8 +21,12 @@ public class DeliveriesUI {
     private final DeliveriesApplication deliveriesApplication;
     private final Scanner scanner;
 
-    public DeliveriesUI() {
-        this(new DeliveriesApplication());
+    public DeliveriesUI(DeliveriesApplication deliveriesApplication) {
+        if (deliveriesApplication == null) {
+            throw new IllegalArgumentException("deliveriesApplication cannot be null");
+        }
+        this.deliveriesApplication = deliveriesApplication;
+        this.scanner = new Scanner(System.in);
     }
 
     public DeliveriesUI(DeliveriesApplication deliveriesApplication) {
@@ -220,7 +224,7 @@ public class DeliveriesUI {
 
         Site source = chooseSiteFromList("Choose source site:", sitesInZone);
         Truck truck = chooseTruck();
-        Driver driver = chooseCompatibleDriver(truck);
+        Driver driver = chooseAvailableDriver(deliveryDate, departureTime, truck);
 
         int stopCount = readInt("How many stops does this delivery have? ");
         while (stopCount <= 0) {
@@ -420,6 +424,32 @@ public class DeliveriesUI {
         }
 
         return deliveriesApplication.getTruckByIndex(index);
+    }
+
+    private Driver chooseAvailableDriver(LocalDate deliveryDate, LocalTime departureTime, Truck truck) {
+        List<Driver> availableDrivers =
+                deliveriesApplication.getAvailableDriversForDelivery(deliveryDate, departureTime, truck);
+
+        if (availableDrivers.isEmpty()) {
+            throw new IllegalStateException("No available drivers found for the selected date, time and truck.");
+        }
+
+        System.out.println("Available drivers:");
+        for (int i = 0; i < availableDrivers.size(); i++) {
+            Driver driver = availableDrivers.get(i);
+            System.out.println("[" + i + "] "
+                    + driver.getDriverName()
+                    + " | Employee ID: " + driver.getEmployeeId()
+                    + " | Licenses: " + driver.getLicenseTypes());
+        }
+
+        int index = readInt("Choose driver index: ");
+        while (index < 0 || index >= availableDrivers.size()) {
+            System.out.println("Invalid index.");
+            index = readInt("Choose driver index: ");
+        }
+
+        return availableDrivers.get(index);
     }
 
     private Driver chooseCompatibleDriver(Truck truck) {
