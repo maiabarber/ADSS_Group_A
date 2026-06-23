@@ -1,6 +1,7 @@
 package domain;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,6 +18,7 @@ import employees.domain.ShiftType;
 
 public class DeliveryManager {
 
+    private int deliveryId;
     private List<Delivery> deliveries;
     private List<Site> sites;
     private List<Truck> trucks;
@@ -26,6 +28,7 @@ public class DeliveryManager {
     private ShiftController shiftController; // Module Employyee
 
     public DeliveryManager() {
+        this.deliveryId = 1; // hashcode (change to hashcode!!!!!!!!!!!!!!!!)
         this.deliveries = new ArrayList<>();
         this.sites = new ArrayList<>();
         this.trucks = new ArrayList<>();
@@ -673,6 +676,20 @@ public class DeliveryManager {
         if (!deliveries.contains(delivery)) {
             throw new IllegalArgumentException("delivery is not managed by this manager");
         }
+    }
+
+    public boolean validateWarehouseWorkerForArrival(Site site, LocalDateTime arrivalDateTime) {
+        if (site == null) {
+            throw new IllegalArgumentException("site cannot be null");
+        }
+        if (arrivalDateTime == null) {
+            throw new IllegalArgumentException("arrivalDateTime cannot be null");
+        }
+
+        return hasStorekeeperAssignedToShift(
+                arrivalDateTime.toLocalDate(),
+                arrivalDateTime.toLocalTime()
+        );
     }
 
     private void ensureDeliveryIsStillModifiable(Delivery delivery) {

@@ -1,17 +1,20 @@
 package domain;
 
+import java.time.LocalDateTime;
+
 public class DeliveryStop {
 
     private int stopOrder;
     private StopType stopType;
     private Site site;
     private DeliveryDocument document;
+    private LocalDateTime plannedArrivalDateTime;
 
-    public DeliveryStop(int stopOrder, StopType stopType, Site site) {
-        this(stopOrder, stopType, site, null);
+    public DeliveryStop(int stopOrder, StopType stopType, Site site, LocalDateTime plannedArrivalDateTime) {
+        this(stopOrder, stopType, site, null, plannedArrivalDateTime);
     }
 
-    public DeliveryStop(int stopOrder, StopType stopType, Site site, DeliveryDocument document) {
+    public DeliveryStop(int stopOrder, StopType stopType, Site site, DeliveryDocument document, LocalDateTime plannedArrivalDateTime) {
         validateStopOrder(stopOrder);
 
         if (stopType == null) {
@@ -20,11 +23,15 @@ public class DeliveryStop {
         if (site == null) {
             throw new IllegalArgumentException("site cannot be null");
         }
+        if (plannedArrivalDateTime == null) {
+            throw new IllegalArgumentException("plannedArrivalDateTime cannot be null");
+        }
 
         this.stopOrder = stopOrder;
         this.stopType = stopType;
         this.site = site;
         this.document = document;
+        this.plannedArrivalDateTime = plannedArrivalDateTime;
     }
 
     public int getStopOrder() {
@@ -41,6 +48,17 @@ public class DeliveryStop {
 
     public DeliveryDocument getDocument() {
         return document;
+    }
+    
+    public LocalDateTime getPlannedArrivalDateTime() {
+        return plannedArrivalDateTime;
+    }
+
+    public void setPlannedArrivalDateTime(LocalDateTime plannedArrivalDateTime) {
+        if (plannedArrivalDateTime == null) {
+            throw new IllegalArgumentException("plannedArrivalDateTime cannot be null");
+        }
+        this.plannedArrivalDateTime = plannedArrivalDateTime;
     }
 
     public void setStopOrder(int stopOrder) {
@@ -71,8 +89,8 @@ public class DeliveryStop {
     }
 
     private void validateStopOrder(int stopOrder) {
-        if (stopOrder < 0) {
-            throw new IllegalArgumentException("stopOrder cannot be negative");
+        if (stopOrder <= 0) {
+            throw new IllegalArgumentException("stopOrder must be positive");
         }
     }
 
@@ -83,6 +101,7 @@ public class DeliveryStop {
                 ", stopType=" + stopType +
                 ", site=" + site.getSiteName() +
                 ", hasDocument=" + (document != null) +
+                ", plannedArrivalDateTime=" + plannedArrivalDateTime +
                 '}';
     }
 }

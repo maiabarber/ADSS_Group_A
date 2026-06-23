@@ -1,6 +1,7 @@
 package domain;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,57 +44,62 @@ public class Delivery {
         this.status = status;
         this.deliveryForm = deliveryForm;
 
+        validateStopsArrivalTimes();
+
         if (!deliveryForm.hasMeasurements()) {
             deliveryForm.addWeightMeasurement(finalMeasuredWeightBeforeDeparture);
         }
+        if (!allStopsBelongToShippingZone()) {
+            throw new IllegalArgumentException("all stops and source must belong to the delivery shipping zone");
+        }
     }
 
-    public Delivery(LocalDate deliveryDate,
-                    List<DeliveryStop> stops,
-                    LocalTime departureTime,
-                    double actualWeightAtDeparture,
-                    Truck truck,
-                    Driver driver,
-                    DeliveryDocument document) {
+    // public Delivery(LocalDate deliveryDate,
+    //                 List<DeliveryStop> stops,
+    //                 LocalTime departureTime,
+    //                 double actualWeightAtDeparture,
+    //                 Truck truck,
+    //                 Driver driver,
+    //                 DeliveryDocument document) {
 
-        if (document == null) {
-            throw new IllegalArgumentException("document cannot be null");
-        }
-        if (stops == null) {
-            throw new IllegalArgumentException("stops cannot be null");
-        }
-        if (stops.isEmpty()) {
-            throw new IllegalArgumentException("stops cannot be empty in legacy constructor");
-        }
+    //     if (document == null) {
+    //         throw new IllegalArgumentException("document cannot be null");
+    //     }
+    //     if (stops == null) {
+    //         throw new IllegalArgumentException("stops cannot be null");
+    //     }
+    //     if (stops.isEmpty()) {
+    //         throw new IllegalArgumentException("stops cannot be empty in legacy constructor");
+    //     }
 
-        DeliveryStop firstStop = stops.get(0);
-        firstStop.setDocument(document);
+   //     DeliveryStop firstStop = stops.get(0);
+    //     firstStop.setDocument(document);
 
-        validateCoreFields(
-                deliveryDate,
-                firstStop.getSite(),
-                stops,
-                departureTime,
-                truck,
-                driver,
-                firstStop.getSite().getShippingZone(),
-                DeliveryStatus.PLANNED,
-                new DeliveryForm()
-        );
-        validateWeight(actualWeightAtDeparture);
+    //     validateCoreFields(
+    //             deliveryDate,
+    //             firstStop.getSite(),
+    //             stops,
+    //             departureTime,
+    //             truck,
+    //             driver,
+    //             firstStop.getSite().getShippingZone(),
+    //             DeliveryStatus.PLANNED,
+    //             new DeliveryForm()
+    //     );
+    //     validateWeight(actualWeightAtDeparture);
 
-        this.deliveryDate = deliveryDate;
-        this.source = firstStop.getSite();
-        this.stops = new ArrayList<>(stops);
-        this.departureTime = departureTime;
-        this.finalMeasuredWeightBeforeDeparture = actualWeightAtDeparture;
-        this.truck = truck;
-        this.driver = driver;
-        this.shippingZone = firstStop.getSite().getShippingZone();
-        this.status = DeliveryStatus.PLANNED;
-        this.deliveryForm = new DeliveryForm();
-        this.deliveryForm.addWeightMeasurement(actualWeightAtDeparture);
-    }
+    //     this.deliveryDate = deliveryDate;
+    //     this.source = firstStop.getSite();
+    //     this.stops = new ArrayList<>(stops);
+    //     this.departureTime = departureTime;
+    //     this.finalMeasuredWeightBeforeDeparture = actualWeightAtDeparture;
+    //     this.truck = truck;
+    //     this.driver = driver;
+    //     this.shippingZone = firstStop.getSite().getShippingZone();
+    //     this.status = DeliveryStatus.PLANNED;
+    //     this.deliveryForm = new DeliveryForm();
+    //     this.deliveryForm.addWeightMeasurement(actualWeightAtDeparture);
+    // }
 
     public LocalDate getDeliveryDate() {
         return deliveryDate;
@@ -147,6 +153,7 @@ public class Delivery {
     }
 
     public void setDriver(Driver driver) {
+        ensureCanStillBeModified();
         if (driver == null) {
             throw new IllegalArgumentException("driver cannot be null");
         }
@@ -154,6 +161,7 @@ public class Delivery {
     }
 
     public void setTruck(Truck truck) {
+        ensureCanStillBeModified();
         if (truck == null) {
             throw new IllegalArgumentException("truck cannot be null");
         }
@@ -161,6 +169,7 @@ public class Delivery {
     }
 
     public void setSource(Site source) {
+        ensureCanStillBeModified();
         if (source == null) {
             throw new IllegalArgumentException("source cannot be null");
         }
@@ -168,6 +177,7 @@ public class Delivery {
     }
 
     public void setShippingZone(ShippingZone shippingZone) {
+        ensureCanStillBeModified();
         if (shippingZone == null) {
             throw new IllegalArgumentException("shippingZone cannot be null");
         }
@@ -182,6 +192,7 @@ public class Delivery {
     }
 
     public void setFinalMeasuredWeightBeforeDeparture(double finalMeasuredWeightBeforeDeparture) {
+        ensureCanStillBeModified();
         validateWeight(finalMeasuredWeightBeforeDeparture);
         this.finalMeasuredWeightBeforeDeparture = finalMeasuredWeightBeforeDeparture;
         deliveryForm.addWeightMeasurement(finalMeasuredWeightBeforeDeparture);
@@ -192,6 +203,7 @@ public class Delivery {
     }
 
     public void addStop(DeliveryStop stop) {
+        ensureCanStillBeModified();
         if (stop == null) {
             throw new IllegalArgumentException("stop cannot be null");
         }
@@ -199,6 +211,7 @@ public class Delivery {
     }
 
     public void removeStop(DeliveryStop stop) {
+        ensureCanStillBeModified();
         if (stop == null) {
             throw new IllegalArgumentException("stop cannot be null");
         }
@@ -206,6 +219,7 @@ public class Delivery {
     }
 
     public void recordWeightMeasurement(double weight) {
+        ensureCanStillBeModified();
         validateWeight(weight);
         deliveryForm.addWeightMeasurement(weight);
         this.finalMeasuredWeightBeforeDeparture = weight;
@@ -259,6 +273,9 @@ public class Delivery {
         if (stops == null) {
             throw new IllegalArgumentException("stops cannot be null");
         }
+        if (stops.isEmpty()) {
+            throw new IllegalArgumentException("stops cannot be empty");
+        }
         if (departureTime == null) {
             throw new IllegalArgumentException("departureTime cannot be null");
         }
@@ -282,6 +299,23 @@ public class Delivery {
     private void validateWeight(double weight) {
         if (weight < 0) {
             throw new IllegalArgumentException("weight cannot be negative");
+        }
+    }
+
+    
+    private void validateStopsArrivalTimes() {
+        LocalDateTime departureDateTime = LocalDateTime.of(deliveryDate, departureTime);
+
+        for (DeliveryStop stop : stops) {
+            if (stop.getPlannedArrivalDateTime().isBefore(departureDateTime)) {
+                throw new IllegalArgumentException("stop arrival time cannot be before delivery departure time");
+            }
+        }
+    }
+
+    private void ensureCanStillBeModified() {
+        if (!canStillBeModified()) {
+            throw new IllegalStateException("dispatched delivery cannot be modified");
         }
     }
 
