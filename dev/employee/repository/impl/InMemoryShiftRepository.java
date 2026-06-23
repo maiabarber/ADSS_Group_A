@@ -1,9 +1,11 @@
 ﻿package employee.repository.impl;
 
 import employee.domain.Shift;
+import employee.domain.ShiftType;
 import employee.repository.RepositoryException;
 import employee.repository.ShiftRepository;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -53,5 +55,15 @@ public class InMemoryShiftRepository implements ShiftRepository {
 
     private static String buildShiftId(Shift shift) {
         return shift.getDate() + ":" + shift.getShiftType();
+    }
+
+    @Override
+    public Optional<Shift> findByDateAndType(LocalDate date, ShiftType shiftType) {
+        if (date == null || shiftType == null) {
+            return Optional.empty();
+        }
+
+        String shiftId = date + ":" + shiftType;
+        return Optional.ofNullable(shiftsById.get(shiftId));
     }
 }

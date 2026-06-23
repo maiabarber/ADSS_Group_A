@@ -2,6 +2,7 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
          http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>adss</groupId>
@@ -15,7 +16,7 @@
     </properties>
 
     <build>
-        <sourceDirectory>dev/src</sourceDirectory>
+        <sourceDirectory>dev</sourceDirectory>
         <testSourceDirectory>dev/test</testSourceDirectory>
 
         <plugins>
@@ -28,26 +29,6 @@
                         <exclude>test/**</exclude>
                     </excludes>
                 </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.5.0</version>
-                <executions>
-                    <execution>
-                        <id>add-main-as-source</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>add-source</goal>
-                        </goals>
-                        <configuration>
-                            <sources>
-                                <source>dev</source>
-                            </sources>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
 
             <plugin>
@@ -79,4 +60,5 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
 </project>

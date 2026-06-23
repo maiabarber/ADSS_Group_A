@@ -10,35 +10,27 @@ import employee.domain.ShiftAssignment;
 import employee.domain.ShiftType;
 import employee.domain.User;
 import employee.domain.WeeklyAvailabilityRequest;
-import employee.domain.DriverAvailability;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
- * ShiftController class manages the scheduling of shifts, employee assignments, and related operations.
- * It maintains lists of employees, current shifts, and shift history. The controller provides methods for
- * adding shifts, assigning employees to shifts, handling substitutions, managing cancellation requests,
- * calculating worked hours and salaries, and listing shifts managed by a specific employee.
+ * ShiftController class manages the scheduling of shifts, employee assignments,
+ * and related operations.
+ * It maintains lists of employees, current shifts, and shift history. The
+ * controller provides methods for
+ * adding shifts, assigning employees to shifts, handling substitutions,
+ * managing cancellation requests,
+ * calculating worked hours and salaries, and listing shifts managed by a
+ * specific employee.
  */
 public class ShiftController {
     private final List<Employee> employees = new ArrayList<>();
     private final List<Shift> shifts = new ArrayList<>();
     private final List<Shift> shiftHistory = new ArrayList<>();
-    /**
-     * System-managed availability records for drivers, keyed by employeeId.
-     * Each entry corresponds to a driver record in the transportation module (same employeeId)
-     * and specifies which days and shift types the driver is permitted to work.
-     * Managed exclusively by HR managers via {@link #registerDriverAvailability} and
-     * {@link #updateDriverAvailability}.
-     */
-    private final Map<String, DriverAvailability> driverAvailabilities = new HashMap<>();
 
     public List<Employee> getEmployees() {
         return Collections.unmodifiableList(employees);
@@ -57,59 +49,6 @@ public class ShiftController {
         if (employees != null) {
             this.employees.addAll(employees);
         }
-    }
-
-    // -------------------------------------------------------------------------
-    // Driver availability registry (HR-managed)
-    // -------------------------------------------------------------------------
-
-    /**
-     * Registers or replaces the system availability record for a driver.
-     * Must be called by an HR manager. The {@code employeeId} on the
-     * {@link DriverAvailability} must match an existing employee who holds the DRIVER role.
-     *
-     * @param managedBy    the HR manager making the change
-     * @param availability the driver's system availability record
-     */
-    public void registerDriverAvailability(User managedBy, DriverAvailability availability) {
-        ensureHrManager(managedBy);
-        if (availability == null) {
-            throw new IllegalArgumentException("DriverAvailability must not be null");
-        }
-        driverAvailabilities.put(availability.getEmployeeId(), availability);
-    }
-
-    /**
-     * Updates the permitted shift types for a driver on a specific day.
-     * Must be called by an HR manager.
-     *
-     * @param managedBy  the HR manager making the change
-     * @param employeeId the driver's employee ID
-     * @param day        the day of the week to configure
-     * @param shifts     the shift types available that day; null/empty clears the day
-     */
-    public void updateDriverAvailability(User managedBy, String employeeId, DayOfWeek day, Set<ShiftType> shifts) {
-        ensureHrManager(managedBy);
-        DriverAvailability record = driverAvailabilities.get(employeeId);
-        if (record == null) {
-            throw new IllegalArgumentException("No driver availability record found for employeeId: " + employeeId);
-        }
-        record.setAvailableShifts(day, shifts);
-    }
-
-    /**
-     * Returns the system availability record for a driver, or {@code null} if none is registered.
-     *
-     * @param employeeId the driver's employee ID
-     * @return the availability record, or null
-     */
-    public DriverAvailability getDriverAvailability(String employeeId) {
-        return driverAvailabilities.get(employeeId);
-    }
-
-    /** Returns an unmodifiable view of all registered driver availability records. */
-    public Map<String, DriverAvailability> getAllDriverAvailabilities() {
-        return Collections.unmodifiableMap(driverAvailabilities);
     }
 
     public void addShift(Shift shift) {
@@ -132,98 +71,85 @@ public class ShiftController {
         shiftHistory.add(shift);
     }
 
-    public void assignEmployeeToShift(User assignedBy, Employee employee, Shift shift, Role role) 
-    throws IllegalArgumentException {
-    if (!(assignedBy instanceof HR_Manager) || !((HR_Manager) assignedBy).isHRManager()) {
-        throw new IllegalArgumentException("Only HR manager can assign employees to shifts");
-    }
-    
-    // Validate that employee is authorized for this role
-    if (!employee.getAuthorizedRoles().contains(role)) {
-        throw new IllegalArgumentException("Employee " + employee.getName() + " is not authorized for role " + role);
-    }
+    public void assignEmployeeToShift(User assignedBy, Employee employee, Shift shift, Role role)
+            throws IllegalArgumentException {
+        if (!(assignedBy instanceof HR_Manager) || !((HR_Manager) assignedBy).isHRManager()) {
+            throw new IllegalArgumentException("Only HR manager can assign employees to shifts");
+        }
 
-    // For DRIVER role: verify a system availability record exists and covers this shift
-    if (role == Role.DRIVER) {
-        DriverAvailability driverRecord = driverAvailabilities.get(employee.getId());
-        if (driverRecord == null) {
-            throw new IllegalArgumentException("Employee " + employee.getName() +
-                " has no driver availability record registered in the system");
+        // Validate that employee is authorized for this role
+        if (!employee.getAuthorizedRoles().contains(role)) {
+            throw new IllegalArgumentException(
+                    "Employee " + employee.getName() + " is not authorized for role " + role);
         }
-        if (!driverRecord.isAvailableFor(shift.getDate().getDayOfWeek(), shift.getShiftType())) {
-            throw new IllegalArgumentException("Driver " + employee.getName() +
-                " is not available for " + shift.getShiftType() +
-                " shifts on " + shift.getDate().getDayOfWeek() +
-                " according to the system record");
-        }
-    }
-    
-    // Validate that employee is not already assigned to this shift
-    for (ShiftAssignment existing : shift.getAssignments()) {
-        if (existing.getEmployee().getId().equals(employee.getId())) {
-            throw new IllegalArgumentException("Employee " + employee.getName() + " is already assigned to this shift");
-        }
-    }
 
-    // Req #2: DOUBLE_SHIFT and MORNING_OVERTIME require explicit employee preference
-    if (shift.getShiftType() == ShiftType.DOUBLE_SHIFT || shift.getShiftType() == ShiftType.MORNING_OVERTIME) {
-        boolean hasPreference = false;
+        // Validate that employee is not already assigned to this shift
+        for (ShiftAssignment existing : shift.getAssignments()) {
+            if (existing.getEmployee().getId().equals(employee.getId())) {
+                throw new IllegalArgumentException(
+                        "Employee " + employee.getName() + " is already assigned to this shift");
+            }
+        }
+
+        // Req #2: DOUBLE_SHIFT and MORNING_OVERTIME require explicit employee
+        // preference
+        if (shift.getShiftType() == ShiftType.DOUBLE_SHIFT || shift.getShiftType() == ShiftType.MORNING_OVERTIME) {
+            boolean hasPreference = false;
+            WeeklyAvailabilityRequest availability = employee.getWeeklyAvailabilityRequest();
+            if (availability != null) {
+                for (Preference preference : availability.getPreferences()) {
+                    if (preference.getDay() == shift.getDate().getDayOfWeek() &&
+                            preference.getShiftType() == shift.getShiftType()) {
+                        hasPreference = true;
+                        break;
+                    }
+                }
+            }
+            if (!hasPreference) {
+                throw new IllegalArgumentException("Employee " + employee.getName() +
+                        " has not indicated a preference for " + shift.getShiftType() +
+                        " on " + shift.getDate().getDayOfWeek());
+            }
+        }
+
         WeeklyAvailabilityRequest availability = employee.getWeeklyAvailabilityRequest();
+        if (isFullDayVacationConstraint(availability, shift.getDate().getDayOfWeek())) {
+            throw new IllegalArgumentException("Employee " + employee.getName() +
+                    " is on vacation on " + shift.getDate().getDayOfWeek() + " and cannot be assigned");
+        }
+
+        // Check if assignment conflicts with employee constraints or fixed day off
+        boolean hasConstraintConflict = false;
         if (availability != null) {
-            for (Preference preference : availability.getPreferences()) {
-                if (preference.getDay() == shift.getDate().getDayOfWeek() &&
-                    preference.getShiftType() == shift.getShiftType()) {
-                    hasPreference = true;
+            for (Constraint constraint : availability.getConstraints()) {
+                if (constraint.getDay() == shift.getDate().getDayOfWeek() &&
+                        constraint.getShiftType() == shift.getShiftType()) {
+                    hasConstraintConflict = true;
                     break;
                 }
             }
         }
-        if (!hasPreference) {
-            throw new IllegalArgumentException("Employee " + employee.getName() +
-                " has not indicated a preference for " + shift.getShiftType() +
-                " on " + shift.getDate().getDayOfWeek());
+        boolean hasFixedDayOffConflict = employee.getFixedDayOff() != null &&
+                employee.getFixedDayOff() == shift.getDate().getDayOfWeek();
+        boolean hasConflict = hasConstraintConflict || hasFixedDayOffConflict;
+
+        // No conflict → approve immediately
+        // Conflict → create PENDING assignment, employee must approve
+        ShiftAssignment assignment = new ShiftAssignment(
+                employee,
+                shift,
+                role,
+                hasConflict,
+                hasFixedDayOffConflict);
+        if (!hasConflict) {
+            assignment.setApproved(true);
         }
-    }
-    
-    WeeklyAvailabilityRequest availability = employee.getWeeklyAvailabilityRequest();
-    if (isFullDayVacationConstraint(availability, shift.getDate().getDayOfWeek())) {
-        throw new IllegalArgumentException("Employee " + employee.getName() +
-            " is on vacation on " + shift.getDate().getDayOfWeek() + " and cannot be assigned");
-    }
+        shift.addAssignment(assignment);
 
-    // Check if assignment conflicts with employee constraints or fixed day off
-    boolean hasConstraintConflict = false;
-    if (availability != null) {
-        for (Constraint constraint : availability.getConstraints()) {
-            if (constraint.getDay() == shift.getDate().getDayOfWeek() &&
-                constraint.getShiftType() == shift.getShiftType()) {
-                hasConstraintConflict = true;
-                break;
-            }
+        if (hasConflict) {
+            System.out.println("Warning: Assignment conflicts with " + employee.getName() +
+                    "'s constraints. A pending approval request has been sent to the employee.");
         }
-    }
-    boolean hasFixedDayOffConflict = employee.getFixedDayOff() != null &&
-        employee.getFixedDayOff() == shift.getDate().getDayOfWeek();
-    boolean hasConflict = hasConstraintConflict || hasFixedDayOffConflict;
-
-    // No conflict → approve immediately
-    // Conflict → create PENDING assignment, employee must approve
-    ShiftAssignment assignment = new ShiftAssignment(
-        employee,
-        shift,
-        role,
-        hasConflict,
-        hasFixedDayOffConflict
-    );
-    if (!hasConflict) {
-        assignment.setApproved(true);
-    }
-    shift.addAssignment(assignment);
-
-    if (hasConflict) {
-        System.out.println("Warning: Assignment conflicts with " + employee.getName() +
-            "'s constraints. A pending approval request has been sent to the employee.");
-    }
     }
 
     /** Returns all assignments waiting for this employee's approval */
@@ -239,8 +165,11 @@ public class ShiftController {
         return pending;
     }
 
-    /** Employee approves or rejects a pending assignment.
-     *  If rejected, the assignment is removed from the shift so HR can pick another employee. */
+    /**
+     * Employee approves or rejects a pending assignment.
+     * If rejected, the assignment is removed from the shift so HR can pick another
+     * employee.
+     */
     public void respondToAssignment(Employee employee, ShiftAssignment assignment, boolean approved) {
         if (!assignment.getEmployee().getId().equals(employee.getId())) {
             throw new IllegalArgumentException("Employee can only respond to their own assignments");
@@ -257,8 +186,12 @@ public class ShiftController {
         }
     }
 
-    /** Req #4: Substitute an existing assignment with a different available employee.
-     *  The replacement must not already be on the shift and must be authorized for the same role. */
+    /**
+     * Req #4: Substitute an existing assignment with a different available
+     * employee.
+     * The replacement must not already be on the shift and must be authorized for
+     * the same role.
+     */
     public void substituteEmployee(User requestedBy, Shift shift, Employee originalEmployee, Employee replacement) {
         if (!(requestedBy instanceof HR_Manager) || !((HR_Manager) requestedBy).isHRManager()) {
             throw new IllegalArgumentException("Only HR manager can make substitutions");
@@ -290,50 +223,34 @@ public class ShiftController {
             throw new IllegalArgumentException(replacement.getName() + " is not authorized for role " + role);
         }
 
-        // For DRIVER role: verify system availability record covers this shift
-        if (role == Role.DRIVER) {
-            DriverAvailability driverRecord = driverAvailabilities.get(replacement.getId());
-            if (driverRecord == null) {
-                throw new IllegalArgumentException("Employee " + replacement.getName() +
-                    " has no driver availability record registered in the system");
-            }
-            if (!driverRecord.isAvailableFor(shift.getDate().getDayOfWeek(), shift.getShiftType())) {
-                throw new IllegalArgumentException("Driver " + replacement.getName() +
-                    " is not available for " + shift.getShiftType() +
-                    " shifts on " + shift.getDate().getDayOfWeek() +
-                    " according to the system record");
-            }
-        }
-
         // Check constraints for replacement (req #3 behaviour applies here too)
         boolean hasConstraintConflict = false;
         WeeklyAvailabilityRequest availability = replacement.getWeeklyAvailabilityRequest();
         if (isFullDayVacationConstraint(availability, shift.getDate().getDayOfWeek())) {
             throw new IllegalArgumentException(replacement.getName() +
-                " is on vacation on " + shift.getDate().getDayOfWeek() + " and cannot be assigned");
+                    " is on vacation on " + shift.getDate().getDayOfWeek() + " and cannot be assigned");
         }
         if (availability != null) {
             for (Constraint constraint : availability.getConstraints()) {
                 if (constraint.getDay() == shift.getDate().getDayOfWeek() &&
-                    constraint.getShiftType() == shift.getShiftType()) {
+                        constraint.getShiftType() == shift.getShiftType()) {
                     hasConstraintConflict = true;
                     break;
                 }
             }
         }
         boolean hasFixedDayOffConflict = replacement.getFixedDayOff() != null &&
-            replacement.getFixedDayOff() == shift.getDate().getDayOfWeek();
+                replacement.getFixedDayOff() == shift.getDate().getDayOfWeek();
         boolean hasConflict = hasConstraintConflict || hasFixedDayOffConflict;
 
         // Remove original, add replacement
         shift.removeAssignment(originalAssignment);
         ShiftAssignment newAssignment = new ShiftAssignment(
-            replacement,
-            shift,
-            role,
-            hasConflict,
-            hasFixedDayOffConflict
-        );
+                replacement,
+                shift,
+                role,
+                hasConflict,
+                hasFixedDayOffConflict);
         if (!hasConflict) {
             newAssignment.setApproved(true);
         }
@@ -341,7 +258,7 @@ public class ShiftController {
 
         if (hasConflict) {
             System.out.println("Warning: Substitution conflicts with " + replacement.getName() +
-                "'s constraints. A pending approval request has been sent to the employee.");
+                    "'s constraints. A pending approval request has been sent to the employee.");
         }
     }
 
@@ -375,19 +292,21 @@ public class ShiftController {
     }
 
     /** HR handles cancellation by substituting another employee. */
-    public void handleCancellationWithSubstitution(User requestedBy, ShiftAssignment cancellationRequest, Employee replacement) {
+    public void handleCancellationWithSubstitution(User requestedBy, ShiftAssignment cancellationRequest,
+            Employee replacement) {
         if (!cancellationRequest.isCancellationRequested()) {
             throw new IllegalArgumentException("Assignment is not marked as cancellation request");
         }
         substituteEmployee(
-            requestedBy,
-            cancellationRequest.getShift(),
-            cancellationRequest.getEmployee(),
-            replacement
-        );
+                requestedBy,
+                cancellationRequest.getShift(),
+                cancellationRequest.getEmployee(),
+                replacement);
     }
 
-    /** Req #10: calculate worked hours from approved assignments and update salary. */
+    /**
+     * Req #10: calculate worked hours from approved assignments and update salary.
+     */
     public double calculateWorkedHoursForEmployee(Employee employee) {
         double totalHours = 0;
 
@@ -401,7 +320,10 @@ public class ShiftController {
         return totalHours;
     }
 
-    /** Updates employee salary according to approved assigned shifts and returns final salary. */
+    /**
+     * Updates employee salary according to approved assigned shifts and returns
+     * final salary.
+     */
     public double recalculateEmployeeSalary(Employee employee) {
         if (employee.getSalary() == null) {
             throw new IllegalArgumentException("Employee salary configuration is missing");
