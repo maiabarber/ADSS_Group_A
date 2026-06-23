@@ -23,7 +23,8 @@ public class Shift {
         this.cancellationCardTransferred = false;
     }
 
-    public Shift(LocalDate date, ShiftType shiftType, Employee shiftManager, int requiredCashiers, int requiredStorekeepers) {
+    public Shift(LocalDate date, ShiftType shiftType, Employee shiftManager, int requiredCashiers,
+            int requiredStorekeepers) {
         this();
         this.date = date;
         this.shiftType = shiftType;
@@ -133,8 +134,6 @@ public class Shift {
         return cancellationCardTransferred;
     }
 
-    
-
     public Employee getCancellationCardTransferredBy() {
         return cancellationCardTransferredBy;
     }
@@ -160,21 +159,21 @@ public class Shift {
     @Override
     public String toString() {
         return "Shift{" +
-            "date=" + date +
-            ", shiftType=" + shiftType +
-            ", shiftManager=" + shiftManager +
-            ", requiredRoleCounts=" + requiredRoleCounts +
-            ", assignments=" + assignments +
-            ", cancellationCardTransferred=" + cancellationCardTransferred +
-            ", cancellationCardTransferredBy=" + cancellationCardTransferredBy +
-            '}';
+                "date=" + date +
+                ", shiftType=" + shiftType +
+                ", shiftManager=" + shiftManager +
+                ", requiredRoleCounts=" + requiredRoleCounts +
+                ", assignments=" + assignments +
+                ", cancellationCardTransferred=" + cancellationCardTransferred +
+                ", cancellationCardTransferredBy=" + cancellationCardTransferredBy +
+                '}';
     }
 
     private void initializeDefaultRoleRequirements() {
         requiredRoleCounts.clear();
-        for (Role role : Role.values()) {
-            requiredRoleCounts.put(role, 1);
-        }
+        requiredRoleCounts.put(Role.CASHIER, 1);
+        requiredRoleCounts.put(Role.STOREKEEPER, 1);
+        requiredRoleCounts.put(Role.DRIVER, 0);
     }
 
     private int getRequiredCount(Role role) {
@@ -185,8 +184,8 @@ public class Shift {
         if (role == null) {
             throw new IllegalArgumentException("Role must not be null");
         }
-        if (count == null || count < 1) {
-            throw new IllegalArgumentException("Required count for role " + role + " must be at least 1");
+        if (count == null || count < 0) {
+            throw new IllegalArgumentException("Required count for role " + role + " must be at least 0");
         }
         requiredRoleCounts.put(role, count);
     }

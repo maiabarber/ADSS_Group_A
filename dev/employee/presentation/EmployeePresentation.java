@@ -194,6 +194,7 @@ public class EmployeePresentation {
             System.out.println("Job role:");
             System.out.println("1. CASHIER");
             System.out.println("2. STOREKEEPER");
+            System.out.println("3. DRIVER");
             System.out.print("Selection: ");
             String value = scanner.nextLine().trim();
 

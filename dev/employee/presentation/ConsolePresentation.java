@@ -13,6 +13,7 @@ import employee.domain.Salary;
 import employee.domain.Shift;
 import employee.domain.ShiftAssignment;
 import employee.domain.ShiftType;
+import employee.domain.DriverAssignmentRequest;
 import employee.domain.User;
 import employee.domain.WeeklyAvailabilityRequest;
 import employee.repository.EmployeeRepository;
@@ -27,7 +28,7 @@ import employee.repository.impl.InMemoryUserRepository;
 import employee.service.AuthenticationService;
 import employee.service.SubmissionDeadlineService;
 import employee.service.WeeklyAvailabilityService;
-import employee.domain.DriverAvailability;
+import employee.service.EmployeeTransportationService;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -35,16 +36,18 @@ import java.time.Year;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
 
 /**
- * ConsolePresentation class provides a console-based user interface for the employee scheduling system.
- * It allows users to log in, submit their weekly availability, and perform various actions based on their role (HR manager or employee).
- * The class interacts with the authentication service, employee repository, and other controllers to manage user input and system operations.
+ * ConsolePresentation class provides a console-based user interface for the
+ * employee scheduling system.
+ * It allows users to log in, submit their weekly availability, and perform
+ * various actions based on their role (HR manager or employee).
+ * The class interacts with the authentication service, employee repository, and
+ * other controllers to manage user input and system operations.
  */
 public class ConsolePresentation {
     private static final int DEFAULT_ANNUAL_VACATION_DAYS = 10;
@@ -59,6 +62,7 @@ public class ConsolePresentation {
     private final SubmissionDeadlineRepository submissionDeadlineRepository;
     private final SubmissionDeadlineService submissionDeadlineService;
     private final WeeklyAvailabilityService weeklyAvailabilityService;
+    private final EmployeeTransportationService employeeTransportationService;
     private int lastVacationResetYear = -1;
 
     public ConsolePresentation() {
@@ -72,7 +76,9 @@ public class ConsolePresentation {
         this.shiftRepository = new InMemoryShiftRepository();
         this.submissionDeadlineRepository = new InMemorySubmissionDeadlineRepository();
         this.submissionDeadlineService = new SubmissionDeadlineService();
-        this.weeklyAvailabilityService = new WeeklyAvailabilityService(submissionDeadlineRepository, employeeRepository);
+        this.weeklyAvailabilityService = new WeeklyAvailabilityService(submissionDeadlineRepository,
+                employeeRepository);
+        this.employeeTransportationService = new EmployeeTransportationService(shiftRepository, employeeRepository);
     }
 
     public void run() {
@@ -90,14 +96,12 @@ public class ConsolePresentation {
                 loginPresentation.readLoginInput(scanner);
 
                 Optional<User> loggedInUser = authenticationService.login(
-                    loginPresentation.getIdInput(),
-                    loginPresentation.getPasswordInput()
-                );
+                        loginPresentation.getIdInput(),
+                        loginPresentation.getPasswordInput());
                 if (!loggedInUser.isPresent()) {
                     if (authenticationService.isFiredCredentials(
-                        loginPresentation.getIdInput(),
-                        loginPresentation.getPasswordInput()
-                    )) {
+                            loginPresentation.getIdInput(),
+                            loginPresentation.getPasswordInput())) {
                         System.out.println("Login blocked: this employee is marked as fired.");
                         continue;
                     }
@@ -131,9 +135,9 @@ public class ConsolePresentation {
                         System.out.println("8. Substitute employee in shift");
                         System.out.println("9. Handle cancellation requests");
                         System.out.println("10. Calculate employee salary from shifts");
-                        System.out.println("11. Manage driver availability");   // NEW
-                        System.out.println("12. Logout");                       // was 11
-                        System .out.println("13. Exit");   
+                        System.out.println("11. Logout");
+                        System.out.println("12. Exit");
+                        System.out.println("13. Handle driver assignment requests");
                     } else {
                         System.out.println("1. Submit weekly constraints and preferences");
                         System.out.println("2. View and respond to pending shift assignments");
@@ -178,9 +182,6 @@ public class ConsolePresentation {
                                 calculateEmployeeSalaryFlow(scanner);
                                 break;
                             case "11":
-                                manageDriverAvailabilityFlow(scanner);
-                                break;
-                            case "12":
                                 if (authenticationService.logout()) {
                                     System.out.println("You have been logged out.");
                                 } else {
@@ -188,12 +189,15 @@ public class ConsolePresentation {
                                 }
                                 sessionActive = false;
                                 break;
-                            case "13":
+                            case "12":
                                 authenticationService.logout();
                                 System.out.println("You have been logged out.");
                                 System.out.println("Application terminated.");
                                 sessionActive = false;
                                 appRunning = false;
+                                break;
+                            case "13":
+                                handleDriverAssignmentRequestsFlow(scanner);
                                 break;
                             default:
                                 System.out.println("Invalid selection.");
@@ -244,19 +248,18 @@ public class ConsolePresentation {
         authenticationService.registerUser(new HR_Manager("100000201", "hrpass"));
 
         Employee demoEmployee = new Employee(
-            "100000202",
-            "pass123",
-            new BankAccount("10", "123", "555555"),
-            "Demo Employee",
-            new Salary(5000, 50, 0, EmploymentScope.FULL_TIME),
-            EmploymentType.REGULAR,
-            new EmploymentTerms(LocalDate.now(), EmploymentScope.FULL_TIME, 5000, 50, 12),
-            java.util.Collections.singleton(Role.CASHIER),
-            false,
-            false,
-            null,
-            new WeeklyAvailabilityRequest()
-        );
+                "100000202",
+                "pass123",
+                new BankAccount("10", "123", "555555"),
+                "Demo Employee",
+                new Salary(5000, 50, 0, EmploymentScope.FULL_TIME),
+                EmploymentType.REGULAR,
+                new EmploymentTerms(LocalDate.now(), EmploymentScope.FULL_TIME, 5000, 50, 12),
+                java.util.Collections.singleton(Role.CASHIER),
+                false,
+                false,
+                null,
+                new WeeklyAvailabilityRequest());
 
         authenticationService.registerUser(demoEmployee);
         employeeRepository.save(demoEmployee);
@@ -290,48 +293,46 @@ public class ConsolePresentation {
         }
     }
 
-private void submitWeeklyAvailabilityFlow(User loggedInUser, Scanner scanner) {
-    if (!(loggedInUser instanceof Employee)) {
-        System.out.println("Only employees can submit constraints and preferences.");
-        return;
-    }
+    private void submitWeeklyAvailabilityFlow(User loggedInUser, Scanner scanner) {
+        if (!(loggedInUser instanceof Employee)) {
+            System.out.println("Only employees can submit constraints and preferences.");
+            return;
+        }
 
-    Employee employee = (Employee) loggedInUser;
-    ensureWeeklyAvailabilityCurrent(employee);
-
-    WeeklyAvailabilityRequest weeklyAvailabilityRequest = employee.getWeeklyAvailabilityRequest();
-    if (weeklyAvailabilityRequest == null) {
-        weeklyAvailabilityRequest = new WeeklyAvailabilityRequest();
-        employee.setWeeklyAvailabilityRequest(weeklyAvailabilityRequest);
+        Employee employee = (Employee) loggedInUser;
         ensureWeeklyAvailabilityCurrent(employee);
+
+        WeeklyAvailabilityRequest weeklyAvailabilityRequest = employee.getWeeklyAvailabilityRequest();
+        if (weeklyAvailabilityRequest == null) {
+            weeklyAvailabilityRequest = new WeeklyAvailabilityRequest();
+            employee.setWeeklyAvailabilityRequest(weeklyAvailabilityRequest);
+            ensureWeeklyAvailabilityCurrent(employee);
+        }
+
+        List<Constraint> constraints = readConstraints(scanner);
+        List<Preference> preferences = readPreferences(scanner);
+        System.out.println("Current vacation days balance: " + employee.getVacationDaysBalance());
+        int vacationDaysToUse = readInt(scanner, "Vacation days to use this week: ");
+
+        List<DayOfWeek> selectedVacationDays = readVacationDaysToUse(scanner, vacationDaysToUse);
+
+        try {
+            int remainingVacationDays = weeklyAvailabilityService.submitWeeklyAvailability(
+                    employee,
+                    constraints,
+                    preferences,
+                    vacationDaysToUse,
+                    selectedVacationDays,
+                    LocalDate.now());
+            System.out.println(
+                    "Weekly constraints and preferences were submitted successfully. Remaining vacation days: " +
+                            remainingVacationDays + ".");
+        } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
+        } catch (RepositoryException e) {
+            System.out.println("Failed to save weekly submission: " + e.getMessage());
+        }
     }
-
-    List<Constraint> constraints = readConstraints(scanner);
-    List<Preference> preferences = readPreferences(scanner);
-    System.out.println("Current vacation days balance: " + employee.getVacationDaysBalance());
-    int vacationDaysToUse = readInt(scanner, "Vacation days to use this week: ");
-
-    List<DayOfWeek> selectedVacationDays = readVacationDaysToUse(scanner, vacationDaysToUse);
-
-    try {
-        int remainingVacationDays = weeklyAvailabilityService.submitWeeklyAvailability(
-            employee,
-            constraints,
-            preferences,
-            vacationDaysToUse,
-            selectedVacationDays,
-            LocalDate.now()
-        );
-        System.out.println(
-            "Weekly constraints and preferences were submitted successfully. Remaining vacation days: " +
-            remainingVacationDays + "."
-        );
-    } catch (IllegalArgumentException e) {
-        System.out.println(e.getMessage());
-    } catch (RepositoryException e) {
-        System.out.println("Failed to save weekly submission: " + e.getMessage());
-    }
-}
 
     private List<DayOfWeek> readVacationDaysToUse(Scanner scanner, int daysToUse) {
         List<DayOfWeek> selectedDays = new ArrayList<>();
@@ -364,33 +365,32 @@ private void submitWeeklyAvailabilityFlow(User loggedInUser, Scanner scanner) {
         }
     }
 
-private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
-    if (!(loggedInUser instanceof Employee)) {
-        return;
-    }
+    private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
+        if (!(loggedInUser instanceof Employee)) {
+            return;
+        }
 
-    Employee employee = (Employee) loggedInUser;
-    if (employee.getFixedDayOff() != null) {
-        return;
-    }
+        Employee employee = (Employee) loggedInUser;
+        if (employee.getFixedDayOff() != null) {
+            return;
+        }
 
-    DayOfWeek fixedDayOff = readFixedDayOff(scanner);
-    employee.setFixedDayOff(fixedDayOff);
+        DayOfWeek fixedDayOff = readFixedDayOff(scanner);
+        employee.setFixedDayOff(fixedDayOff);
 
-    try {
-        employeeRepository.save(employee);
-        System.out.println("Your fixed day off was set to " + fixedDayOff + ".");
-    } catch (RepositoryException e) {
-        System.out.println("Failed to save fixed day off: " + e.getMessage());
+        try {
+            employeeRepository.save(employee);
+            System.out.println("Your fixed day off was set to " + fixedDayOff + ".");
+        } catch (RepositoryException e) {
+            System.out.println("Failed to save fixed day off: " + e.getMessage());
+        }
     }
-}
 
     private void setSubmissionDeadlineFlow(Scanner scanner) {
         while (true) {
             LocalDate newDeadline = readLocalDate(
-                scanner,
-                "Deadline for submitting constraints and preferences for the upcoming week (DD-MM-YYYY): "
-            );
+                    scanner,
+                    "Deadline for submitting constraints and preferences for the upcoming week (DD-MM-YYYY): ");
 
             try {
                 submissionDeadlineService.setWeeklySubmissionDeadline(newDeadline, submissionDeadlineRepository);
@@ -484,7 +484,7 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
                     String canManageShiftInput = scanner.nextLine();
                     if (!canManageShiftInput.isEmpty()) {
                         if (!"true".equalsIgnoreCase(canManageShiftInput) &&
-                            !"false".equalsIgnoreCase(canManageShiftInput)) {
+                                !"false".equalsIgnoreCase(canManageShiftInput)) {
                             System.out.println("Invalid value. Please enter true or false.");
                             return;
                         }
@@ -501,13 +501,12 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
 
         try {
             boolean updated = userController.updateEmployeeDetails(
-                currentUser.get(),
-                employee,
-                newName,
-                newGlobalSalary,
-                newHourlySalary,
-                newCanManageShift
-            );
+                    currentUser.get(),
+                    employee,
+                    newName,
+                    newGlobalSalary,
+                    newHourlySalary,
+                    newCanManageShift);
 
             if (updated) {
                 System.out.println("Employee details updated successfully.");
@@ -533,9 +532,8 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
             String employeeId = scanner.nextLine();
 
             boolean fired = userController.fireEmployee(
-                currentUser.get(),
-                employeeId
-            );
+                    currentUser.get(),
+                    employeeId);
 
             if (fired) {
                 System.out.println("Employee marked as fired.");
@@ -609,14 +607,22 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
 
             String value = scanner.nextLine().trim();
             switch (value) {
-                case "1": return DayOfWeek.MONDAY;
-                case "2": return DayOfWeek.TUESDAY;
-                case "3": return DayOfWeek.WEDNESDAY;
-                case "4": return DayOfWeek.THURSDAY;
-                case "5": return DayOfWeek.FRIDAY;
-                case "6": return DayOfWeek.SATURDAY;
-                case "7": return DayOfWeek.SUNDAY;
-                default: System.out.println("Error: Day of week must be 1-7.");
+                case "1":
+                    return DayOfWeek.MONDAY;
+                case "2":
+                    return DayOfWeek.TUESDAY;
+                case "3":
+                    return DayOfWeek.WEDNESDAY;
+                case "4":
+                    return DayOfWeek.THURSDAY;
+                case "5":
+                    return DayOfWeek.FRIDAY;
+                case "6":
+                    return DayOfWeek.SATURDAY;
+                case "7":
+                    return DayOfWeek.SUNDAY;
+                default:
+                    System.out.println("Error: Day of week must be 1-7.");
             }
         }
     }
@@ -632,11 +638,16 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
 
             String value = scanner.nextLine().trim();
             switch (value) {
-                case "1": return ShiftType.MORNING;
-                case "2": return ShiftType.MORNING_OVERTIME;
-                case "3": return ShiftType.EVENING;
-                case "4": return ShiftType.DOUBLE_SHIFT;
-                default: System.out.println("Error: Shift type must be 1-4.");
+                case "1":
+                    return ShiftType.MORNING;
+                case "2":
+                    return ShiftType.MORNING_OVERTIME;
+                case "3":
+                    return ShiftType.EVENING;
+                case "4":
+                    return ShiftType.DOUBLE_SHIFT;
+                default:
+                    System.out.println("Error: Shift type must be 1-4.");
             }
         }
     }
@@ -686,14 +697,22 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
             String value = scanner.nextLine().trim();
 
             switch (value) {
-                case "1": return DayOfWeek.MONDAY;
-                case "2": return DayOfWeek.TUESDAY;
-                case "3": return DayOfWeek.WEDNESDAY;
-                case "4": return DayOfWeek.THURSDAY;
-                case "5": return DayOfWeek.FRIDAY;
-                case "6": return DayOfWeek.SATURDAY;
-                case "7": return DayOfWeek.SUNDAY;
-                default: System.out.println("Error: Day of week must be 1-7.");
+                case "1":
+                    return DayOfWeek.MONDAY;
+                case "2":
+                    return DayOfWeek.TUESDAY;
+                case "3":
+                    return DayOfWeek.WEDNESDAY;
+                case "4":
+                    return DayOfWeek.THURSDAY;
+                case "5":
+                    return DayOfWeek.FRIDAY;
+                case "6":
+                    return DayOfWeek.SATURDAY;
+                case "7":
+                    return DayOfWeek.SUNDAY;
+                default:
+                    System.out.println("Error: Day of week must be 1-7.");
             }
         }
     }
@@ -709,30 +728,30 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
             System.out.println("\n=== Approve Employee as Shift Manager ===");
             System.out.println("Available employees:");
             List<Employee> employees = userController.getEmployees();
-            
+
             if (employees.isEmpty()) {
                 System.out.println("No employees found.");
                 return;
             }
-            
+
             for (int i = 0; i < employees.size(); i++) {
                 Employee emp = employees.get(i);
                 String status = emp.canManageShift() ? "(Already approved)" : "(Not approved)";
                 System.out.println((i + 1) + ". " + emp.getId() + " - " + emp.getName() + " " + status);
             }
-            
+
             System.out.print("Select employee number: ");
             int choice = Integer.parseInt(scanner.nextLine()) - 1;
-            
+
             if (choice < 0 || choice >= employees.size()) {
                 System.out.println("Invalid selection.");
                 return;
             }
-            
+
             Employee selectedEmployee = employees.get(choice);
             userController.approveAsShiftManager(currentUser.get(), selectedEmployee.getId());
             System.out.println("Employee " + selectedEmployee.getName() + " has been approved as shift manager.");
-            
+
         } catch (RepositoryException e) {
             System.out.println("Failed to approve employee: " + e.getMessage());
         } catch (IllegalArgumentException e) {
@@ -771,12 +790,11 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
             }
 
             Shift shift = new Shift(
-                shiftPresentation.getShiftDateInput(),
-                shiftPresentation.getShiftTypeInput(),
-                null,
-                shiftPresentation.getRequiredCashierInput(),
-                shiftPresentation.getRequiredStoreKeeperInput()
-            );
+                    shiftPresentation.getShiftDateInput(),
+                    shiftPresentation.getShiftTypeInput(),
+                    null,
+                    shiftPresentation.getRequiredCashierInput(),
+                    shiftPresentation.getRequiredStoreKeeperInput());
             shift.assignShiftManager(currentUser.get(), manager);
             shiftController.addShift(shift);
             shiftRepository.save(shift);
@@ -799,7 +817,6 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
 
             System.out.println("\n=== Assign Employee to Shift ===");
 
-            // Show available employees
             List<Employee> employees = userController.getEmployees();
             if (employees.isEmpty()) {
                 System.out.println("No employees found.");
@@ -822,7 +839,6 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
 
             Employee selectedEmployee = employees.get(employeeChoice);
 
-            // Show available shifts
             List<Shift> shifts = shiftController.getShifts();
             if (shifts.isEmpty()) {
                 System.out.println("No shifts found.");
@@ -845,11 +861,10 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
 
             Shift selectedShift = shifts.get(shiftChoice);
 
-            // Select role
             System.out.println("Select role:");
             System.out.println("1. CASHIER");
             System.out.println("2. STOREKEEPER");
-            System.out.println("3. DRIVER");    
+            System.out.println("3. DRIVER");
             System.out.print("Selection: ");
             String roleChoice = scanner.nextLine();
 
@@ -865,11 +880,14 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
                 return;
             }
 
-            // Perform assignment
             shiftController.assignEmployeeToShift(currentUser.get(), selectedEmployee, selectedShift, selectedRole);
-            System.out.println("Employee " + selectedEmployee.getName() + " has been assigned to shift " +
-                             selectedShift.getDate() + " - " + selectedShift.getShiftType() + " as " + selectedRole);
+            shiftRepository.save(selectedShift);
 
+            System.out.println("Employee " + selectedEmployee.getName() + " has been assigned to shift " +
+                    selectedShift.getDate() + " - " + selectedShift.getShiftType() + " as " + selectedRole);
+
+        } catch (RepositoryException e) {
+            System.out.println("Failed to save shift assignment: " + e.getMessage());
         } catch (IllegalArgumentException e) {
             System.out.println("Assignment failed: " + e.getMessage());
         }
@@ -893,9 +911,9 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
         for (int i = 0; i < pending.size(); i++) {
             ShiftAssignment assignment = pending.get(i);
             System.out.println((i + 1) + ". " + assignment.getShift().getDate() +
-                " - " + assignment.getShift().getShiftType() +
-                " as " + assignment.getRole() +
-                " [CONFLICTS WITH YOUR CONSTRAINTS]");
+                    " - " + assignment.getShift().getShiftType() +
+                    " as " + assignment.getRole() +
+                    " [CONFLICTS WITH YOUR CONSTRAINTS]");
         }
 
         System.out.print("Select assignment number: ");
@@ -912,6 +930,7 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
             boolean approved = "yes".equals(response);
 
             shiftController.respondToAssignment(employee, selected, approved);
+            shiftRepository.save(selected.getShift());
 
             if (approved) {
                 System.out.println("Assignment approved. You are confirmed for this shift.");
@@ -922,6 +941,8 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
             System.out.println("Invalid input.");
         } catch (IllegalArgumentException e) {
             System.out.println("Error: " + e.getMessage());
+        } catch (RepositoryException e) {
+            System.out.println("Failed to save assignment response: " + e.getMessage());
         }
     }
 
@@ -985,7 +1006,8 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
                             break;
                         }
                     }
-                    if (!alreadyAssigned) available.add(emp);
+                    if (!alreadyAssigned)
+                        available.add(emp);
                 }
             }
 
@@ -1006,8 +1028,11 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
             Employee replacement = available.get(replChoice);
 
             shiftController.substituteEmployee(currentUser.get(), selectedShift, originalEmployee, replacement);
+            shiftRepository.save(selectedShift);
             System.out.println(originalEmployee.getName() + " has been replaced by " + replacement.getName() + ".");
 
+        } catch (RepositoryException e) {
+            System.out.println("Failed to save substitution: " + e.getMessage());
         } catch (IllegalArgumentException e) {
             System.out.println("Substitution failed: " + e.getMessage());
         }
@@ -1039,8 +1064,8 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
             ShiftAssignment assignment = myAssignments.get(i);
             String status = assignment.isCancellationRequested() ? "[REQUESTED]" : "";
             System.out.println((i + 1) + ". " + assignment.getShift().getDate() +
-                " - " + assignment.getShift().getShiftType() +
-                " as " + assignment.getRole() + " " + status);
+                    " - " + assignment.getShift().getShiftType() +
+                    " as " + assignment.getRole() + " " + status);
         }
 
         System.out.print("Select assignment number: ");
@@ -1058,11 +1083,14 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
             }
 
             shiftController.requestShiftCancellation(employee, selected.getShift());
+            shiftRepository.save(selected.getShift());
             System.out.println("Cancellation request submitted. The manager will handle a substitution.");
         } catch (NumberFormatException e) {
             System.out.println("Invalid input.");
         } catch (IllegalArgumentException e) {
             System.out.println("Error: " + e.getMessage());
+        } catch (RepositoryException e) {
+            System.out.println("Failed to save cancellation request: " + e.getMessage());
         }
     }
 
@@ -1084,9 +1112,9 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
             for (int i = 0; i < requests.size(); i++) {
                 ShiftAssignment request = requests.get(i);
                 System.out.println((i + 1) + ". " + request.getEmployee().getName() +
-                    " requested cancellation for " + request.getShift().getDate() +
-                    " - " + request.getShift().getShiftType() +
-                    " (" + request.getRole() + ")");
+                        " requested cancellation for " + request.getShift().getDate() +
+                        " - " + request.getShift().getShiftType() +
+                        " (" + request.getRole() + ")");
             }
 
             System.out.print("Select request number: ");
@@ -1135,10 +1163,13 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
 
             Employee replacement = available.get(replacementChoice);
             shiftController.handleCancellationWithSubstitution(currentUser.get(), selectedRequest, replacement);
+            shiftRepository.save(selectedShift);
             System.out.println("Cancellation handled. Substitution completed.");
 
         } catch (IllegalArgumentException e) {
             System.out.println("Failed to handle cancellation: " + e.getMessage());
+        } catch (RepositoryException e) {
+            System.out.println("Failed to save cancellation handling: " + e.getMessage());
         }
     }
 
@@ -1215,105 +1246,114 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
             Shift selectedShift = managedShifts.get(choice);
             shiftController.transferCancellationCard(employee, selectedShift);
             System.out.println("Cancellation card transfer recorded for shift " +
-                selectedShift.getDate() + " - " + selectedShift.getShiftType() + ".");
+                    selectedShift.getDate() + " - " + selectedShift.getShiftType() + ".");
         } catch (IllegalArgumentException e) {
             System.out.println("Transfer failed: " + e.getMessage());
-        } 
+        }
     }
 
-    private void manageDriverAvailabilityFlow(Scanner scanner) {
+    private void handleDriverAssignmentRequestsFlow(Scanner scanner) {
         Optional<User> currentUser = authenticationService.getCurrentUser();
         if (!currentUser.isPresent()) {
             System.out.println("No user is currently logged in.");
             return;
         }
 
-        List<Employee> drivers = new ArrayList<>();
-        for (Employee emp : userController.getEmployees()) {
-            if (emp.getAuthorizedRoles().contains(Role.DRIVER) && !emp.isFired())
-                drivers.add(emp);
-        }
-        if (drivers.isEmpty()) {
-            System.out.println("No employees with the DRIVER role found.");
+        if (!isHrManager(currentUser.get())) {
+            System.out.println("Only HR manager can handle driver assignment requests.");
             return;
         }
 
-        System.out.println("\n=== Manage Driver Availability ===");
-        for (int i = 0; i < drivers.size(); i++) {
-            Employee d = drivers.get(i);
-            String reg = shiftController.getDriverAvailability(d.getId()) != null
-                ? "(record registered)" : "(no record yet)";
-            System.out.println((i + 1) + ". " + d.getId() + " - " + d.getName() + " " + reg);
+        List<DriverAssignmentRequest> requests = employeeTransportationService.getOpenDriverAssignmentRequests();
+
+        if (requests.isEmpty()) {
+            System.out.println("No open driver assignment requests.");
+            return;
         }
-        System.out.print("Select driver number: ");
-        int choice;
+
+        System.out.println("\n=== Driver Assignment Requests ===");
+        for (int i = 0; i < requests.size(); i++) {
+            DriverAssignmentRequest request = requests.get(i);
+            System.out.println((i + 1) + ". Delivery " + request.getDeliveryId()
+                    + " needs driver " + request.getDriverId()
+                    + " on " + request.getDeliveryDateTime().toLocalDate()
+                    + " at " + request.getDeliveryDateTime().toLocalTime()
+                    + ", shift " + request.getShiftType());
+        }
+
+        System.out.print("Select request number: ");
+        int requestChoice;
         try {
-            choice = Integer.parseInt(scanner.nextLine()) - 1;
+            requestChoice = Integer.parseInt(scanner.nextLine()) - 1;
         } catch (NumberFormatException e) {
             System.out.println("Invalid input.");
             return;
         }
-        if (choice < 0 || choice >= drivers.size()) {
+
+        if (requestChoice < 0 || requestChoice >= requests.size()) {
             System.out.println("Invalid selection.");
             return;
         }
 
-        Employee driver = drivers.get(choice);
-        DriverAvailability availability = shiftController.getDriverAvailability(driver.getId());
-        if (availability == null) {
-            availability = new DriverAvailability(driver.getId());
-            shiftController.registerDriverAvailability(currentUser.get(), availability);
-        }
+        DriverAssignmentRequest selectedRequest = requests.get(requestChoice);
 
-        boolean managing = true;
-        while (managing) {
-            System.out.println("\nDriver: " + driver.getName() + " — current availability:");
-            boolean hasAny = false;
-            for (DayOfWeek day : DayOfWeek.values()) {
-                Set<ShiftType> shifts = availability.getAvailableShiftsForDay(day);
-                if (!shifts.isEmpty()) {
-                    System.out.println("  " + day + ": " + shifts);
-                    hasAny = true;
-                }
-            }
-            if (!hasAny) System.out.println("  (none)");
+        Shift shift = employeeTransportationService.getShiftByDateTime(
+                selectedRequest.getDeliveryDateTime());
 
-            System.out.println("1. Set available shifts for a day");
-            System.out.println("2. Clear a day");
-            System.out.println("3. Done");
-            System.out.print("Selection: ");
-            String action = scanner.nextLine().trim();
-            if ("1".equals(action)) {
-                DayOfWeek day = readDayOfWeek(scanner);
-                Set<ShiftType> selected = readMultipleShiftTypes(scanner);
-                shiftController.updateDriverAvailability(currentUser.get(), driver.getId(), day, selected);
-                System.out.println("Availability updated for " + day + ".");
-            } else if ("2".equals(action)) {
-                DayOfWeek day = readDayOfWeek(scanner);
-                shiftController.updateDriverAvailability(currentUser.get(), driver.getId(), day, null);
-                System.out.println(day + " cleared.");
-            } else if ("3".equals(action)) {
-                managing = false;
-            } else {
-                System.out.println("Invalid selection.");
-            }
-        }
-    }
+        if (shift == null) {
+            selectedRequest.setStatusMessage(
+                    "Waiting for HR manager to create shift "
+                            + selectedRequest.getShiftType()
+                            + " on "
+                            + selectedRequest.getDeliveryDateTime().toLocalDate()
+                            + " before assigning the driver");
 
-    private Set<ShiftType> readMultipleShiftTypes(Scanner scanner) {
-        Set<ShiftType> selected = new HashSet<>();
-        System.out.println("Select shift types (numbers separated by spaces):");
-        System.out.println("1. MORNING  2. MORNING_OVERTIME  3. EVENING  4. DOUBLE_SHIFT");
-        System.out.print("Selection: ");
-        for (String token : scanner.nextLine().trim().split("\\s+")) {
-            switch (token) {
-                case "1": selected.add(ShiftType.MORNING); break;
-                case "2": selected.add(ShiftType.MORNING_OVERTIME); break;
-                case "3": selected.add(ShiftType.EVENING); break;
-                case "4": selected.add(ShiftType.DOUBLE_SHIFT); break;
-                default: System.out.println("Ignoring unknown token: " + token);
-            }
+            System.out.println("\nNo matching shift exists for this delivery time.");
+            System.out.println("To handle this driver assignment request, HR must first create the required shift.");
+            System.out.println("Required shift details:");
+            System.out.println("Date: " + selectedRequest.getDeliveryDateTime().toLocalDate());
+            System.out.println("Shift type: " + selectedRequest.getShiftType());
+            System.out.println("Driver to assign later: " + selectedRequest.getDriverId());
+            System.out.println("Delivery id: " + selectedRequest.getDeliveryId());
+
+            System.out.println("\nWhat to do next:");
+            System.out.println("1. You will now return to the HR main menu.");
+            System.out.println("2. Choose option 6: Create shift.");
+            System.out.println("3. Create the shift with the date and shift type shown above.");
+            System.out.println("4. After creating the shift, choose option 13 again.");
+            System.out
+                    .println("5. Select this same request again, and the system will assign the driver to that shift.");
+            return;
         }
-        return selected;
+        try {
+            Optional<Employee> driverOptional = employeeRepository.findById(selectedRequest.getDriverId());
+
+            if (!driverOptional.isPresent()) {
+                System.out.println("Driver employee was not found.");
+                return;
+            }
+
+            Employee driver = driverOptional.get();
+
+            shiftController.assignEmployeeToShift(
+                    currentUser.get(),
+                    driver,
+                    shift,
+                    Role.DRIVER);
+
+            shiftRepository.save(shift);
+            employeeTransportationService.markDriverAssignmentRequestHandled(selectedRequest);
+
+            System.out.println("Driver " + driver.getName()
+                    + " was assigned to shift "
+                    + shift.getDate() + " - " + shift.getShiftType()
+                    + " for delivery " + selectedRequest.getDeliveryId() + ".");
+
+            System.out.println("Transportation manager update: driver assignment request was completed.");
+        } catch (RepositoryException e) {
+            System.out.println("Failed to save driver assignment: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            System.out.println("Driver assignment failed: " + e.getMessage());
+        }
     }
 }
