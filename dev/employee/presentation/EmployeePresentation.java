@@ -1,14 +1,14 @@
-package presentation;
+﻿package employee.presentation;
 
-import domain.BankAccount;
-import domain.Employee;
-import domain.EmploymentScope;
-import domain.EmploymentTerms;
-import domain.EmploymentType;
-import domain.Role;
-import domain.Salary;
-import domain.User;
-import domain.WeeklyAvailabilityRequest;
+import employee.domain.BankAccount;
+import employee.domain.Employee;
+import employee.domain.EmploymentScope;
+import employee.domain.EmploymentTerms;
+import employee.domain.EmploymentType;
+import employee.domain.Role;
+import employee.domain.Salary;
+import employee.domain.User;
+import employee.domain.WeeklyAvailabilityRequest;
 
 import java.time.LocalDate;
 import java.util.Collections;

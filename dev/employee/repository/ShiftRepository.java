@@ -1,6 +1,6 @@
-package repository;
+﻿package employee.repository;
 
-import domain.Shift;
+import employee.domain.Shift;
 
 public interface ShiftRepository extends Repository<Shift, String> {
 }

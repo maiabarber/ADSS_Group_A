@@ -1,4 +1,4 @@
-package domain;
+package employee.domain;
 import java.time.DayOfWeek;
 
 /**

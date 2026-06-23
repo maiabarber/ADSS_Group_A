@@ -1,4 +1,4 @@
-package domain;
+package employee.domain;
 
 /**
  * HR_Manager class represents a Human Resources Manager in the system.

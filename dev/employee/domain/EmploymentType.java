@@ -1,4 +1,4 @@
-package domain;
+package employee.domain;
 
 /**
  * EmploymentType enum represents the type of employment for an employee.

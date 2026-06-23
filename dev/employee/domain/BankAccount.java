@@ -1,4 +1,4 @@
-package domain;
+package employee.domain;
 
 /**
  * BankAccount class represents an employee's bank account information in the system.

@@ -1,31 +1,33 @@
-package presentation;
+package employee.presentation;
 
-import domain.BankAccount;
-import domain.Constraint;
-import domain.Employee;
-import domain.EmploymentScope;
-import domain.EmploymentTerms;
-import domain.EmploymentType;
-import domain.HR_Manager;
-import domain.Preference;
-import domain.Role;
-import domain.Salary;
-import domain.Shift;
-import domain.ShiftAssignment;
-import domain.ShiftType;
-import domain.User;
-import domain.WeeklyAvailabilityRequest;
-import repository.EmployeeRepository;
-import repository.RepositoryException;
-import repository.ShiftRepository;
-import repository.SubmissionDeadlineRepository;
-import repository.impl.InMemoryEmployeeRepository;
-import repository.impl.InMemoryShiftRepository;
-import repository.impl.InMemorySubmissionDeadlineRepository;
-import repository.impl.InMemoryUserRepository;
-import service.AuthenticationService;
-import service.SubmissionDeadlineService;
-import service.WeeklyAvailabilityService;
+import employee.domain.BankAccount;
+import employee.domain.Constraint;
+import employee.domain.Employee;
+import employee.domain.EmploymentScope;
+import employee.domain.EmploymentTerms;
+import employee.domain.EmploymentType;
+import employee.domain.HR_Manager;
+import employee.domain.Preference;
+import employee.domain.Role;
+import employee.domain.Salary;
+import employee.domain.Shift;
+import employee.domain.ShiftAssignment;
+import employee.domain.ShiftType;
+import employee.domain.User;
+import employee.domain.WeeklyAvailabilityRequest;
+import employee.repository.EmployeeRepository;
+import employee.repository.RepositoryException;
+import employee.repository.ShiftRepository;
+import employee.repository.SubmissionDeadlineRepository;
+import employee.repository.UserRepository;
+import employee.repository.impl.InMemoryEmployeeRepository;
+import employee.repository.impl.InMemoryShiftRepository;
+import employee.repository.impl.InMemorySubmissionDeadlineRepository;
+import employee.repository.impl.InMemoryUserRepository;
+import employee.service.AuthenticationService;
+import employee.service.SubmissionDeadlineService;
+import employee.service.WeeklyAvailabilityService;
+import employee.domain.DriverAvailability;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -33,9 +35,11 @@ import java.time.Year;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
+import java.util.Set;
 
 /**
  * ConsolePresentation class provides a console-based user interface for the employee scheduling system.
@@ -44,7 +48,6 @@ import java.util.Scanner;
  */
 public class ConsolePresentation {
     private static final int DEFAULT_ANNUAL_VACATION_DAYS = 10;
-
     private final AuthenticationService authenticationService;
     private final EmployeeRepository employeeRepository;
     private final LoginPresentation loginPresentation;
@@ -128,8 +131,9 @@ public class ConsolePresentation {
                         System.out.println("8. Substitute employee in shift");
                         System.out.println("9. Handle cancellation requests");
                         System.out.println("10. Calculate employee salary from shifts");
-                        System.out.println("11. Logout");
-                        System.out.println("12. Exit");
+                        System.out.println("11. Manage driver availability");   // NEW
+                        System.out.println("12. Logout");                       // was 11
+                        System .out.println("13. Exit");   
                     } else {
                         System.out.println("1. Submit weekly constraints and preferences");
                         System.out.println("2. View and respond to pending shift assignments");
@@ -174,6 +178,9 @@ public class ConsolePresentation {
                                 calculateEmployeeSalaryFlow(scanner);
                                 break;
                             case "11":
+                                manageDriverAvailabilityFlow(scanner);
+                                break;
+                            case "12":
                                 if (authenticationService.logout()) {
                                     System.out.println("You have been logged out.");
                                 } else {
@@ -181,7 +188,7 @@ public class ConsolePresentation {
                                 }
                                 sessionActive = false;
                                 break;
-                            case "12":
+                            case "13":
                                 authenticationService.logout();
                                 System.out.println("You have been logged out.");
                                 System.out.println("Application terminated.");
@@ -842,6 +849,7 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
             System.out.println("Select role:");
             System.out.println("1. CASHIER");
             System.out.println("2. STOREKEEPER");
+            System.out.println("3. DRIVER");    
             System.out.print("Selection: ");
             String roleChoice = scanner.nextLine();
 
@@ -850,6 +858,8 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
                 selectedRole = Role.CASHIER;
             } else if ("2".equals(roleChoice)) {
                 selectedRole = Role.STOREKEEPER;
+            } else if ("3".equals(roleChoice)) {
+                selectedRole = Role.DRIVER;
             } else {
                 System.out.println("Invalid role selection.");
                 return;
@@ -1209,5 +1219,101 @@ private void promptForFixedDayOffIfNeeded(User loggedInUser, Scanner scanner) {
         } catch (IllegalArgumentException e) {
             System.out.println("Transfer failed: " + e.getMessage());
         } 
+    }
+
+    private void manageDriverAvailabilityFlow(Scanner scanner) {
+        Optional<User> currentUser = authenticationService.getCurrentUser();
+        if (!currentUser.isPresent()) {
+            System.out.println("No user is currently logged in.");
+            return;
+        }
+
+        List<Employee> drivers = new ArrayList<>();
+        for (Employee emp : userController.getEmployees()) {
+            if (emp.getAuthorizedRoles().contains(Role.DRIVER) && !emp.isFired())
+                drivers.add(emp);
+        }
+        if (drivers.isEmpty()) {
+            System.out.println("No employees with the DRIVER role found.");
+            return;
+        }
+
+        System.out.println("\n=== Manage Driver Availability ===");
+        for (int i = 0; i < drivers.size(); i++) {
+            Employee d = drivers.get(i);
+            String reg = shiftController.getDriverAvailability(d.getId()) != null
+                ? "(record registered)" : "(no record yet)";
+            System.out.println((i + 1) + ". " + d.getId() + " - " + d.getName() + " " + reg);
+        }
+        System.out.print("Select driver number: ");
+        int choice;
+        try {
+            choice = Integer.parseInt(scanner.nextLine()) - 1;
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid input.");
+            return;
+        }
+        if (choice < 0 || choice >= drivers.size()) {
+            System.out.println("Invalid selection.");
+            return;
+        }
+
+        Employee driver = drivers.get(choice);
+        DriverAvailability availability = shiftController.getDriverAvailability(driver.getId());
+        if (availability == null) {
+            availability = new DriverAvailability(driver.getId());
+            shiftController.registerDriverAvailability(currentUser.get(), availability);
+        }
+
+        boolean managing = true;
+        while (managing) {
+            System.out.println("\nDriver: " + driver.getName() + " — current availability:");
+            boolean hasAny = false;
+            for (DayOfWeek day : DayOfWeek.values()) {
+                Set<ShiftType> shifts = availability.getAvailableShiftsForDay(day);
+                if (!shifts.isEmpty()) {
+                    System.out.println("  " + day + ": " + shifts);
+                    hasAny = true;
+                }
+            }
+            if (!hasAny) System.out.println("  (none)");
+
+            System.out.println("1. Set available shifts for a day");
+            System.out.println("2. Clear a day");
+            System.out.println("3. Done");
+            System.out.print("Selection: ");
+            String action = scanner.nextLine().trim();
+            if ("1".equals(action)) {
+                DayOfWeek day = readDayOfWeek(scanner);
+                Set<ShiftType> selected = readMultipleShiftTypes(scanner);
+                shiftController.updateDriverAvailability(currentUser.get(), driver.getId(), day, selected);
+                System.out.println("Availability updated for " + day + ".");
+            } else if ("2".equals(action)) {
+                DayOfWeek day = readDayOfWeek(scanner);
+                shiftController.updateDriverAvailability(currentUser.get(), driver.getId(), day, null);
+                System.out.println(day + " cleared.");
+            } else if ("3".equals(action)) {
+                managing = false;
+            } else {
+                System.out.println("Invalid selection.");
+            }
+        }
+    }
+
+    private Set<ShiftType> readMultipleShiftTypes(Scanner scanner) {
+        Set<ShiftType> selected = new HashSet<>();
+        System.out.println("Select shift types (numbers separated by spaces):");
+        System.out.println("1. MORNING  2. MORNING_OVERTIME  3. EVENING  4. DOUBLE_SHIFT");
+        System.out.print("Selection: ");
+        for (String token : scanner.nextLine().trim().split("\\s+")) {
+            switch (token) {
+                case "1": selected.add(ShiftType.MORNING); break;
+                case "2": selected.add(ShiftType.MORNING_OVERTIME); break;
+                case "3": selected.add(ShiftType.EVENING); break;
+                case "4": selected.add(ShiftType.DOUBLE_SHIFT); break;
+                default: System.out.println("Ignoring unknown token: " + token);
+            }
+        }
+        return selected;
     }
 }

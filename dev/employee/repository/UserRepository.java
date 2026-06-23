@@ -1,6 +1,6 @@
-package repository;
+﻿package employee.repository;
 
-import domain.User;
+import employee.domain.User;
 
 public interface UserRepository extends Repository<User, String> {
 }

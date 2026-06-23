@@ -1,9 +1,9 @@
-package service;
+﻿package employee.service;
 
-import domain.Employee;
-import domain.User;
-import repository.RepositoryException;
-import repository.UserRepository;
+import employee.domain.Employee;
+import employee.domain.User;
+import employee.repository.RepositoryException;
+import employee.repository.UserRepository;
 
 import java.util.Optional;
 

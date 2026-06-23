@@ -1,4 +1,4 @@
-package domain;
+package employee.domain;
 
 /**
  * ShiftType enum represents the different types of shifts that can be assigned to employees.

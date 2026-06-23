@@ -1,8 +1,8 @@
-package repository.impl;
+﻿package employee.repository.impl;
 
-import domain.Shift;
-import repository.RepositoryException;
-import repository.ShiftRepository;
+import employee.domain.Shift;
+import employee.repository.RepositoryException;
+import employee.repository.ShiftRepository;
 
 import java.util.ArrayList;
 import java.util.HashMap;

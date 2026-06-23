@@ -1,19 +1,25 @@
-package presentation;
+﻿package employee.presentation;
 
-import domain.Constraint;
-import domain.Employee;
-import domain.HR_Manager;
-import domain.Preference;
-import domain.Role;
-import domain.Shift;
-import domain.ShiftAssignment;
-import domain.ShiftType;
-import domain.User;
-import domain.WeeklyAvailabilityRequest;
+import employee.domain.Constraint;
+import employee.domain.Employee;
+import employee.domain.HR_Manager;
+import employee.domain.Preference;
+import employee.domain.Role;
+import employee.domain.Shift;
+import employee.domain.ShiftAssignment;
+import employee.domain.ShiftType;
+import employee.domain.User;
+import employee.domain.WeeklyAvailabilityRequest;
+import employee.domain.DriverAvailability;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * ShiftController class manages the scheduling of shifts, employee assignments, and related operations.
@@ -25,6 +31,14 @@ public class ShiftController {
     private final List<Employee> employees = new ArrayList<>();
     private final List<Shift> shifts = new ArrayList<>();
     private final List<Shift> shiftHistory = new ArrayList<>();
+    /**
+     * System-managed availability records for drivers, keyed by employeeId.
+     * Each entry corresponds to a driver record in the transportation module (same employeeId)
+     * and specifies which days and shift types the driver is permitted to work.
+     * Managed exclusively by HR managers via {@link #registerDriverAvailability} and
+     * {@link #updateDriverAvailability}.
+     */
+    private final Map<String, DriverAvailability> driverAvailabilities = new HashMap<>();
 
     public List<Employee> getEmployees() {
         return Collections.unmodifiableList(employees);
@@ -43,6 +57,59 @@ public class ShiftController {
         if (employees != null) {
             this.employees.addAll(employees);
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Driver availability registry (HR-managed)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Registers or replaces the system availability record for a driver.
+     * Must be called by an HR manager. The {@code employeeId} on the
+     * {@link DriverAvailability} must match an existing employee who holds the DRIVER role.
+     *
+     * @param managedBy    the HR manager making the change
+     * @param availability the driver's system availability record
+     */
+    public void registerDriverAvailability(User managedBy, DriverAvailability availability) {
+        ensureHrManager(managedBy);
+        if (availability == null) {
+            throw new IllegalArgumentException("DriverAvailability must not be null");
+        }
+        driverAvailabilities.put(availability.getEmployeeId(), availability);
+    }
+
+    /**
+     * Updates the permitted shift types for a driver on a specific day.
+     * Must be called by an HR manager.
+     *
+     * @param managedBy  the HR manager making the change
+     * @param employeeId the driver's employee ID
+     * @param day        the day of the week to configure
+     * @param shifts     the shift types available that day; null/empty clears the day
+     */
+    public void updateDriverAvailability(User managedBy, String employeeId, DayOfWeek day, Set<ShiftType> shifts) {
+        ensureHrManager(managedBy);
+        DriverAvailability record = driverAvailabilities.get(employeeId);
+        if (record == null) {
+            throw new IllegalArgumentException("No driver availability record found for employeeId: " + employeeId);
+        }
+        record.setAvailableShifts(day, shifts);
+    }
+
+    /**
+     * Returns the system availability record for a driver, or {@code null} if none is registered.
+     *
+     * @param employeeId the driver's employee ID
+     * @return the availability record, or null
+     */
+    public DriverAvailability getDriverAvailability(String employeeId) {
+        return driverAvailabilities.get(employeeId);
+    }
+
+    /** Returns an unmodifiable view of all registered driver availability records. */
+    public Map<String, DriverAvailability> getAllDriverAvailabilities() {
+        return Collections.unmodifiableMap(driverAvailabilities);
     }
 
     public void addShift(Shift shift) {
@@ -74,6 +141,21 @@ public class ShiftController {
     // Validate that employee is authorized for this role
     if (!employee.getAuthorizedRoles().contains(role)) {
         throw new IllegalArgumentException("Employee " + employee.getName() + " is not authorized for role " + role);
+    }
+
+    // For DRIVER role: verify a system availability record exists and covers this shift
+    if (role == Role.DRIVER) {
+        DriverAvailability driverRecord = driverAvailabilities.get(employee.getId());
+        if (driverRecord == null) {
+            throw new IllegalArgumentException("Employee " + employee.getName() +
+                " has no driver availability record registered in the system");
+        }
+        if (!driverRecord.isAvailableFor(shift.getDate().getDayOfWeek(), shift.getShiftType())) {
+            throw new IllegalArgumentException("Driver " + employee.getName() +
+                " is not available for " + shift.getShiftType() +
+                " shifts on " + shift.getDate().getDayOfWeek() +
+                " according to the system record");
+        }
     }
     
     // Validate that employee is not already assigned to this shift
@@ -206,6 +288,21 @@ public class ShiftController {
         // Replacement must be authorized for same role
         if (!replacement.getAuthorizedRoles().contains(role)) {
             throw new IllegalArgumentException(replacement.getName() + " is not authorized for role " + role);
+        }
+
+        // For DRIVER role: verify system availability record covers this shift
+        if (role == Role.DRIVER) {
+            DriverAvailability driverRecord = driverAvailabilities.get(replacement.getId());
+            if (driverRecord == null) {
+                throw new IllegalArgumentException("Employee " + replacement.getName() +
+                    " has no driver availability record registered in the system");
+            }
+            if (!driverRecord.isAvailableFor(shift.getDate().getDayOfWeek(), shift.getShiftType())) {
+                throw new IllegalArgumentException("Driver " + replacement.getName() +
+                    " is not available for " + shift.getShiftType() +
+                    " shifts on " + shift.getDate().getDayOfWeek() +
+                    " according to the system record");
+            }
         }
 
         // Check constraints for replacement (req #3 behaviour applies here too)
