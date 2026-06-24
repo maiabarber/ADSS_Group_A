@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 
 import employee.domain.BankAccount;
 import employee.domain.Constraint;
+import employee.domain.Branch;
 import employee.domain.Employee;
 import employee.domain.EmploymentScope;
 import employee.domain.EmploymentTerms;
@@ -31,6 +32,9 @@ import employee.repository.impl.InMemorySubmissionDeadlineRepository;
 import employee.repository.impl.InMemoryUserRepository;
 import employee.service.AuthenticationService;
 import employee.service.WeeklyAvailabilityService;
+import transportation.domain.Site;
+import transportation.domain.ShippingZone;
+import transportation.domain.SiteType;
 
 import org.junit.Test;
 
@@ -39,13 +43,17 @@ import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 
 public class Tests {
+	private static final Branch DEFAULT_TEST_BRANCH = new Branch("B-DEFAULT", "Default Test Branch", "Default Location");
+
 	@Test
 	public void easy_salaryNoOvertime_whenWorkedBelowThreshold() {
 		Salary salary = new Salary(5000, 50, 120, EmploymentScope.FULL_TIME);
@@ -452,7 +460,8 @@ public class Tests {
 			false,
 			false,
 			DayOfWeek.THURSDAY,
-			new WeeklyAvailabilityRequest()
+			new WeeklyAvailabilityRequest(),
+			DEFAULT_TEST_BRANCH
 		);
 
 		assertEquals("Fixed day off chosen at hiring should be stored", DayOfWeek.THURSDAY, employee.getFixedDayOff());
@@ -1320,6 +1329,10 @@ public class Tests {
 	}
 
 	private static Employee buildEmployee(String id, boolean canManageShift, int vacationDays) {
+		return buildEmployee(id, canManageShift, vacationDays, DEFAULT_TEST_BRANCH);
+	}
+
+	private static Employee buildEmployee(String id, boolean canManageShift, int vacationDays, Branch branch) {
 		Salary salary = new Salary(5000, 50, 0, EmploymentScope.FULL_TIME);
 		EmploymentTerms terms = new EmploymentTerms(
 			LocalDate.of(2026, 4, 21),
@@ -1343,11 +1356,16 @@ public class Tests {
 			canManageShift,
 			false,
 			null,
-			new WeeklyAvailabilityRequest()
+			new WeeklyAvailabilityRequest(),
+			branch
 		);
 	}
 
 	private static Employee buildEmployeeWithRoles(String id, boolean canManageShift, int vacationDays, Set<Role> roles) {
+		return buildEmployeeWithRoles(id, canManageShift, vacationDays, roles, DEFAULT_TEST_BRANCH);
+	}
+
+	private static Employee buildEmployeeWithRoles(String id, boolean canManageShift, int vacationDays, Set<Role> roles, Branch branch) {
 		Salary salary = new Salary(5000, 50, 0, EmploymentScope.FULL_TIME);
 		EmploymentTerms terms = new EmploymentTerms(
 			LocalDate.of(2026, 4, 21),
@@ -1369,8 +1387,312 @@ public class Tests {
 			canManageShift,
 			false,
 			null,
-			new WeeklyAvailabilityRequest()
+			new WeeklyAvailabilityRequest(),
+			branch
 		);
+	}
+
+	private static Employee buildGlobalDriver(String id) {
+		return new Employee(
+			id,
+			"pass",
+			new BankAccount("10", "123", "000222"),
+			"Global Driver " + id,
+			new Salary(5000, 50, 0, EmploymentScope.FULL_TIME),
+			EmploymentType.REGULAR,
+			new EmploymentTerms(LocalDate.of(2026, 4, 21), EmploymentScope.FULL_TIME, 5000, 50, 10),
+			Collections.singleton(Role.DRIVER),
+			false,
+			false,
+			null,
+			new WeeklyAvailabilityRequest(),
+			null
+		);
+	}
+
+	@Test
+	public void branch_creation_successWithValidDetails() {
+		Branch branch = new Branch("B-001", "Main Branch", "Downtown");
+
+		assertEquals("Branch ID should match", "B-001", branch.getBranchId());
+		assertEquals("Branch name should match", "Main Branch", branch.getBranchName());
+		assertEquals("Branch location should match", "Downtown", branch.getLocation());
+	}
+
+	@Test
+	public void branch_creationWithSite_successWithBranchSiteType() {
+		ShippingZone zone = new ShippingZone("Z1", "Zone 1");
+		Site branchSite = new Site(
+			"Branch Stop",
+			"123 Main St",
+			"555-0001",
+			"John Doe",
+			zone,
+			SiteType.BRANCH,
+			null
+		);
+		Branch branch = new Branch("B-002", "Secondary Branch", "Uptown", branchSite);
+
+		assertEquals("Branch should have delivery stop", branchSite, branch.getDeliveryStop());
+		assertEquals("Delivery stop should be BRANCH type", SiteType.BRANCH, branchSite.getSiteType());
+	}
+
+	@Test
+	public void branch_rejection_whenSiteIsNotBranchType() {
+		ShippingZone zone = new ShippingZone("Z2", "Zone 2");
+		Site regularSite = new Site(
+			"Regular Stop",
+			"456 Oak Ave",
+			"555-0002",
+			"Jane Smith",
+			zone,
+			SiteType.REGULAR,
+			null
+		);
+
+		assertThrows(IllegalArgumentException.class, () ->
+			new Branch("B-003", "Bad Branch", "Midtown", regularSite)
+		);
+	}
+
+	@Test
+	public void employee_branchSpecific_successWithCashierAndBranch() {
+		Branch branch = new Branch("B-004", "Test Branch", "Test Location");
+		Employee branchEmployee = new Employee(
+			"100000401",
+			"pass",
+			new BankAccount("10", "123", "001"),
+			"Branch Emp One",
+			new Salary(5000, 50, 0, EmploymentScope.FULL_TIME),
+			EmploymentType.REGULAR,
+			new EmploymentTerms(LocalDate.now(), EmploymentScope.FULL_TIME, 5000, 50, 10),
+			Collections.singleton(Role.CASHIER),
+			false,
+			false,
+			null,
+			new WeeklyAvailabilityRequest(),
+			branch
+		);
+
+		assertEquals("Employee should have branch assigned", branch, branchEmployee.getBranch());
+	}
+
+	@Test
+	public void employee_branchSpecific_rejectionWithCashierButNoBranch() {
+		assertThrows(IllegalArgumentException.class, () ->
+			new Employee(
+				"100000402",
+				"pass",
+				new BankAccount("10", "123", "002"),
+				"Bad Branch Emp",
+				new Salary(5000, 50, 0, EmploymentScope.FULL_TIME),
+				EmploymentType.REGULAR,
+				new EmploymentTerms(LocalDate.now(), EmploymentScope.FULL_TIME, 5000, 50, 10),
+				Collections.singleton(Role.STOREKEEPER),
+				false,
+				false,
+				null,
+				new WeeklyAvailabilityRequest(),
+				null
+			)
+		);
+	}
+
+	@Test
+	public void employee_globalDriver_creationSuccess() {
+		Employee globalDriver = buildGlobalDriver("100000403");
+
+		assertEquals("Global driver should have no branch", null, globalDriver.getBranch());
+		assertTrue("Global driver should be authorized for DRIVER role",
+			globalDriver.getAuthorizedRoles().contains(Role.DRIVER));
+	}
+
+	@Test
+	public void employee_globalDriver_rejectionWhenAssignedBranch() {
+		Branch branch = new Branch("B-005", "Driver Test Branch", "Test");
+
+		assertThrows(IllegalArgumentException.class, () ->
+			new Employee(
+				"100000404",
+				"pass",
+				new BankAccount("10", "123", "004"),
+				"Bad Global Driver",
+				new Salary(5000, 50, 0, EmploymentScope.FULL_TIME),
+				EmploymentType.REGULAR,
+				new EmploymentTerms(LocalDate.now(), EmploymentScope.FULL_TIME, 5000, 50, 10),
+				Collections.singleton(Role.DRIVER),
+				false,
+				false,
+				null,
+				new WeeklyAvailabilityRequest(),
+				branch
+			)
+		);
+	}
+
+	@Test
+	public void employee_mixedRoles_driverAndCashierRequiresBranch() {
+		Branch branch = new Branch("B-006", "Mixed Role Branch", "Test");
+		Employee mixedEmployee = new Employee(
+			"100000405",
+			"pass",
+			new BankAccount("10", "123", "005"),
+			"Mixed Role Employee",
+			new Salary(5000, 50, 0, EmploymentScope.FULL_TIME),
+			EmploymentType.REGULAR,
+			new EmploymentTerms(LocalDate.now(), EmploymentScope.FULL_TIME, 5000, 50, 10),
+			new HashSet<>(Arrays.asList(Role.DRIVER, Role.CASHIER)),
+			false,
+			false,
+			null,
+			new WeeklyAvailabilityRequest(),
+			branch
+		);
+
+		assertEquals("Mixed role employee should have branch", branch, mixedEmployee.getBranch());
+	}
+
+	@Test
+	public void shift_branchAssignment_successWhenCreatedWithBranch() {
+		Branch branch = new Branch("B-010", "Shift Test Branch", "Test");
+		Employee manager = buildEmployee("100000410", true, 10, branch);
+
+		Shift shift = new Shift(
+			LocalDate.of(2026, 5, 15),
+			ShiftType.MORNING,
+			manager,
+			1,
+			1,
+			branch
+		);
+
+		assertEquals("Shift should have branch assigned", branch, shift.getBranch());
+	}
+
+	@Test
+	public void shiftAssignment_successWhenEmployeeAndShiftSameBranch() {
+		ShiftController controller = new ShiftController();
+		HR_Manager hr = new HR_Manager("100000411", "pass");
+		Branch branch = new Branch("B-011", "Assignment Test Branch", "Test");
+
+		Employee manager = buildEmployee("100000412", true, 10, branch);
+		Employee employee = buildEmployee("100000413", false, 10, branch);
+
+		Shift shift = new Shift(
+			LocalDate.of(2026, 5, 16),
+			ShiftType.MORNING,
+			manager,
+			1,
+			1,
+			branch
+		);
+
+		controller.assignEmployeeToShift(hr, employee, shift, Role.CASHIER);
+
+		assertEquals("Employee should be assigned to shift", 1, shift.getAssignments().size());
+		assertEquals("Assigned employee should match", employee.getId(), shift.getAssignments().get(0).getEmployee().getId());
+	}
+
+	@Test
+	public void shiftAssignment_rejectionWhenEmployeeAndShiftDifferentBranches() {
+		ShiftController controller = new ShiftController();
+		HR_Manager hr = new HR_Manager("100000414", "pass");
+		Branch branch1 = new Branch("B-012", "Branch One", "Location One");
+		Branch branch2 = new Branch("B-013", "Branch Two", "Location Two");
+
+		Employee manager = buildEmployee("100000415", true, 10, branch1);
+		Employee employee = buildEmployee("100000416", false, 10, branch2);
+
+		Shift shift = new Shift(
+			LocalDate.of(2026, 5, 17),
+			ShiftType.MORNING,
+			manager,
+			1,
+			1,
+			branch1
+		);
+
+		assertThrows(IllegalArgumentException.class, () ->
+			controller.assignEmployeeToShift(hr, employee, shift, Role.CASHIER)
+		);
+	}
+
+	@Test
+	public void shiftAssignment_globalDriverSuccessInAnyShinftRegardlessOfBranch() {
+		ShiftController controller = new ShiftController();
+		HR_Manager hr = new HR_Manager("100000417", "pass");
+		Branch branch = new Branch("B-014", "Driver Assignment Branch", "Test");
+
+		Employee manager = buildEmployee("100000418", true, 10, branch);
+		Employee globalDriver = buildGlobalDriver("100000419");
+
+		Shift shift = new Shift(
+			LocalDate.of(2026, 5, 18),
+			ShiftType.EVENING,
+			manager,
+			0,
+			0,
+			branch
+		);
+
+		controller.assignEmployeeToShift(hr, globalDriver, shift, Role.DRIVER);
+
+		assertEquals("Global driver should be assigned to shift", 1, shift.getAssignments().size());
+		assertEquals("Assigned driver should match", globalDriver.getId(), shift.getAssignments().get(0).getEmployee().getId());
+	}
+
+	@Test
+	public void substitution_globalDriverAcceptedInAnyBranchShift() {
+		ShiftController controller = new ShiftController();
+		HR_Manager hr = new HR_Manager("100000420", "pass");
+		Branch branch = new Branch("B-015", "Substitution Test Branch", "Test");
+
+		Employee manager = buildEmployee("100000421", true, 10, branch);
+		Employee original = buildEmployee("100000422", false, 10, branch);
+		Employee globalDriver = buildGlobalDriver("100000423");
+
+		Shift shift = new Shift(
+			LocalDate.of(2026, 5, 19),
+			ShiftType.MORNING,
+			manager,
+			1,
+			0,
+			branch
+		);
+
+		controller.assignEmployeeToShift(hr, original, shift, Role.CASHIER);
+		controller.substituteEmployee(hr, shift, original, globalDriver);
+
+		assertEquals("Shift should still have one assignment after substitution", 1, shift.getAssignments().size());
+		assertEquals("Global driver should replace original employee", globalDriver.getId(), shift.getAssignments().get(0).getEmployee().getId());
+	}
+
+	@Test
+	public void substitution_globalDriverSuccessAcrossMultipleBranches() {
+		ShiftController controller = new ShiftController();
+		HR_Manager hr = new HR_Manager("100000424", "pass");
+		Branch branch1 = new Branch("B-016", "First Branch", "Loc1");
+		Branch branch2 = new Branch("B-017", "Second Branch", "Loc2");
+
+		Employee manager1 = buildEmployee("100000425", true, 10, branch1);
+		Employee original1 = buildEmployee("100000426", false, 10, branch1);
+
+		Employee manager2 = buildEmployee("100000427", true, 10, branch2);
+		Employee original2 = buildEmployee("100000428", false, 10, branch2);
+
+		Employee globalDriver = buildGlobalDriver("100000429");
+
+		Shift shift1 = new Shift(LocalDate.of(2026, 5, 20), ShiftType.MORNING, manager1, 1, 0, branch1);
+		Shift shift2 = new Shift(LocalDate.of(2026, 5, 21), ShiftType.EVENING, manager2, 1, 0, branch2);
+
+		controller.assignEmployeeToShift(hr, original1, shift1, Role.CASHIER);
+		controller.assignEmployeeToShift(hr, original2, shift2, Role.CASHIER);
+
+		controller.substituteEmployee(hr, shift1, original1, globalDriver);
+		controller.substituteEmployee(hr, shift2, original2, globalDriver);
+
+		assertEquals("Global driver should be in shift1", globalDriver.getId(), shift1.getAssignments().get(0).getEmployee().getId());
+		assertEquals("Global driver should be in shift2", globalDriver.getId(), shift2.getAssignments().get(0).getEmployee().getId());
 	}
 
 	private static void assertThrows(Class<? extends Throwable> expected, Runnable action) {
