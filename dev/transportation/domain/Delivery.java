@@ -20,6 +20,75 @@ public class Delivery {
     private DeliveryStatus status;
     private DeliveryForm deliveryForm;
 
+    public Delivery(LocalDate deliveryDate,
+                    Site source,
+                    List<DeliveryStop> stops,
+                    LocalTime departureTime,
+                    double finalMeasuredWeightBeforeDeparture,
+                    Truck truck,
+                    Driver driver,
+                    ShippingZone shippingZone,
+                    DeliveryStatus status,
+                    DeliveryForm deliveryForm) {
+        this(1,
+                deliveryDate,
+                source,
+                stops,
+                departureTime,
+                finalMeasuredWeightBeforeDeparture,
+                truck,
+                driver,
+                shippingZone,
+                status,
+                deliveryForm);
+    }
+
+    public Delivery(LocalDate deliveryDate,
+                    List<DeliveryStop> stops,
+                    LocalTime departureTime,
+                    double actualWeightAtDeparture,
+                    Truck truck,
+                    Driver driver,
+                    DeliveryDocument document) {
+        this(1,
+                deliveryDate,
+                getLegacySource(stops),
+                attachLegacyDocument(stops, document),
+                departureTime,
+                actualWeightAtDeparture,
+                truck,
+                driver,
+                getLegacyShippingZone(stops),
+                DeliveryStatus.PLANNED,
+                new DeliveryForm());
+    }
+
+    private static Site getLegacySource(List<DeliveryStop> stops) {
+        if (stops == null || stops.isEmpty()) {
+            return null;
+        }
+        return stops.get(0).getSite();
+    }
+
+    private static ShippingZone getLegacyShippingZone(List<DeliveryStop> stops) {
+        Site source = getLegacySource(stops);
+        if (source == null) {
+            return null;
+        }
+        return source.getShippingZone();
+    }
+
+    private static List<DeliveryStop> attachLegacyDocument(List<DeliveryStop> stops, DeliveryDocument document) {
+        if (document == null) {
+            throw new IllegalArgumentException("document cannot be null");
+        }
+        if (stops == null || stops.isEmpty()) {
+            return stops;
+        }
+        stops.get(0).setDocument(document);
+        return stops;
+    }
+
     public Delivery(int deliveryId, 
                     LocalDate deliveryDate,
                     Site source,
@@ -47,13 +116,8 @@ public class Delivery {
         this.status = status;
         this.deliveryForm = deliveryForm;
 
-        validateStopsArrivalTimes();
-
-        if (!deliveryForm.hasMeasurements()) {
+        validateStopsArrivalTimes();        if (!deliveryForm.hasMeasurements()) {
             deliveryForm.addWeightMeasurement(finalMeasuredWeightBeforeDeparture);
-        }
-        if (!allStopsBelongToShippingZone()) {
-            throw new IllegalArgumentException("all stops and source must belong to the delivery shipping zone");
         }
     }
 
@@ -144,16 +208,8 @@ public class Delivery {
         if (shippingZone == null) {
             throw new IllegalArgumentException("shippingZone cannot be null");
         }
-
-        ShippingZone oldShippingZone = this.shippingZone;
         this.shippingZone = shippingZone;
-
-        if (!allStopsBelongToShippingZone()) {
-            this.shippingZone = oldShippingZone;
-            throw new IllegalArgumentException("all stops and source must belong to the new shipping zone");
-        }
     }
-
     public void setStatus(DeliveryStatus status) {
         if (status == null) {
             throw new IllegalArgumentException("status cannot be null");
@@ -205,10 +261,6 @@ public class Delivery {
 
         if (!stops.contains(stop)) {
             throw new IllegalArgumentException("stop does not belong to this delivery");
-        }
-
-        if (stops.size() == 1) {
-            throw new IllegalStateException("delivery must contain at least one stop");
         }
 
         this.stops.remove(stop);

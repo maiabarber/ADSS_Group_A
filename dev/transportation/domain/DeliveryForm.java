@@ -43,8 +43,8 @@ public class DeliveryForm {
         return !weightMeasurements.isEmpty();
     }
 
-    private void validateMeasurement(double measurement) {
-        if (measurement < 0) {
+    private void validateMeasurement(Double measurement) {
+        if (measurement == null) {
             throw new IllegalArgumentException("weight measurement cannot be null");
         }
         if (measurement < 0) {

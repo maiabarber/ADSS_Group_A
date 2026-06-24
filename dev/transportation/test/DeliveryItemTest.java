@@ -1,6 +1,6 @@
 package tests;
 
-import domain.DeliveryItem;
+import transportation.domain.DeliveryItem;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

@@ -1,7 +1,7 @@
 package tests;
 
-import domain.ShippingZone;
-import domain.Site;
+import transportation.domain.ShippingZone;
+import transportation.domain.Site;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

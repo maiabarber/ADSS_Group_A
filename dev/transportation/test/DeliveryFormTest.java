@@ -1,6 +1,6 @@
 package tests;
 
-import domain.DeliveryForm;
+import transportation.domain.DeliveryForm;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;

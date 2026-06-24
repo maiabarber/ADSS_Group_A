@@ -1,8 +1,8 @@
 package tests;
 
-import domain.Driver;
-import domain.LicenseType;
-import domain.Truck;
+import transportation.domain.Driver;
+import transportation.domain.LicenseType;
+import transportation.domain.Truck;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;

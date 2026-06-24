@@ -1,7 +1,7 @@
 package tests;
 
-import domain.DeliveryDocument;
-import domain.DeliveryItem;
+import transportation.domain.DeliveryDocument;
+import transportation.domain.DeliveryItem;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;

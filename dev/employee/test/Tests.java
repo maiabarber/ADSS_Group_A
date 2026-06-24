@@ -58,24 +58,24 @@ public class Tests {
 	public void easy_salaryNoOvertime_whenWorkedBelowThreshold() {
 		Salary salary = new Salary(5000, 50, 120, EmploymentScope.FULL_TIME);
 
-		assertEquals("Overtime should be zero for full-time under 190h", 0.0, salary.getOvertimeHours(), 0.0001);
-		assertEquals("Final salary should equal base when no overtime", 5000.0, salary.getFinalSalary(), 0.0001);
+		assertEquals(0.0, salary.getOvertimeHours(), 0.0001, "Overtime should be zero for full-time under 190h");
+		assertEquals(5000.0, salary.getFinalSalary(), 0.0001, "Final salary should equal base when no overtime");
 	}
 
 	@Test
 	public void easy_salaryOvertime_forPartTimeEmployee() {
 		Salary salary = new Salary(3000, 40, 100, EmploymentScope.PART_TIME);
 
-		assertEquals("Part-time overtime should be workedHours - 95", 5.0, salary.getOvertimeHours(), 0.0001);
-		assertEquals("Final salary should include overtime pay", 3200.0, salary.getFinalSalary(), 0.0001);
+		assertEquals(5.0, salary.getOvertimeHours(), 0.0001, "Part-time overtime should be workedHours - 95");
+		assertEquals(3200.0, salary.getFinalSalary(), 0.0001, "Final salary should include overtime pay");
 	}
 
 	@Test
 	public void easy_salaryOvertime_forFullTimeEmployee() {
 		Salary salary = new Salary(5000, 50, 200, EmploymentScope.FULL_TIME);
 
-		assertEquals("Full-time overtime should be workedHours - 190", 10.0, salary.getOvertimeHours(), 0.0001);
-		assertEquals("Final salary should be global salary plus overtime pay", 5500.0, salary.getFinalSalary(), 0.0001);
+		assertEquals(10.0, salary.getOvertimeHours(), 0.0001, "Full-time overtime should be workedHours - 190");
+		assertEquals(5500.0, salary.getFinalSalary(), 0.0001, "Final salary should be global salary plus overtime pay");
 	}
 
 	@Test
@@ -83,8 +83,8 @@ public class Tests {
 		Salary fullTime = new Salary(5000, 50, 190, EmploymentScope.FULL_TIME);
 		Salary partTime = new Salary(3000, 40, 95, EmploymentScope.PART_TIME);
 
-		assertEquals("Full-time overtime should be zero at exactly 190h", 0.0, fullTime.getOvertimeHours(), 0.0001);
-		assertEquals("Part-time overtime should be zero at exactly 95h", 0.0, partTime.getOvertimeHours(), 0.0001);
+		assertEquals(0.0, fullTime.getOvertimeHours(), 0.0001, "Full-time overtime should be zero at exactly 190h");
+		assertEquals(0.0, partTime.getOvertimeHours(), 0.0001, "Part-time overtime should be zero at exactly 95h");
 	}
 
 	@Test
@@ -97,15 +97,15 @@ public class Tests {
 	@Test
 	public void easy_weeklyAvailabilityReset_clearsData() {
 		WeeklyAvailabilityRequest request = new WeeklyAvailabilityRequest();
-		request.addConstraint(new employees.domain.Constraint(DayOfWeek.SUNDAY, ShiftType.MORNING));
-		request.addPreference(new employees.domain.Preference(DayOfWeek.MONDAY, ShiftType.EVENING));
+		request.addConstraint(new employee.domain.Constraint(DayOfWeek.SUNDAY, ShiftType.MORNING));
+		request.addPreference(new employee.domain.Preference(DayOfWeek.MONDAY, ShiftType.EVENING));
 
 		LocalDate newWeek = LocalDate.of(2026, 4, 20);
 		request.resetForWeek(newWeek);
 
 		assertTrue("Constraints should be cleared after reset", request.getConstraints().isEmpty());
 		assertTrue("Preferences should be cleared after reset", request.getPreferences().isEmpty());
-		assertEquals("Week start date should be updated", newWeek, request.getWeekStartDate());
+		assertEquals(newWeek, request.getWeekStartDate(), "Week start date should be updated");
 	}
 
 	@Test
@@ -115,8 +115,8 @@ public class Tests {
 		// Week 1 submission
 		request.addConstraint(new Constraint(DayOfWeek.SUNDAY, ShiftType.MORNING));
 		request.addPreference(new Preference(DayOfWeek.MONDAY, ShiftType.EVENING));
-		assertEquals("Week 1 should have 1 constraint", 1, request.getConstraints().size());
-		assertEquals("Week 1 should have 1 preference", 1, request.getPreferences().size());
+		assertEquals(1, request.getConstraints().size(), "Week 1 should have 1 constraint");
+		assertEquals(1, request.getPreferences().size(), "Week 1 should have 1 preference");
 
 		// Reset for week 2
 		request.resetForWeek(LocalDate.of(2026, 7, 27));
@@ -126,10 +126,10 @@ public class Tests {
 		// Week 2 re-submission with different data
 		request.addConstraint(new Constraint(DayOfWeek.WEDNESDAY, ShiftType.EVENING));
 		request.addPreference(new Preference(DayOfWeek.THURSDAY, ShiftType.MORNING));
-		assertEquals("Week 2 should have 1 newly submitted constraint", 1, request.getConstraints().size());
-		assertEquals("Week 2 constraint day should be WEDNESDAY", DayOfWeek.WEDNESDAY, request.getConstraints().get(0).getDay());
-		assertEquals("Week 2 should have 1 newly submitted preference", 1, request.getPreferences().size());
-		assertEquals("Week 2 preference day should be THURSDAY", DayOfWeek.THURSDAY, request.getPreferences().get(0).getDay());
+		assertEquals(1, request.getConstraints().size(), "Week 2 should have 1 newly submitted constraint");
+		assertEquals(DayOfWeek.WEDNESDAY, request.getConstraints().get(0).getDay(), "Week 2 constraint day should be WEDNESDAY");
+		assertEquals(1, request.getPreferences().size(), "Week 2 should have 1 newly submitted preference");
+		assertEquals(DayOfWeek.THURSDAY, request.getPreferences().get(0).getDay(), "Week 2 preference day should be THURSDAY");
 	}
 
 	@Test
@@ -155,10 +155,10 @@ public class Tests {
 		LocalDate currentWeekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 		assertTrue("First employee constraints should reset at week start", first.getWeeklyAvailabilityRequest().getConstraints().isEmpty());
 		assertTrue("First employee preferences should reset at week start", first.getWeeklyAvailabilityRequest().getPreferences().isEmpty());
-		assertEquals("First employee week should advance to current week", currentWeekStart, first.getWeeklyAvailabilityRequest().getWeekStartDate());
+		assertEquals(currentWeekStart, first.getWeeklyAvailabilityRequest().getWeekStartDate(), "First employee week should advance to current week");
 		assertTrue("Second employee constraints should reset at week start", second.getWeeklyAvailabilityRequest().getConstraints().isEmpty());
 		assertTrue("Second employee preferences should reset at week start", second.getWeeklyAvailabilityRequest().getPreferences().isEmpty());
-		assertEquals("Second employee week should advance to current week", currentWeekStart, second.getWeeklyAvailabilityRequest().getWeekStartDate());
+		assertEquals(currentWeekStart, second.getWeeklyAvailabilityRequest().getWeekStartDate(), "Second employee week should advance to current week");
 	}
 
 	@Test
@@ -186,9 +186,9 @@ public class Tests {
 			);
 
 			WeeklyAvailabilityRequest request = employee.getWeeklyAvailabilityRequest();
-			assertEquals("Using one vacation day should reduce balance by one", 9, remainingDays);
-			assertEquals("Employee vacation balance should be reduced", 9, employee.getVacationDaysBalance());
-			assertEquals("Vacation day should add full-day constraints plus existing one", 5, request.getConstraints().size());
+			assertEquals(9, remainingDays, "Using one vacation day should reduce balance by one");
+			assertEquals(9, employee.getVacationDaysBalance(), "Employee vacation balance should be reduced");
+			assertEquals(5, request.getConstraints().size(), "Vacation day should add full-day constraints plus existing one");
 
 			int tuesdayConstraints = 0;
 			boolean hasMorning = false;
@@ -205,7 +205,7 @@ public class Tests {
 				}
 			}
 
-			assertEquals("Vacation day should map to exactly four shift constraints", 4, tuesdayConstraints);
+			assertEquals(4, tuesdayConstraints, "Vacation day should map to exactly four shift constraints");
 			assertTrue("Vacation day should block MORNING", hasMorning);
 			assertTrue("Vacation day should block MORNING_OVERTIME", hasMorningOvertime);
 			assertTrue("Vacation day should block EVENING", hasEvening);
@@ -246,7 +246,7 @@ public class Tests {
 				}
 			);
 
-			assertEquals("Failed submission should not consume vacation days", 10, employee.getVacationDaysBalance());
+			assertEquals(10, employee.getVacationDaysBalance(), "Failed submission should not consume vacation days");
 		} catch (RepositoryException e) {
 			throw new RuntimeException(e);
 		}
@@ -267,9 +267,9 @@ public class Tests {
 		ensureWeeklyAvailabilityCurrent.setAccessible(true);
 		ensureWeeklyAvailabilityCurrent.invoke(console, employee);
 
-		assertEquals("Current-week request should keep existing constraints", 1, employee.getWeeklyAvailabilityRequest().getConstraints().size());
-		assertEquals("Current-week request should keep existing preferences", 1, employee.getWeeklyAvailabilityRequest().getPreferences().size());
-		assertEquals("Week start should remain current week", currentWeekStart, employee.getWeeklyAvailabilityRequest().getWeekStartDate());
+		assertEquals(1, employee.getWeeklyAvailabilityRequest().getConstraints().size(), "Current-week request should keep existing constraints");
+		assertEquals(1, employee.getWeeklyAvailabilityRequest().getPreferences().size(), "Current-week request should keep existing preferences");
+		assertEquals(currentWeekStart, employee.getWeeklyAvailabilityRequest().getWeekStartDate(), "Week start should remain current week");
 	}
 
 	@Test
@@ -283,7 +283,7 @@ public class Tests {
 			Collections.singletonList(DayOfWeek.TUESDAY)
 		);
 
-		assertEquals("Vacation merge should produce exactly four shift constraints for the vacation day", 4, merged.size());
+		assertEquals(4, merged.size(), "Vacation merge should produce exactly four shift constraints for the vacation day");
 
 		int morningCount = 0;
 		for (Constraint c : merged) {
@@ -291,7 +291,7 @@ public class Tests {
 				morningCount++;
 			}
 		}
-		assertEquals("Existing MORNING constraint should not be duplicated", 1, morningCount);
+		assertEquals(1, morningCount, "Existing MORNING constraint should not be duplicated");
 	}
 
 	@Test
@@ -304,7 +304,7 @@ public class Tests {
 
 		try {
 			controller.addEmployee(hr, newHire);
-			assertEquals("Newly hired employee should start with 10 vacation days", 10, newHire.getVacationDaysBalance());
+			assertEquals(10, newHire.getVacationDaysBalance(), "Newly hired employee should start with 10 vacation days");
 		} catch (RepositoryException e) {
 			throw new RuntimeException(e);
 		}
@@ -329,8 +329,8 @@ public class Tests {
 
 		Employee firstAfterReset = employeeRepository.findById("100000176").orElse(null);
 		Employee secondAfterReset = employeeRepository.findById("100000177").orElse(null);
-		assertEquals("Annual reset should set first employee to 10 vacation days", 10, firstAfterReset.getVacationDaysBalance());
-		assertEquals("Annual reset should set second employee to 10 vacation days", 10, secondAfterReset.getVacationDaysBalance());
+		assertEquals(10, firstAfterReset.getVacationDaysBalance(), "Annual reset should set first employee to 10 vacation days");
+		assertEquals(10, secondAfterReset.getVacationDaysBalance(), "Annual reset should set second employee to 10 vacation days");
 	}
 
 	@Test
@@ -355,7 +355,7 @@ public class Tests {
 		resetVacationDaysForCurrentYear.invoke(console);
 
 		Employee afterSecondCall = employeeRepository.findById("100000180").orElse(null);
-		assertEquals("Second annual reset call in same year should not run again", 4, afterSecondCall.getVacationDaysBalance());
+		assertEquals(4, afterSecondCall.getVacationDaysBalance(), "Second annual reset call in same year should not run again");
 	}
 
 	@Test
@@ -364,9 +364,9 @@ public class Tests {
 
 		request.addConstraint(new Constraint(DayOfWeek.TUESDAY, ShiftType.MORNING));
 
-		assertEquals("Constraint list should contain exactly one entry", 1, request.getConstraints().size());
-		assertEquals("Stored constraint day should be TUESDAY", DayOfWeek.TUESDAY, request.getConstraints().get(0).getDay());
-		assertEquals("Stored constraint shift type should be MORNING", ShiftType.MORNING, request.getConstraints().get(0).getShiftType());
+		assertEquals(1, request.getConstraints().size(), "Constraint list should contain exactly one entry");
+		assertEquals(DayOfWeek.TUESDAY, request.getConstraints().get(0).getDay(), "Stored constraint day should be TUESDAY");
+		assertEquals(ShiftType.MORNING, request.getConstraints().get(0).getShiftType(), "Stored constraint shift type should be MORNING");
 	}
 
 	@Test
@@ -375,9 +375,9 @@ public class Tests {
 
 		request.addPreference(new Preference(DayOfWeek.WEDNESDAY, ShiftType.EVENING));
 
-		assertEquals("Preference list should contain exactly one entry", 1, request.getPreferences().size());
-		assertEquals("Stored preference day should be WEDNESDAY", DayOfWeek.WEDNESDAY, request.getPreferences().get(0).getDay());
-		assertEquals("Stored preference shift type should be EVENING", ShiftType.EVENING, request.getPreferences().get(0).getShiftType());
+		assertEquals(1, request.getPreferences().size(), "Preference list should contain exactly one entry");
+		assertEquals(DayOfWeek.WEDNESDAY, request.getPreferences().get(0).getDay(), "Stored preference day should be WEDNESDAY");
+		assertEquals(ShiftType.EVENING, request.getPreferences().get(0).getShiftType(), "Stored preference shift type should be EVENING");
 	}
 
 	@Test
@@ -387,7 +387,7 @@ public class Tests {
 		request.addConstraint(new Constraint(DayOfWeek.SUNDAY, ShiftType.MORNING));
 		request.addConstraint(new Constraint(DayOfWeek.MONDAY, ShiftType.EVENING));
 
-		assertEquals("All added constraints should be present in the record", 2, request.getConstraints().size());
+		assertEquals(2, request.getConstraints().size(), "All added constraints should be present in the record");
 	}
 
 	@Test
@@ -396,9 +396,9 @@ public class Tests {
 
 		request.addPreference(new Preference(DayOfWeek.THURSDAY, ShiftType.MORNING));
 
-		assertEquals("Preference list should contain exactly one entry", 1, request.getPreferences().size());
-		assertEquals("Stored preference day should be THURSDAY", DayOfWeek.THURSDAY, request.getPreferences().get(0).getDay());
-		assertEquals("Stored preference shift type should be MORNING", ShiftType.MORNING, request.getPreferences().get(0).getShiftType());
+		assertEquals(1, request.getPreferences().size(), "Preference list should contain exactly one entry");
+		assertEquals(DayOfWeek.THURSDAY, request.getPreferences().get(0).getDay(), "Stored preference day should be THURSDAY");
+		assertEquals(ShiftType.MORNING, request.getPreferences().get(0).getShiftType(), "Stored preference shift type should be MORNING");
 	}
 
 	@Test
@@ -417,7 +417,7 @@ public class Tests {
 
 		employee.consumeVacationDays(3);
 
-		assertEquals("Vacation balance should decrease by consumed amount", 7, employee.getVacationDaysBalance());
+		assertEquals(7, employee.getVacationDaysBalance(), "Vacation balance should decrease by consumed amount");
 	}
 
 	@Test
@@ -432,7 +432,7 @@ public class Tests {
 		Employee employee = buildEmployee("100000003", false, 10);
 
 		employee.setFixedDayOff(DayOfWeek.SUNDAY);
-		assertEquals("Fixed day off should be set the first time", DayOfWeek.SUNDAY, employee.getFixedDayOff());
+		assertEquals(DayOfWeek.SUNDAY, employee.getFixedDayOff(), "Fixed day off should be set the first time");
 
 		assertThrows(IllegalStateException.class, () -> employee.setFixedDayOff(DayOfWeek.MONDAY));
 	}
@@ -464,7 +464,7 @@ public class Tests {
 			DEFAULT_TEST_BRANCH
 		);
 
-		assertEquals("Fixed day off chosen at hiring should be stored", DayOfWeek.THURSDAY, employee.getFixedDayOff());
+		assertEquals(DayOfWeek.THURSDAY, employee.getFixedDayOff(), "Fixed day off chosen at hiring should be stored");
 	}
 
 	@Test
@@ -472,7 +472,7 @@ public class Tests {
 		Employee candidate = buildEmployee("100000011", true, 10);
 		Shift shift = new Shift();
 
-		assertThrows(IllegalArgumentException.class, () -> shift.assignShiftManager(new employees.domain.User("100000021", "p"), candidate));
+		assertThrows(IllegalArgumentException.class, () -> shift.assignShiftManager(new employee.domain.User("100000021", "p"), candidate));
 	}
 
 	@Test
@@ -491,7 +491,7 @@ public class Tests {
 
 		shift.assignShiftManager(hr, qualified);
 
-		assertEquals("Shift manager should be the assigned qualified employee", qualified, shift.getShiftManager());
+		assertEquals(qualified, shift.getShiftManager(), "Shift manager should be the assigned qualified employee");
 	}
 
 	@Test
@@ -502,11 +502,11 @@ public class Tests {
 		Shift shift = new Shift();
 
 		shift.assignShiftManager(hr, firstManager);
-		assertEquals("First assigned manager should be set", firstManager, shift.getShiftManager());
+		assertEquals(firstManager, shift.getShiftManager(), "First assigned manager should be set");
 
 		shift.assignShiftManager(hr, secondManager);
 
-		assertEquals("Reassignment should replace previous manager so shift has only one manager", secondManager, shift.getShiftManager());
+		assertEquals(secondManager, shift.getShiftManager(), "Reassignment should replace previous manager so shift has only one manager");
 		assertFalse("Shift manager should no longer be the first manager after reassignment", shift.getShiftManager().equals(firstManager));
 	}
 
@@ -542,7 +542,7 @@ public class Tests {
 		employee.setCanManageShift(true);
 		shift.assignShiftManager(hr, employee);
 
-		assertEquals("Employee authorized as shift manager should be assignable to a shift", employee, shift.getShiftManager());
+		assertEquals(employee, shift.getShiftManager(), "Employee authorized as shift manager should be assignable to a shift");
 	}
 
 	@Test
@@ -551,7 +551,7 @@ public class Tests {
 		Map<Role, Integer> customCounts = new EnumMap<>(Role.class);
 		customCounts.put(Role.CASHIER, 3);
 
-		assertThrows(IllegalArgumentException.class, () -> shift.configureRequiredRoleCounts(new employees.domain.User("100000022", "p"), customCounts));
+		assertThrows(IllegalArgumentException.class, () -> shift.configureRequiredRoleCounts(new employee.domain.User("100000022", "p"), customCounts));
 	}
 
 	@Test
@@ -564,8 +564,8 @@ public class Tests {
 
 		shift.configureRequiredRoleCounts(hr, customCounts);
 
-		assertEquals("Required cashiers should be updated to 3", 3, shift.getRequiredRoleCounts().get(Role.CASHIER).intValue());
-		assertEquals("Required storekeepers should be updated to 2", 2, shift.getRequiredRoleCounts().get(Role.STOREKEEPER).intValue());
+		assertEquals(3, shift.getRequiredRoleCounts().get(Role.CASHIER).intValue(), "Required cashiers should be updated to 3");
+		assertEquals(2, shift.getRequiredRoleCounts().get(Role.STOREKEEPER).intValue(), "Required storekeepers should be updated to 2");
 	}
 
 	@Test
@@ -597,7 +597,7 @@ public class Tests {
 
 		shift.transferCancellationCard(shiftManager);
 		assertTrue("Cancellation card should be transferred by shift manager", shift.isCancellationCardTransferred());
-		assertEquals("Transfer actor should be the shift manager", shiftManager.getId(), shift.getCancellationCardTransferredBy().getId());
+		assertEquals(shiftManager.getId(), shift.getCancellationCardTransferredBy().getId(), "Transfer actor should be the shift manager");
 	}
 
 	@Test
@@ -748,7 +748,7 @@ public class Tests {
 			Employee found = repository.findById("100000147").orElse(null);
 			assertFalse("Fired employee record should still exist in the repository", found == null);
 			assertTrue("Retrieved employee should still be marked as fired", found.isFired());
-			assertEquals("Fired employee's name should still be intact", employee.getName(), found.getName());
+			assertEquals(employee.getName(), found.getName(), "Fired employee's name should still be intact");
 		} catch (RepositoryException e) {
 			throw new RuntimeException(e);
 		}
@@ -777,8 +777,8 @@ public class Tests {
 		try {
 			repository.save(employee);
 			Employee found = repository.findById("100000062").orElse(null);
-			assertEquals("Added employee should be retrievable by id", employee, found);
-			assertEquals("Repository should contain the added employee", 1, repository.findAll().size());
+			assertEquals(employee, found, "Added employee should be retrievable by id");
+			assertEquals(1, repository.findAll().size(), "Repository should contain the added employee");
 		} catch (RepositoryException e) {
 			throw new RuntimeException(e);
 		}
@@ -846,7 +846,7 @@ public class Tests {
 
 		employee.setName("Updated Name");
 
-		assertEquals("Employee name should reflect the update", "Updated Name", employee.getName());
+		assertEquals("Updated Name", employee.getName(), "Employee name should reflect the update");
 	}
 
 	@Test
@@ -856,7 +856,7 @@ public class Tests {
 
 		employee.setSalary(newSalary);
 
-		assertEquals("Employee salary should reflect the update", 8000.0, employee.getSalary().getFinalSalary(), 0.0001);
+		assertEquals(8000.0, employee.getSalary().getFinalSalary(), 0.0001, "Employee salary should reflect the update");
 	}
 
 	@Test
@@ -866,7 +866,7 @@ public class Tests {
 
 		employee.setBankAccount(newAccount);
 
-		assertEquals("Employee bank account should reflect the update", newAccount, employee.getBankAccount());
+		assertEquals(newAccount, employee.getBankAccount(), "Employee bank account should reflect the update");
 	}
 
 	@Test
@@ -874,31 +874,28 @@ public class Tests {
 		LocalDate startDate = LocalDate.of(2026, 4, 21);
 		Employee employee = buildEmployee("100000067", false, 10);
 
-		assertEquals("Employee start date should match the value set at construction", startDate, employee.getStartDate());
+		assertEquals(startDate, employee.getStartDate(), "Employee start date should match the value set at construction");
 	}
 
 	@Test
 	public void easy_employeeDetails_employmentScope() {
 		Employee employee = buildEmployee("100000068", false, 10);
 
-		assertEquals("Employee employment scope should be FULL_TIME as set at construction",
-			EmploymentScope.FULL_TIME, employee.getEmploymentTerms().getEmploymentScope());
+		assertEquals(EmploymentScope.FULL_TIME, employee.getEmploymentTerms().getEmploymentScope(), "Employee employment scope should be FULL_TIME as set at construction");
 	}
 
 	@Test
 	public void easy_employeeDetails_globalSalary() {
 		Employee employee = buildEmployee("100000069", false, 10);
 
-		assertEquals("Employee global salary should match the value set at construction",
-			5000.0, employee.getEmploymentTerms().getGlobalSalary(), 0.0001);
+		assertEquals(5000.0, employee.getEmploymentTerms().getGlobalSalary(), 0.0001, "Employee global salary should match the value set at construction");
 	}
 
 	@Test
 	public void easy_employeeDetails_hourlySalary() {
 		Employee employee = buildEmployee("100000070", false, 10);
 
-		assertEquals("Employee hourly salary should match the value set at construction",
-			50.0, employee.getEmploymentTerms().getHourlySalary(), 0.0001);
+		assertEquals(50.0, employee.getEmploymentTerms().getHourlySalary(), 0.0001, "Employee hourly salary should match the value set at construction");
 	}
 
 	@Test
@@ -908,7 +905,7 @@ public class Tests {
 
 		try {
 			repository.save(deadline);
-			assertEquals("Saved deadline should be loaded back", deadline, repository.findCurrent().orElse(null));
+			assertEquals(deadline, repository.findCurrent().orElse(null), "Saved deadline should be loaded back");
 		} catch (RepositoryException e) {
 			throw new RuntimeException(e);
 		}
@@ -929,7 +926,7 @@ public class Tests {
 			"Deadline for submitting constraints and preferences for the upcoming week (DD-MM-YYYY): "
 		);
 
-		assertEquals("Date should be parsed from DD-MM-YYYY input", LocalDate.of(2026, 4, 20), parsed);
+		assertEquals(LocalDate.of(2026, 4, 20), parsed, "Date should be parsed from DD-MM-YYYY input");
 	}
 
 	@Test
@@ -1002,7 +999,7 @@ public class Tests {
 
 		controller.assignEmployeeToShift(hr, employee, shift, Role.CASHIER);
 
-		assertEquals("Shift should have one assignment", 1, shift.getAssignments().size());
+		assertEquals(1, shift.getAssignments().size(), "Shift should have one assignment");
 		assertTrue("No-conflict assignment should be auto-approved", shift.getAssignments().get(0).isApproved());
 	}
 
@@ -1015,8 +1012,8 @@ public class Tests {
 
 		controller.assignEmployeeToShift(hr, employee, morningShift, Role.CASHIER);
 
-		assertEquals("Morning shift should contain exactly one assignment", 1, morningShift.getAssignments().size());
-		assertEquals("Assignment role should be CASHIER for morning shift", Role.CASHIER, morningShift.getAssignments().get(0).getRole());
+		assertEquals(1, morningShift.getAssignments().size(), "Morning shift should contain exactly one assignment");
+		assertEquals(Role.CASHIER, morningShift.getAssignments().get(0).getRole(), "Assignment role should be CASHIER for morning shift");
 	}
 
 	@Test
@@ -1028,8 +1025,8 @@ public class Tests {
 
 		controller.assignEmployeeToShift(hr, employee, eveningShift, Role.STOREKEEPER);
 
-		assertEquals("Evening shift should contain exactly one assignment", 1, eveningShift.getAssignments().size());
-		assertEquals("Assignment role should be STOREKEEPER for evening shift", Role.STOREKEEPER, eveningShift.getAssignments().get(0).getRole());
+		assertEquals(1, eveningShift.getAssignments().size(), "Evening shift should contain exactly one assignment");
+		assertEquals(Role.STOREKEEPER, eveningShift.getAssignments().get(0).getRole(), "Assignment role should be STOREKEEPER for evening shift");
 	}
 
 	@Test
@@ -1082,7 +1079,7 @@ public class Tests {
 		ShiftAssignment pending = shift.getAssignments().get(0);
 		controller.respondToAssignment(employee, pending, false);
 
-		assertEquals("Rejected pending assignment should be removed from shift", 0, shift.getAssignments().size());
+		assertEquals(0, shift.getAssignments().size(), "Rejected pending assignment should be removed from shift");
 	}
 
 	@Test
@@ -1105,7 +1102,7 @@ public class Tests {
 
 		assertFalse("Assignment should no longer be pending after employee accepts", pending.isPending());
 		assertTrue("Assignment should be approved after employee accepts", pending.isApproved());
-		assertEquals("Assignment should remain in the shift after acceptance", 1, shift.getAssignments().size());
+		assertEquals(1, shift.getAssignments().size(), "Assignment should remain in the shift after acceptance");
 	}
 
 	@Test
@@ -1121,7 +1118,7 @@ public class Tests {
 			new Preference(shift.getDate().getDayOfWeek(), ShiftType.DOUBLE_SHIFT)
 		);
 		controller.assignEmployeeToShift(hr, employee, shift, Role.CASHIER);
-		assertEquals("Assignment should succeed after matching preference is provided", 1, shift.getAssignments().size());
+		assertEquals(1, shift.getAssignments().size(), "Assignment should succeed after matching preference is provided");
 	}
 
 	@Test
@@ -1146,7 +1143,7 @@ public class Tests {
 		);
 		controller.assignEmployeeToShift(hr, employee, shift, Role.CASHIER);
 
-		assertEquals("Overtime assignment should succeed after matching preference is provided", 1, shift.getAssignments().size());
+		assertEquals(1, shift.getAssignments().size(), "Overtime assignment should succeed after matching preference is provided");
 	}
 
 	@Test
@@ -1201,8 +1198,8 @@ public class Tests {
 		controller.assignEmployeeToShift(hr, original, shift, Role.CASHIER);
 		controller.substituteEmployee(hr, shift, original, replacement);
 
-		assertEquals("Shift should still have one assignment after substitution", 1, shift.getAssignments().size());
-		assertEquals("Replacement should be the assigned employee after substitution", "100000136", shift.getAssignments().get(0).getEmployee().getId());
+		assertEquals(1, shift.getAssignments().size(), "Shift should still have one assignment after substitution");
+		assertEquals("100000136", shift.getAssignments().get(0).getEmployee().getId(), "Replacement should be the assigned employee after substitution");
 	}
 
 	@Test
@@ -1227,7 +1224,7 @@ public class Tests {
 		Shift shift = new Shift(LocalDate.of(2026, 4, 26), ShiftType.MORNING, buildEmployee("100000128", true, 10), 1, 1);
 
 		controller.assignEmployeeToShift(hr, original, shift, Role.CASHIER);
-		assertThrows(IllegalArgumentException.class, () -> controller.substituteEmployee(new employees.domain.User("100000023", "p"), shift, original, replacement));
+		assertThrows(IllegalArgumentException.class, () -> controller.substituteEmployee(new employee.domain.User("100000023", "p"), shift, original, replacement));
 	}
 
 	@Test
@@ -1245,8 +1242,8 @@ public class Tests {
 		ShiftAssignment request = controller.getCancellationRequests().get(0);
 		controller.handleCancellationWithSubstitution(hr, request, replacement);
 
-		assertEquals("After handling cancellation, shift should still have one assignment", 1, shift.getAssignments().size());
-			assertEquals("Replacement employee should be assigned", "100000134", shift.getAssignments().get(0).getEmployee().getId());
+		assertEquals(1, shift.getAssignments().size(), "After handling cancellation, shift should still have one assignment");
+			assertEquals("100000134", shift.getAssignments().get(0).getEmployee().getId(), "Replacement employee should be assigned");
 	}
 
 	@Test
@@ -1263,8 +1260,8 @@ public class Tests {
 
 		controller.requestShiftCancellation(employee, shift);
 
-		assertEquals("Cancellation request should appear in the list after submission", 1, controller.getCancellationRequests().size());
-		assertEquals("Cancellation request should belong to the requesting employee", employee.getId(), controller.getCancellationRequests().get(0).getEmployee().getId());
+		assertEquals(1, controller.getCancellationRequests().size(), "Cancellation request should appear in the list after submission");
+		assertEquals(employee.getId(), controller.getCancellationRequests().get(0).getEmployee().getId(), "Cancellation request should belong to the requesting employee");
 	}
 
 	@Test
@@ -1305,7 +1302,7 @@ public class Tests {
 
 		double workedHours = controller.calculateWorkedHoursForEmployee(employee);
 
-		assertEquals("MORNING (8h) + MORNING_OVERTIME (10h) + EVENING (8h) should total 26 hours", 26.0, workedHours, 0.0001);
+		assertEquals(26.0, workedHours, 0.0001, "MORNING (8h) + MORNING_OVERTIME (10h) + EVENING (8h) should total 26 hours");
 	}
 
 	@Test
@@ -1324,8 +1321,8 @@ public class Tests {
 		double workedHours = controller.calculateWorkedHoursForEmployee(employee);
 		double finalSalary = controller.recalculateEmployeeSalary(employee);
 
-		assertEquals("Two approved regular shifts should total 16 worked hours", 16.0, workedHours, 0.0001);
-		assertEquals("16h is below full-time overtime threshold so salary stays base", 5000.0, finalSalary, 0.0001);
+		assertEquals(16.0, workedHours, 0.0001, "Two approved regular shifts should total 16 worked hours");
+		assertEquals(5000.0, finalSalary, 0.0001, "16h is below full-time overtime threshold so salary stays base");
 	}
 
 	private static Employee buildEmployee(String id, boolean canManageShift, int vacationDays) {
@@ -1414,9 +1411,9 @@ public class Tests {
 	public void branch_creation_successWithValidDetails() {
 		Branch branch = new Branch("B-001", "Main Branch", "Downtown");
 
-		assertEquals("Branch ID should match", "B-001", branch.getBranchId());
-		assertEquals("Branch name should match", "Main Branch", branch.getBranchName());
-		assertEquals("Branch location should match", "Downtown", branch.getLocation());
+		assertEquals("B-001", branch.getBranchId(), "Branch ID should match");
+		assertEquals("Main Branch", branch.getBranchName(), "Branch name should match");
+		assertEquals("Downtown", branch.getLocation(), "Branch location should match");
 	}
 
 	@Test
@@ -1433,8 +1430,8 @@ public class Tests {
 		);
 		Branch branch = new Branch("B-002", "Secondary Branch", "Uptown", branchSite);
 
-		assertEquals("Branch should have delivery stop", branchSite, branch.getDeliveryStop());
-		assertEquals("Delivery stop should be BRANCH type", SiteType.BRANCH, branchSite.getSiteType());
+		assertEquals(branchSite, branch.getDeliveryStop(), "Branch should have delivery stop");
+		assertEquals(SiteType.BRANCH, branchSite.getSiteType(), "Delivery stop should be BRANCH type");
 	}
 
 	@Test
@@ -1474,7 +1471,7 @@ public class Tests {
 			branch
 		);
 
-		assertEquals("Employee should have branch assigned", branch, branchEmployee.getBranch());
+		assertEquals(branch, branchEmployee.getBranch(), "Employee should have branch assigned");
 	}
 
 	@Test
@@ -1502,7 +1499,7 @@ public class Tests {
 	public void employee_globalDriver_creationSuccess() {
 		Employee globalDriver = buildGlobalDriver("100000403");
 
-		assertEquals("Global driver should have no branch", null, globalDriver.getBranch());
+		assertEquals(null, globalDriver.getBranch(), "Global driver should have no branch");
 		assertTrue("Global driver should be authorized for DRIVER role",
 			globalDriver.getAuthorizedRoles().contains(Role.DRIVER));
 	}
@@ -1549,7 +1546,7 @@ public class Tests {
 			branch
 		);
 
-		assertEquals("Mixed role employee should have branch", branch, mixedEmployee.getBranch());
+		assertEquals(branch, mixedEmployee.getBranch(), "Mixed role employee should have branch");
 	}
 
 	@Test
@@ -1566,7 +1563,7 @@ public class Tests {
 			branch
 		);
 
-		assertEquals("Shift should have branch assigned", branch, shift.getBranch());
+		assertEquals(branch, shift.getBranch(), "Shift should have branch assigned");
 	}
 
 	@Test
@@ -1589,8 +1586,8 @@ public class Tests {
 
 		controller.assignEmployeeToShift(hr, employee, shift, Role.CASHIER);
 
-		assertEquals("Employee should be assigned to shift", 1, shift.getAssignments().size());
-		assertEquals("Assigned employee should match", employee.getId(), shift.getAssignments().get(0).getEmployee().getId());
+		assertEquals(1, shift.getAssignments().size(), "Employee should be assigned to shift");
+		assertEquals(employee.getId(), shift.getAssignments().get(0).getEmployee().getId(), "Assigned employee should match");
 	}
 
 	@Test
@@ -1637,8 +1634,8 @@ public class Tests {
 
 		controller.assignEmployeeToShift(hr, globalDriver, shift, Role.DRIVER);
 
-		assertEquals("Global driver should be assigned to shift", 1, shift.getAssignments().size());
-		assertEquals("Assigned driver should match", globalDriver.getId(), shift.getAssignments().get(0).getEmployee().getId());
+		assertEquals(1, shift.getAssignments().size(), "Global driver should be assigned to shift");
+		assertEquals(globalDriver.getId(), shift.getAssignments().get(0).getEmployee().getId(), "Assigned driver should match");
 	}
 
 	@Test
@@ -1663,8 +1660,8 @@ public class Tests {
 		controller.assignEmployeeToShift(hr, original, shift, Role.CASHIER);
 		controller.substituteEmployee(hr, shift, original, globalDriver);
 
-		assertEquals("Shift should still have one assignment after substitution", 1, shift.getAssignments().size());
-		assertEquals("Global driver should replace original employee", globalDriver.getId(), shift.getAssignments().get(0).getEmployee().getId());
+		assertEquals(1, shift.getAssignments().size(), "Shift should still have one assignment after substitution");
+		assertEquals(globalDriver.getId(), shift.getAssignments().get(0).getEmployee().getId(), "Global driver should replace original employee");
 	}
 
 	@Test
@@ -1691,8 +1688,8 @@ public class Tests {
 		controller.substituteEmployee(hr, shift1, original1, globalDriver);
 		controller.substituteEmployee(hr, shift2, original2, globalDriver);
 
-		assertEquals("Global driver should be in shift1", globalDriver.getId(), shift1.getAssignments().get(0).getEmployee().getId());
-		assertEquals("Global driver should be in shift2", globalDriver.getId(), shift2.getAssignments().get(0).getEmployee().getId());
+		assertEquals(globalDriver.getId(), shift1.getAssignments().get(0).getEmployee().getId(), "Global driver should be in shift1");
+		assertEquals(globalDriver.getId(), shift2.getAssignments().get(0).getEmployee().getId(), "Global driver should be in shift2");
 	}
 
 	private static void assertThrows(Class<? extends Throwable> expected, Runnable action) {

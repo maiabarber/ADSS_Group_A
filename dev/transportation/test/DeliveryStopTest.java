@@ -1,11 +1,11 @@
 package tests;
 
-import domain.DeliveryDocument;
-import domain.DeliveryItem;
-import domain.DeliveryStop;
-import domain.ShippingZone;
-import domain.Site;
-import domain.StopType;
+import transportation.domain.DeliveryDocument;
+import transportation.domain.DeliveryItem;
+import transportation.domain.DeliveryStop;
+import transportation.domain.ShippingZone;
+import transportation.domain.Site;
+import transportation.domain.StopType;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;

@@ -8,6 +8,17 @@ public class Driver {
     private String employeeId;
     private String driverName;
     private Set<LicenseType> licenseTypes;
+    
+    public Driver(String driverName, Set<LicenseType> licenseTypes) {
+        this(createLegacyEmployeeId(driverName), driverName, licenseTypes);
+    }
+
+    private static String createLegacyEmployeeId(String driverName) {
+        if (driverName == null || driverName.isBlank()) {
+            return driverName;
+        }
+        return "LEGACY-" + Math.abs(driverName.hashCode());
+    }
 
     public Driver(String employeeId, String driverName, Set<LicenseType> licenseTypes) {
         validateEmployeeId(employeeId);

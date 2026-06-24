@@ -1,16 +1,17 @@
 package tests;
 
-import domain.Delivery;
-import domain.DeliveryItem;
-import domain.DeliveryStatus;
-import domain.DeliveryStop;
-import domain.Driver;
-import domain.LicenseType;
-import domain.ShippingZone;
-import domain.Site;
-import domain.Truck;
+import transportation.domain.Delivery;
+import transportation.domain.DeliveryItem;
+import transportation.domain.DeliveryManager;
+import transportation.domain.DeliveryStatus;
+import transportation.domain.DeliveryStop;
+import transportation.domain.Driver;
+import transportation.domain.LicenseType;
+import transportation.domain.ShippingZone;
+import transportation.domain.Site;
+import transportation.domain.Truck;
 import org.junit.jupiter.api.Test;
-import service.DeliveriesApplication;
+import transportation.service.DeliveriesApplication;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -106,7 +107,7 @@ public class DeliveriesApplicationTest {
     @Test
     void constructor_nullDeliveryManager_throwsException() {
         assertThrows(IllegalArgumentException.class, () ->
-                new DeliveriesApplication(null)
+                new DeliveriesApplication((DeliveryManager) null)
         );
     }
 

@@ -346,4 +346,24 @@ public class DeliveriesApplication {
             throw new IllegalArgumentException(entityName + " index is out of range");
         }
     }
+
+    public Delivery planDelivery(LocalDate deliveryDate,
+                                 Site source,
+                                 List<DeliveryStop> stops,
+                                 LocalTime departureTime,
+                                 double initialWeight,
+                                 Truck truck,
+                                 Driver driver,
+                                 ShippingZone shippingZone) {
+        return createDelivery(
+                deliveryDate,
+                source,
+                stops,
+                departureTime,
+                initialWeight,
+                truck,
+                driver,
+                shippingZone
+        );
+    }
 }
