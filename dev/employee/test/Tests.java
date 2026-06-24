@@ -1619,13 +1619,19 @@ public class Tests {
 	}
 
 	@Test
-	public void substitution_globalDriverAcceptedInAnyBranchShift() {
+	public void substitution_globalDriverAcceptedInAnyBranchDriverShift() {
 		ShiftController controller = new ShiftController();
 		HR_Manager hr = new HR_Manager("100000420", "pass");
 		Branch branch = new Branch("B-015", "Substitution Test Branch", "Test");
 
 		Employee manager = buildEmployee("100000421", true, 10, branch);
-		Employee original = buildEmployee("100000422", false, 10, branch);
+		Employee original = buildEmployeeWithRoles(
+			"100000422",
+			false,
+			10,
+			new HashSet<>(Arrays.asList(Role.DRIVER, Role.CASHIER)),
+			branch
+		);
 		Employee globalDriver = buildGlobalDriver("100000423");
 
 		Shift shift = new Shift(
@@ -1637,7 +1643,7 @@ public class Tests {
 			branch
 		);
 
-		controller.assignEmployeeToShift(hr, original, shift, Role.CASHIER);
+		controller.assignEmployeeToShift(hr, original, shift, Role.DRIVER);
 		controller.substituteEmployee(hr, shift, original, globalDriver);
 
 		assertEquals(1, shift.getAssignments().size(), "Shift should still have one assignment after substitution");
