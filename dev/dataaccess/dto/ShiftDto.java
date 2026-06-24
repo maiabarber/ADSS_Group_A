@@ -10,7 +10,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-public final class ShiftDto {
+public class ShiftDto {
     private final LocalDate date;
     private final ShiftType shiftType;
     private final String shiftManagerId;

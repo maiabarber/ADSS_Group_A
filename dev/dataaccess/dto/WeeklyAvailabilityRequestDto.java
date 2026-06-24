@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public final class WeeklyAvailabilityRequestDto {
+public class WeeklyAvailabilityRequestDto {
     private final LocalDate weekStartDate;
     private final List<ConstraintDto> constraints;
     private final List<PreferenceDto> preferences;

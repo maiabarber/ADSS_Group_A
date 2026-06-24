@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-public final class DriverDto {
+public class DriverDto {
     private final String employeeId;
     private final String driverName;
     private final Set<LicenseType> licenseTypes;
