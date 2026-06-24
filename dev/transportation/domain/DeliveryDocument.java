@@ -103,4 +103,8 @@ public class DeliveryDocument {
                 ", items=" + items +
                 '}';
     }
+
+    public List<DeliveryItem> getItemsDelivered() {
+        return getItems();
+    }
 }

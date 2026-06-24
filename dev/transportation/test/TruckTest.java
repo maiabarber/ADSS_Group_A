@@ -1,7 +1,7 @@
 package tests;
 
-import domain.LicenseType;
-import domain.Truck;
+import transportation.domain.LicenseType;
+import transportation.domain.Truck;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

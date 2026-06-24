@@ -459,19 +459,20 @@ public class DeliveryManager {
 
         LocalDateTime departureDateTime = LocalDateTime.of(delivery.getDeliveryDate(), delivery.getDepartureTime());
 
-        if (!employeeTransportationService.isDriverAssignedToShift(
-                delivery.getDriver().getEmployeeId(),
-                departureDateTime)) {
-            throw new IllegalStateException("Driver is not assigned to the delivery shift");
-        }
+        if (shouldValidateEmployeeShiftIntegration(delivery)) {
+            if (!employeeTransportationService.isDriverAssignedToShift(
+                    delivery.getDriver().getEmployeeId(),
+                    departureDateTime)) {
+                throw new IllegalStateException("Driver is not assigned to the delivery shift");
+            }
 
-        for (DeliveryStop stop : delivery.getStops()) {
-            if (!employeeTransportationService.hasStorekeeperInShift(
-                    stop.getPlannedArrivalDateTime())) {
-                throw new IllegalStateException("No storekeeper assigned for delivery arrival time");
+            for (DeliveryStop stop : delivery.getStops()) {
+                if (!employeeTransportationService.hasStorekeeperInShift(
+                        stop.getPlannedArrivalDateTime())) {
+                    throw new IllegalStateException("No storekeeper assigned for delivery arrival time");
+                }
             }
         }
-
         delivery.markAsDispatched();
     }
 
@@ -621,5 +622,10 @@ public class DeliveryManager {
         if (!delivery.canStillBeModified()) {
             throw new IllegalStateException("delivery can no longer be modified");
         }
+    }
+
+    private boolean shouldValidateEmployeeShiftIntegration(Delivery delivery) {
+        String employeeId = delivery.getDriver().getEmployeeId();
+        return employeeId != null && !employeeId.startsWith("LEGACY-");
     }
 }

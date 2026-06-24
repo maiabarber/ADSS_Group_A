@@ -1,17 +1,17 @@
 package tests;
 
-import domain.Delivery;
-import domain.DeliveryDocument;
-import domain.DeliveryForm;
-import domain.DeliveryItem;
-import domain.DeliveryStatus;
-import domain.DeliveryStop;
-import domain.Driver;
-import domain.LicenseType;
-import domain.ShippingZone;
-import domain.Site;
-import domain.StopType;
-import domain.Truck;
+import transportation.domain.Delivery;
+import transportation.domain.DeliveryDocument;
+import transportation.domain.DeliveryForm;
+import transportation.domain.DeliveryItem;
+import transportation.domain.DeliveryStatus;
+import transportation.domain.DeliveryStop;
+import transportation.domain.Driver;
+import transportation.domain.LicenseType;
+import transportation.domain.ShippingZone;
+import transportation.domain.Site;
+import transportation.domain.StopType;
+import transportation.domain.Truck;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
