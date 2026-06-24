@@ -99,7 +99,7 @@ public class Tests {
 		request.addConstraint(new employee.domain.Constraint(DayOfWeek.SUNDAY, ShiftType.MORNING));
 		request.addPreference(new employee.domain.Preference(DayOfWeek.MONDAY, ShiftType.EVENING));
 
-		LocalDate newWeek = LocalDate.of(2026, 4, 20);
+		LocalDate newWeek = LocalDate.of(2027, 4, 20);
 		request.resetForWeek(newWeek);
 
 		assertTrue(request.getConstraints().isEmpty(),"Constraints should be cleared after reset");
@@ -118,7 +118,7 @@ public class Tests {
 		assertEquals(1, request.getPreferences().size(), "Week 1 should have 1 preference");
 
 		// Reset for week 2
-		request.resetForWeek(LocalDate.of(2026, 7, 27));
+		request.resetForWeek(LocalDate.of(2027, 7, 27));
 		assertTrue(request.getConstraints().isEmpty(), "Constraints should be cleared for week 2");
 		assertTrue(request.getPreferences().isEmpty(), "Preferences should be cleared for week 2");
 
@@ -169,7 +169,7 @@ public class Tests {
 
 		try {
 			employeeRepository.save(employee);
-			deadlineRepository.save(LocalDate.of(2026, 7, 25));
+			deadlineRepository.save(LocalDate.of(2027, 7, 25));
 			List<Constraint> constraints = new ArrayList<>();
 			constraints.add(new Constraint(DayOfWeek.MONDAY, ShiftType.MORNING));
 			List<Preference> preferences = Collections.singletonList(new Preference(DayOfWeek.FRIDAY, ShiftType.EVENING));
@@ -181,7 +181,7 @@ public class Tests {
 				preferences,
 				1,
 				selectedVacationDays,
-				LocalDate.of(2026, 7, 20)
+				LocalDate.of(2027, 7, 20)
 			);
 
 			WeeklyAvailabilityRequest request = employee.getWeeklyAvailabilityRequest();
@@ -237,7 +237,7 @@ public class Tests {
 							preferences,
 							1,
 							selectedVacationDays,
-							LocalDate.of(2026, 4, 20)
+							LocalDate.of(2027, 4, 20)
 						);
 					} catch (RepositoryException e) {
 						throw new RuntimeException(e);
@@ -568,22 +568,23 @@ public class Tests {
 	}
 
 	@Test
-	public void hard_shiftConfigureRoleCounts_minimumOneEnforced() {
+	public void hard_shiftConfigureRoleCounts_allowsZeroDriverCount() {
 		HR_Manager hr = new HR_Manager("100000075", "pass");
 		Shift shift = new Shift();
 		Map<Role, Integer> invalidCounts = new EnumMap<>(Role.class);
-		invalidCounts.put(Role.CASHIER, 0);
+		invalidCounts.put(Role.DRIVER, 0);
 
-		assertThrows(IllegalArgumentException.class, () -> shift.configureRequiredRoleCounts(hr, invalidCounts));
+		shift.configureRequiredRoleCounts(hr, invalidCounts);
+		assertEquals(0, shift.getRequiredRoleCounts().get(Role.DRIVER).intValue(), "Driver count should be allowed to remain 0");
 	}
 
 	@Test
 	public void hard_shiftConfigureRoleCounts_defaultsAtLeastOne() {
 		Shift shift = new Shift();
 
-		for (Map.Entry<Role, Integer> entry : shift.getRequiredRoleCounts().entrySet()) {
-			assertTrue(entry.getValue() >= 1, "Default required count for role " + entry.getKey() + " should be at least 1");
-		}
+		assertTrue(shift.getRequiredRoleCounts().get(Role.CASHIER) >= 1, "Default required count for CASHIER should be at least 1");
+		assertTrue(shift.getRequiredRoleCounts().get(Role.STOREKEEPER) >= 1, "Default required count for STOREKEEPER should be at least 1");
+		assertEquals(0, shift.getRequiredRoleCounts().get(Role.DRIVER).intValue(), "Default required count for DRIVER should be 0");
 	}
 
 	@Test
@@ -870,7 +871,7 @@ public class Tests {
 
 	@Test
 	public void easy_employeeDetails_startDate() {
-		LocalDate startDate = LocalDate.of(2026, 4, 21);
+		LocalDate startDate = LocalDate.of(2027, 4, 21);
 		Employee employee = buildEmployee("100000067", false, 10);
 
 		assertEquals(startDate, employee.getStartDate(), "Employee start date should match the value set at construction");
@@ -900,7 +901,7 @@ public class Tests {
 	@Test
 	public void easy_submissionDeadlineRepository_roundTrip() {
 		InMemorySubmissionDeadlineRepository repository = new InMemorySubmissionDeadlineRepository();
-		LocalDate deadline = LocalDate.of(2026, 4, 25);
+		LocalDate deadline = LocalDate.of(2027, 4, 25);
 
 		try {
 			repository.save(deadline);
@@ -913,8 +914,8 @@ public class Tests {
 	@Test
 	public void easy_deadlinePolicy_validDeadlineAccepted() {
 		SubmissionDeadlinePolicy policy = new SubmissionDeadlinePolicy();
-		LocalDate today = LocalDate.of(2026, 4, 20); // Monday
-		LocalDate validDeadline = LocalDate.of(2026, 4, 22); // Wednesday — within the week
+		LocalDate today = LocalDate.of(2027, 4, 19); // Monday
+		LocalDate validDeadline = LocalDate.of(2027, 4, 21); // Wednesday — within the week
 
 		policy.validateManagerDeadline(validDeadline, today); // should not throw
 	}
@@ -922,8 +923,8 @@ public class Tests {
 	@Test
 	public void easy_deadlinePolicy_saturdayBoundaryAccepted() {
 		SubmissionDeadlinePolicy policy = new SubmissionDeadlinePolicy();
-		LocalDate today = LocalDate.of(2026, 4, 20); // Monday
-		LocalDate saturday = LocalDate.of(2026, 4, 25); // Saturday of same week
+		LocalDate today = LocalDate.of(2027, 4, 19); // Monday
+		LocalDate saturday = LocalDate.of(2027, 4, 24); // Saturday of same week
 
 		policy.validateManagerDeadline(saturday, today); // should not throw
 	}
@@ -931,8 +932,8 @@ public class Tests {
 	@Test
 	public void easy_deadlinePolicy_deadlineAfterSaturdayRejected() {
 		SubmissionDeadlinePolicy policy = new SubmissionDeadlinePolicy();
-		LocalDate today = LocalDate.of(2026, 4, 20); // Monday
-		LocalDate nextWeek = LocalDate.of(2026, 4, 26); // Sunday — next week
+		LocalDate today = LocalDate.of(2027, 4, 19); // Monday
+		LocalDate nextWeek = LocalDate.of(2027, 4, 25); // Sunday — next week
 
 		assertThrows(IllegalArgumentException.class, () -> policy.validateManagerDeadline(nextWeek, today));
 	}
@@ -940,7 +941,7 @@ public class Tests {
 	@Test
 	public void easy_deadlinePolicy_nullDeadlineRejected() {
 		SubmissionDeadlinePolicy policy = new SubmissionDeadlinePolicy();
-		LocalDate today = LocalDate.of(2026, 4, 20);
+		LocalDate today = LocalDate.of(2027, 4, 19);
 
 		assertThrows(IllegalArgumentException.class, () -> policy.validateManagerDeadline(null, today));
 	}
@@ -949,14 +950,14 @@ public class Tests {
 	public void hard_shiftController_maintainsShiftHistorySeparately() {
 		ShiftController controller = new ShiftController();
 		Shift activeShift = new Shift(
-			LocalDate.of(2026, 4, 21),
+			LocalDate.of(2027, 4, 21),
 			ShiftType.MORNING,
 			buildEmployee("100000148", true, 10),
 			1,
 			1
 		);
 		Shift historicalShift = new Shift(
-			LocalDate.of(2026, 4, 14),
+			LocalDate.of(2027, 4, 14),
 			ShiftType.EVENING,
 			buildEmployee("100000149", true, 10),
 			1,
@@ -976,7 +977,7 @@ public class Tests {
 		ShiftController controller = new ShiftController();
 		HR_Manager hr = new HR_Manager("100000081", "p");
 		Employee employee = buildEmployee("100000101", false, 10);
-		Shift shift = new Shift(LocalDate.of(2026, 4, 21), ShiftType.MORNING, buildEmployee("100000111", true, 10), 1, 1);
+		Shift shift = new Shift(LocalDate.of(2027, 4, 21), ShiftType.MORNING, buildEmployee("100000111", true, 10), 1, 1);
 
 		controller.assignEmployeeToShift(hr, employee, shift, Role.CASHIER);
 
@@ -989,7 +990,7 @@ public class Tests {
 		ShiftController controller = new ShiftController();
 		HR_Manager hr = new HR_Manager("100000154", "p");
 		Employee employee = buildEmployee("100000155", false, 10);
-		Shift morningShift = new Shift(LocalDate.of(2026, 5, 1), ShiftType.MORNING, buildEmployee("100000156", true, 10), 1, 1);
+		Shift morningShift = new Shift(LocalDate.of(2027, 5, 1), ShiftType.MORNING, buildEmployee("100000156", true, 10), 1, 1);
 
 		controller.assignEmployeeToShift(hr, employee, morningShift, Role.CASHIER);
 
@@ -1002,7 +1003,7 @@ public class Tests {
 		ShiftController controller = new ShiftController();
 		HR_Manager hr = new HR_Manager("100000157", "p");
 		Employee employee = buildEmployeeWithRoles("100000158", false, 10, Collections.singleton(Role.STOREKEEPER));
-		Shift eveningShift = new Shift(LocalDate.of(2026, 5, 2), ShiftType.EVENING, buildEmployee("100000159", true, 10), 1, 1);
+		Shift eveningShift = new Shift(LocalDate.of(2027, 5, 2), ShiftType.EVENING, buildEmployee("100000159", true, 10), 1, 1);
 
 		controller.assignEmployeeToShift(hr, employee, eveningShift, Role.STOREKEEPER);
 
@@ -1015,7 +1016,7 @@ public class Tests {
 		ShiftController controller = new ShiftController();
 		HR_Manager hr = new HR_Manager("100000082", "p");
 		Employee employee = buildEmployee("100000102", false, 10);
-		Shift shift = new Shift(LocalDate.of(2026, 4, 22), ShiftType.MORNING, buildEmployee("100000112", true, 10), 1, 1);
+		Shift shift = new Shift(LocalDate.of(2027, 4, 22), ShiftType.MORNING, buildEmployee("100000112", true, 10), 1, 1);
 
 		employee.getWeeklyAvailabilityRequest().addConstraint(
 			new Constraint(shift.getDate().getDayOfWeek(), ShiftType.MORNING)
@@ -1033,7 +1034,7 @@ public class Tests {
 		ShiftController controller = new ShiftController();
 		HR_Manager hr = new HR_Manager("100000091", "p");
 		Employee employee = buildEmployee("100000121", false, 10);
-		Shift shift = new Shift(LocalDate.of(2026, 4, 22), ShiftType.MORNING, buildEmployee("100000122", true, 10), 1, 1);
+		Shift shift = new Shift(LocalDate.of(2027, 4, 22), ShiftType.MORNING, buildEmployee("100000122", true, 10), 1, 1);
 
 		DayOfWeek vacationDay = shift.getDate().getDayOfWeek();
 		employee.getWeeklyAvailabilityRequest().addConstraint(new Constraint(vacationDay, ShiftType.MORNING));
@@ -1049,7 +1050,7 @@ public class Tests {
 		ShiftController controller = new ShiftController();
 		HR_Manager hr = new HR_Manager("100000083", "p");
 		Employee employee = buildEmployee("100000103", false, 10);
-		Shift shift = new Shift(LocalDate.of(2026, 4, 23), ShiftType.MORNING, buildEmployee("100000113", true, 10), 1, 1);
+		Shift shift = new Shift(LocalDate.of(2027, 4, 23), ShiftType.MORNING, buildEmployee("100000113", true, 10), 1, 1);
 
 		employee.getWeeklyAvailabilityRequest().addConstraint(
 			new Constraint(shift.getDate().getDayOfWeek(), ShiftType.MORNING)
@@ -1068,7 +1069,7 @@ public class Tests {
 		ShiftController controller = new ShiftController();
 		HR_Manager hr = new HR_Manager("100000093", "p");
 		Employee employee = buildEmployee("100000110", false, 10);
-		Shift shift = new Shift(LocalDate.of(2026, 4, 23), ShiftType.MORNING, buildEmployee("100000125", true, 10), 1, 1);
+		Shift shift = new Shift(LocalDate.of(2027, 4, 23), ShiftType.MORNING, buildEmployee("100000125", true, 10), 1, 1);
 
 		employee.getWeeklyAvailabilityRequest().addConstraint(
 			new Constraint(shift.getDate().getDayOfWeek(), ShiftType.MORNING)
@@ -1091,7 +1092,7 @@ public class Tests {
 		ShiftController controller = new ShiftController();
 		HR_Manager hr = new HR_Manager("100000084", "p");
 		Employee employee = buildEmployee("100000104", false, 10);
-		Shift shift = new Shift(LocalDate.of(2026, 4, 24), ShiftType.DOUBLE_SHIFT, buildEmployee("100000114", true, 10), 1, 1);
+		Shift shift = new Shift(LocalDate.of(2027, 4, 24), ShiftType.DOUBLE_SHIFT, buildEmployee("100000114", true, 10), 1, 1);
 
 		assertThrows(IllegalArgumentException.class, () -> controller.assignEmployeeToShift(hr, employee, shift, Role.CASHIER));
 
@@ -1107,7 +1108,7 @@ public class Tests {
 		ShiftController controller = new ShiftController();
 		HR_Manager hr = new HR_Manager("100000088", "p");
 		Employee employee = buildEmployee("100000105", false, 10);
-		Shift shift = new Shift(LocalDate.of(2026, 4, 24), ShiftType.MORNING_OVERTIME, buildEmployee("100000119", true, 10), 1, 1);
+		Shift shift = new Shift(LocalDate.of(2027, 4, 24), ShiftType.MORNING_OVERTIME, buildEmployee("100000119", true, 10), 1, 1);
 
 		assertThrows(IllegalArgumentException.class, () -> controller.assignEmployeeToShift(hr, employee, shift, Role.CASHIER));
 	}
@@ -1117,7 +1118,7 @@ public class Tests {
 		ShiftController controller = new ShiftController();
 		HR_Manager hr = new HR_Manager("100000089", "p");
 		Employee employee = buildEmployee("100000106", false, 10);
-		Shift shift = new Shift(LocalDate.of(2026, 4, 24), ShiftType.MORNING_OVERTIME, buildEmployee("100000120", true, 10), 1, 1);
+		Shift shift = new Shift(LocalDate.of(2027, 4, 24), ShiftType.MORNING_OVERTIME, buildEmployee("100000120", true, 10), 1, 1);
 
 		employee.getWeeklyAvailabilityRequest().addPreference(
 			new Preference(shift.getDate().getDayOfWeek(), ShiftType.MORNING_OVERTIME)
@@ -1140,7 +1141,7 @@ public class Tests {
 		ShiftController controller = new ShiftController();
 		HR_Manager hr = new HR_Manager("100000097", "p");
 		Employee employee = buildEmployeeWithRoles("100000143", false, 10, Collections.singleton(Role.STOREKEEPER));
-		Shift shift = new Shift(LocalDate.of(2026, 4, 21), ShiftType.MORNING, buildEmployee("100000144", true, 10), 1, 1);
+		Shift shift = new Shift(LocalDate.of(2027, 4, 21), ShiftType.MORNING, buildEmployee("100000144", true, 10), 1, 1);
 
 		assertThrows(IllegalArgumentException.class, () -> controller.assignEmployeeToShift(hr, employee, shift, Role.CASHIER));
 	}
@@ -1150,7 +1151,7 @@ public class Tests {
 		ShiftController controller = new ShiftController();
 		HR_Manager hr = new HR_Manager("100000098", "p");
 		Employee employee = buildEmployee("100000145", false, 10);
-		Shift shift = new Shift(LocalDate.of(2026, 4, 21), ShiftType.MORNING, buildEmployee("100000146", true, 10), 1, 1);
+		Shift shift = new Shift(LocalDate.of(2027, 4, 21), ShiftType.MORNING, buildEmployee("100000146", true, 10), 1, 1);
 
 		controller.assignEmployeeToShift(hr, employee, shift, Role.CASHIER);
 		assertThrows(IllegalArgumentException.class, () -> controller.assignEmployeeToShift(hr, employee, shift, Role.CASHIER));
@@ -1162,7 +1163,7 @@ public class Tests {
 		HR_Manager hr = new HR_Manager("100000085", "p");
 		Employee original = buildEmployee("100000131", false, 10);
 		Employee replacement = buildEmployeeWithRoles("100000132", false, 10, Collections.singleton(Role.STOREKEEPER));
-		Shift shift = new Shift(LocalDate.of(2026, 4, 26), ShiftType.MORNING, buildEmployee("100000115", true, 10), 1, 1);
+		Shift shift = new Shift(LocalDate.of(2027, 4, 26), ShiftType.MORNING, buildEmployee("100000115", true, 10), 1, 1);
 
 		controller.assignEmployeeToShift(hr, original, shift, Role.CASHIER);
 		assertThrows(IllegalArgumentException.class, () -> controller.substituteEmployee(hr, shift, original, replacement));
@@ -1174,7 +1175,7 @@ public class Tests {
 		HR_Manager hr = new HR_Manager("100000094", "p");
 		Employee original = buildEmployee("100000135", false, 10);
 		Employee replacement = buildEmployee("100000136", false, 10);
-		Shift shift = new Shift(LocalDate.of(2026, 4, 26), ShiftType.MORNING, buildEmployee("100000126", true, 10), 1, 1);
+		Shift shift = new Shift(LocalDate.of(2027, 4, 26), ShiftType.MORNING, buildEmployee("100000126", true, 10), 1, 1);
 
 		controller.assignEmployeeToShift(hr, original, shift, Role.CASHIER);
 		controller.substituteEmployee(hr, shift, original, replacement);
@@ -1189,7 +1190,7 @@ public class Tests {
 		HR_Manager hr = new HR_Manager("100000095", "p");
 		Employee original = buildEmployee("100000137", false, 10);
 		Employee alreadyAssigned = buildEmployee("100000138", false, 10);
-		Shift shift = new Shift(LocalDate.of(2026, 4, 26), ShiftType.MORNING, buildEmployee("100000127", true, 10), 1, 1);
+		Shift shift = new Shift(LocalDate.of(2027, 4, 26), ShiftType.MORNING, buildEmployee("100000127", true, 10), 1, 1);
 
 		controller.assignEmployeeToShift(hr, original, shift, Role.CASHIER);
 		controller.assignEmployeeToShift(hr, alreadyAssigned, shift, Role.CASHIER);
@@ -1202,7 +1203,7 @@ public class Tests {
 		HR_Manager hr = new HR_Manager("100000096", "p");
 		Employee original = buildEmployee("100000139", false, 10);
 		Employee replacement = buildEmployee("100000140", false, 10);
-		Shift shift = new Shift(LocalDate.of(2026, 4, 26), ShiftType.MORNING, buildEmployee("100000128", true, 10), 1, 1);
+		Shift shift = new Shift(LocalDate.of(2027, 4, 26), ShiftType.MORNING, buildEmployee("100000128", true, 10), 1, 1);
 
 		controller.assignEmployeeToShift(hr, original, shift, Role.CASHIER);
 		assertThrows(IllegalArgumentException.class, () -> controller.substituteEmployee(new employee.domain.User("100000023", "p"), shift, original, replacement));
@@ -1214,7 +1215,7 @@ public class Tests {
 		HR_Manager hr = new HR_Manager("100000086", "p");
 		Employee original = buildEmployee("100000133", false, 10);
 		Employee replacement = buildEmployee("100000134", false, 10);
-		Shift shift = new Shift(LocalDate.of(2026, 4, 27), ShiftType.EVENING, buildEmployee("100000116", true, 10), 1, 1);
+		Shift shift = new Shift(LocalDate.of(2027, 4, 27), ShiftType.EVENING, buildEmployee("100000116", true, 10), 1, 1);
 
 		controller.addShift(shift);
 		controller.assignEmployeeToShift(hr, original, shift, Role.CASHIER);
@@ -1232,7 +1233,7 @@ public class Tests {
 		ShiftController controller = new ShiftController();
 		HR_Manager hr = new HR_Manager("100000090", "p");
 		Employee employee = buildEmployee("100000107", false, 10);
-		Shift shift = new Shift(LocalDate.of(2026, 4, 28), ShiftType.MORNING, buildEmployee("100000123", true, 10), 1, 1);
+		Shift shift = new Shift(LocalDate.of(2027, 4, 28), ShiftType.MORNING, buildEmployee("100000123", true, 10), 1, 1);
 
 		controller.addShift(shift);
 		controller.assignEmployeeToShift(hr, employee, shift, Role.CASHIER);
@@ -1251,7 +1252,7 @@ public class Tests {
 		HR_Manager hr = new HR_Manager("100000092", "p");
 		Employee assigned = buildEmployee("100000108", false, 10);
 		Employee notAssigned = buildEmployee("100000109", false, 10);
-		Shift shift = new Shift(LocalDate.of(2026, 4, 29), ShiftType.MORNING, buildEmployee("100000124", true, 10), 1, 1);
+		Shift shift = new Shift(LocalDate.of(2027, 4, 29), ShiftType.MORNING, buildEmployee("100000124", true, 10), 1, 1);
 
 		controller.addShift(shift);
 		controller.assignEmployeeToShift(hr, assigned, shift, Role.CASHIER);
@@ -1265,9 +1266,9 @@ public class Tests {
 		HR_Manager hr = new HR_Manager("100000099", "p");
 		Employee employee = buildEmployee("100000150", false, 10);
 
-		Shift morning = new Shift(LocalDate.of(2026, 4, 28), ShiftType.MORNING, buildEmployee("100000151", true, 10), 1, 1);
-		Shift morningOvertime = new Shift(LocalDate.of(2026, 4, 29), ShiftType.MORNING_OVERTIME, buildEmployee("100000152", true, 10), 1, 1);
-		Shift evening = new Shift(LocalDate.of(2026, 4, 30), ShiftType.EVENING, buildEmployee("100000153", true, 10), 1, 1);
+		Shift morning = new Shift(LocalDate.of(2027, 4, 28), ShiftType.MORNING, buildEmployee("100000151", true, 10), 1, 1);
+		Shift morningOvertime = new Shift(LocalDate.of(2027, 4, 29), ShiftType.MORNING_OVERTIME, buildEmployee("100000152", true, 10), 1, 1);
+		Shift evening = new Shift(LocalDate.of(2027, 4, 30), ShiftType.EVENING, buildEmployee("100000153", true, 10), 1, 1);
 
 		employee.getWeeklyAvailabilityRequest().addPreference(
 			new Preference(morningOvertime.getDate().getDayOfWeek(), ShiftType.MORNING_OVERTIME)
@@ -1291,8 +1292,8 @@ public class Tests {
 		ShiftController controller = new ShiftController();
 		HR_Manager hr = new HR_Manager("100000087", "p");
 		Employee employee = buildEmployee("100000141", false, 10);
-		Shift morning = new Shift(LocalDate.of(2026, 4, 28), ShiftType.MORNING, buildEmployee("100000117", true, 10), 1, 1);
-		Shift evening = new Shift(LocalDate.of(2026, 4, 29), ShiftType.EVENING, buildEmployee("100000118", true, 10), 1, 1);
+		Shift morning = new Shift(LocalDate.of(2027, 4, 28), ShiftType.MORNING, buildEmployee("100000117", true, 10), 1, 1);
+		Shift evening = new Shift(LocalDate.of(2027, 4, 29), ShiftType.EVENING, buildEmployee("100000118", true, 10), 1, 1);
 
 		controller.addShift(morning);
 		controller.addShift(evening);
@@ -1535,7 +1536,7 @@ public class Tests {
 		Employee manager = buildEmployee("100000410", true, 10, branch);
 
 		Shift shift = new Shift(
-			LocalDate.of(2026, 5, 15),
+			LocalDate.of(2027, 5, 15),
 			ShiftType.MORNING,
 			manager,
 			1,
@@ -1556,7 +1557,7 @@ public class Tests {
 		Employee employee = buildEmployee("100000413", false, 10, branch);
 
 		Shift shift = new Shift(
-			LocalDate.of(2026, 5, 16),
+			LocalDate.of(2027, 5, 16),
 			ShiftType.MORNING,
 			manager,
 			1,
@@ -1581,7 +1582,7 @@ public class Tests {
 		Employee employee = buildEmployee("100000416", false, 10, branch2);
 
 		Shift shift = new Shift(
-			LocalDate.of(2026, 5, 17),
+			LocalDate.of(2027, 5, 17),
 			ShiftType.MORNING,
 			manager,
 			1,
@@ -1658,18 +1659,30 @@ public class Tests {
 		Branch branch2 = new Branch("B-017", "Second Branch", "Loc2");
 
 		Employee manager1 = buildEmployee("100000425", true, 10, branch1);
-		Employee original1 = buildEmployee("100000426", false, 10, branch1);
+		Employee original1 = buildEmployeeWithRoles(
+			"100000426",
+			false,
+			10,
+			new HashSet<>(Arrays.asList(Role.DRIVER, Role.CASHIER)),
+			branch1
+		);
 
 		Employee manager2 = buildEmployee("100000427", true, 10, branch2);
-		Employee original2 = buildEmployee("100000428", false, 10, branch2);
+		Employee original2 = buildEmployeeWithRoles(
+			"100000428",
+			false,
+			10,
+			new HashSet<>(Arrays.asList(Role.DRIVER, Role.CASHIER)),
+			branch2
+		);
 
 		Employee globalDriver = buildGlobalDriver("100000429");
 
 		Shift shift1 = new Shift(LocalDate.of(2027, 5, 20), ShiftType.MORNING, manager1, 1, 0, branch1);
 		Shift shift2 = new Shift(LocalDate.of(2027, 5, 21), ShiftType.EVENING, manager2, 1, 0, branch2);
 
-		controller.assignEmployeeToShift(hr, original1, shift1, Role.CASHIER);
-		controller.assignEmployeeToShift(hr, original2, shift2, Role.CASHIER);
+		controller.assignEmployeeToShift(hr, original1, shift1, Role.DRIVER);
+		controller.assignEmployeeToShift(hr, original2, shift2, Role.DRIVER);
 
 		controller.substituteEmployee(hr, shift1, original1, globalDriver);
 		controller.substituteEmployee(hr, shift2, original2, globalDriver);
