@@ -24,6 +24,7 @@ public class Employee extends User {
     private boolean isFired;
     private DayOfWeek fixedDayOff;
     private WeeklyAvailabilityRequest weeklyAvailabilityRequest;
+    private Branch branch;
 
     public Employee(
         String id,
@@ -37,10 +38,12 @@ public class Employee extends User {
         boolean canManageShift,
         boolean isFired,
         DayOfWeek fixedDayOff,
-        WeeklyAvailabilityRequest weeklyAvailabilityRequest
+        WeeklyAvailabilityRequest weeklyAvailabilityRequest,
+        Branch branch
     ) {
         super(id, password);
         validateName(name);
+        validateBranchAssignment(authorizedRoles, branch);
         this.bankAccount = bankAccount;
         this.name = name;
         this.salary = salary;
@@ -53,6 +56,31 @@ public class Employee extends User {
             setFixedDayOff(fixedDayOff);
         }
         this.weeklyAvailabilityRequest = weeklyAvailabilityRequest;
+        this.branch = branch;
+    }
+
+    private static void validateBranchAssignment(Set<Role> authorizedRoles, Branch branch) {
+        if (authorizedRoles == null || authorizedRoles.isEmpty()) {
+            return;
+        }
+        
+        boolean isDriver = authorizedRoles.contains(Role.DRIVER);
+        boolean isBranchSpecific = authorizedRoles.contains(Role.CASHIER) || authorizedRoles.contains(Role.STOREKEEPER);
+        
+        // If only a driver (no other roles) - must be global (no branch)
+        if (isDriver && !isBranchSpecific && branch != null) {
+            throw new IllegalArgumentException("Drivers without other roles are global employees and cannot be assigned to a specific branch");
+        }
+        
+        // If has branch-specific roles (with or without driver role) - must have branch
+        if (isBranchSpecific && branch == null) {
+            throw new IllegalArgumentException("Employees with Cashier or Storekeeper roles must be assigned to a specific branch");
+        }
+        
+        // If only driver (no branch-specific roles) and no branch assigned - that's valid (global driver)
+        if (isDriver && !isBranchSpecific && branch == null) {
+            return;
+        }
     }
 
     public static void validateName(String name) {
@@ -207,6 +235,14 @@ public class Employee extends User {
 
     public void setWeeklyAvailabilityRequest(WeeklyAvailabilityRequest weeklyAvailabilityRequest) {
         this.weeklyAvailabilityRequest = weeklyAvailabilityRequest;
+    }
+
+    public Branch getBranch() {
+        return branch;
+    }
+
+    public void setBranch(Branch branch) {
+        this.branch = branch;
     }
 
     @Override

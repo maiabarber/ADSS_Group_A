@@ -1,6 +1,7 @@
 ﻿package employee.presentation;
 
 import employee.domain.BankAccount;
+import employee.domain.Branch;
 import employee.domain.Employee;
 import employee.domain.EmploymentScope;
 import employee.domain.EmploymentTerms;
@@ -35,8 +36,13 @@ public class EmployeePresentation {
     private double hourlySalaryInput;
     private double workedHoursInput;
     private EmploymentScope employmentScopeInput;
+    private Branch branchInput;
 
     public Employee readEmployeeInput(Scanner scanner) {
+        return readEmployeeInput(scanner, null);
+    }
+
+    public Employee readEmployeeInput(Scanner scanner, Branch currentBranch) {
         System.out.println("\nAdd new employee");
 
         while (true) {
@@ -57,6 +63,7 @@ public class EmployeePresentation {
             employmentScopeInput = readEmploymentScope(scanner);
             workedHoursInput = 0;
             startDateInput = readStartDate(scanner, "Start date (YYYY-MM-DD): ");
+            branchInput = resolveBranchForEmployee(scanner, currentBranch);
 
             try {
                 BankAccount bankAccount = new BankAccount(bankNumberInput, branchNumberInput, accountNumberInput);
@@ -81,13 +88,26 @@ public class EmployeePresentation {
                     canManageShiftInput,
                     false,
                     null,
-                    new WeeklyAvailabilityRequest()
+                    new WeeklyAvailabilityRequest(),
+                    branchInput
                 );
             } catch (IllegalArgumentException e) {
                 System.out.println("Error: " + e.getMessage());
                 System.out.println("Please enter the employee details again.");
             }
         }
+    }
+
+    private Branch resolveBranchForEmployee(Scanner scanner, Branch currentBranch) {
+        if (jobRoleInput == Role.DRIVER) {
+            return null;
+        }
+
+        if (currentBranch != null) {
+            return currentBranch;
+        }
+
+        throw new IllegalArgumentException("Select or create a branch workspace before adding cashiers or storekeepers");
     }
 
     private String readEmployeeId(Scanner scanner) {
@@ -245,6 +265,23 @@ public class EmployeePresentation {
                 EmploymentTerms.validateStartDate(parsed, LocalDate.now());
                 return parsed;
             } catch (Exception e) {
+                System.out.println("Error: " + e.getMessage());
+            }
+        }
+    }
+
+    private Branch readBranchInput(Scanner scanner) {
+        while (true) {
+            System.out.print("Branch ID: ");
+            String branchId = scanner.nextLine().trim();
+            System.out.print("Branch name: ");
+            String branchName = scanner.nextLine().trim();
+            System.out.print("Branch location: ");
+            String location = scanner.nextLine().trim();
+
+            try {
+                return new Branch(branchId, branchName, location);
+            } catch (IllegalArgumentException e) {
                 System.out.println("Error: " + e.getMessage());
             }
         }

@@ -1,6 +1,7 @@
 ﻿package employee.presentation;
 
 import employee.domain.Constraint;
+import employee.domain.Branch;
 import employee.domain.Employee;
 import employee.domain.HR_Manager;
 import employee.domain.Preference;
@@ -76,6 +77,8 @@ public class ShiftController {
         if (!(assignedBy instanceof HR_Manager) || !((HR_Manager) assignedBy).isHRManager()) {
             throw new IllegalArgumentException("Only HR manager can assign employees to shifts");
         }
+
+        validateShiftBranchCompatibility(employee, shift);
 
         // Validate that employee is authorized for this role
         if (!employee.getAuthorizedRoles().contains(role)) {
@@ -196,6 +199,8 @@ public class ShiftController {
         if (!(requestedBy instanceof HR_Manager) || !((HR_Manager) requestedBy).isHRManager()) {
             throw new IllegalArgumentException("Only HR manager can make substitutions");
         }
+
+        validateShiftBranchCompatibility(replacement, shift);
 
         // Find the original assignment
         ShiftAssignment originalAssignment = null;
@@ -366,6 +371,28 @@ public class ShiftController {
             throw new IllegalArgumentException("Shift is required");
         }
         shift.transferCancellationCard(shiftManager);
+    }
+
+    private void validateShiftBranchCompatibility(Employee employee, Shift shift) {
+        if (employee == null || shift == null) {
+            throw new IllegalArgumentException("Employee and shift are required");
+        }
+
+        Branch shiftBranch = shift.getBranch();
+        Branch employeeBranch = employee.getBranch();
+
+        if (employeeBranch == null) {
+            return;
+        }
+
+        if (shiftBranch == null) {
+            shift.setBranch(employeeBranch);
+            return;
+        }
+
+        if (!shiftBranch.equals(employeeBranch)) {
+            throw new IllegalArgumentException("Employee " + employee.getName() + " belongs to a different branch");
+        }
     }
 
     private boolean isFullDayVacationConstraint(WeeklyAvailabilityRequest availability, java.time.DayOfWeek day) {
