@@ -1,4 +1,4 @@
-package presentation;
+package transportation.presentation;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -6,15 +6,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-import domain.Delivery;
-import domain.DeliveryItem;
-import domain.DeliveryStatus;
-import domain.DeliveryStop;
-import domain.Driver;
-import domain.ShippingZone;
-import domain.Site;
-import domain.Truck;
-import service.DeliveriesApplication;
+import transportation.domain.Delivery;
+import transportation.domain.DeliveryItem;
+import transportation.domain.DeliveryStatus;
+import transportation.domain.DeliveryStop;
+import transportation.domain.Driver;
+import transportation.domain.ShippingZone;
+import transportation.domain.Site;
+import transportation.domain.Truck;
+import transportation.service.DeliveriesApplication;
 
 public class DeliveriesUI {
 
@@ -29,13 +29,7 @@ public class DeliveriesUI {
         this.scanner = new Scanner(System.in);
     }
 
-    public DeliveriesUI(DeliveriesApplication deliveriesApplication) {
-        if (deliveriesApplication == null) {
-            throw new IllegalArgumentException("deliveriesApplication cannot be null");
-        }
-        this.deliveriesApplication = deliveriesApplication;
-        this.scanner = new Scanner(System.in);
-    }
+    
 
     public void start() {
         boolean running = true;
@@ -245,7 +239,7 @@ public class DeliveriesUI {
             initialWeight = readDouble("Enter initial measured weight: ");
         }
 
-        Delivery delivery = deliveriesApplication.planDelivery(
+        Delivery delivery = deliveriesApplication.createDelivery(
                 deliveryDate,
                 source,
                 stops,

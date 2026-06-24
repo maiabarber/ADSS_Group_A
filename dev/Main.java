@@ -1,5 +1,6 @@
 import employee.presentation.ConsolePresentation;
 import transportation.presentation.DeliveriesUI;
+import transportation.service.DeliveriesApplication;
 import java.util.Scanner;
 
 public class Main {
@@ -15,7 +16,7 @@ public class Main {
                 new ConsolePresentation().run();
                 break;
             case "2":
-                new DeliveriesUI().start();
+                new DeliveriesUI(new DeliveriesApplication()).start();
                 break;
             default:
                 System.out.println("Invalid choice.");

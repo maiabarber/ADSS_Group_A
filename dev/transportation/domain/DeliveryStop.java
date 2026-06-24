@@ -1,4 +1,4 @@
-package domain;
+package transportation.domain;
 
 import java.time.LocalDateTime;
 
@@ -10,6 +10,13 @@ public class DeliveryStop {
     private DeliveryDocument document;
     private LocalDateTime plannedArrivalDateTime;
 
+    public DeliveryStop(int stopOrder, StopType stopType, Site site) {
+        this(stopOrder, stopType, site, null, LocalDateTime.now().plusHours(1));
+    }
+
+    public DeliveryStop(int stopOrder, StopType stopType, Site site, DeliveryDocument document) {
+        this(stopOrder, stopType, site, document, LocalDateTime.now().plusHours(1));
+    }
     public DeliveryStop(int stopOrder, StopType stopType, Site site, LocalDateTime plannedArrivalDateTime) {
         this(stopOrder, stopType, site, null, plannedArrivalDateTime);
     }
@@ -61,16 +68,7 @@ public class DeliveryStop {
         this.plannedArrivalDateTime = plannedArrivalDateTime;
     }
 
-    public LocalDateTime getPlannedArrivalDateTime() {
-        return plannedArrivalDateTime;
-    }
-
-    public void setPlannedArrivalDateTime(LocalDateTime plannedArrivalDateTime) {
-        if (plannedArrivalDateTime == null) {
-            throw new IllegalArgumentException("plannedArrivalDateTime cannot be null");
-        }
-        this.plannedArrivalDateTime = plannedArrivalDateTime;
-    }
+    
 
     public void setStopOrder(int stopOrder) {
         validateStopOrder(stopOrder);
@@ -100,8 +98,8 @@ public class DeliveryStop {
     }
 
     private void validateStopOrder(int stopOrder) {
-        if (stopOrder <= 0) {
-            throw new IllegalArgumentException("stopOrder must be positive");
+        if (stopOrder < 0) {
+            throw new IllegalArgumentException("stopOrder cannot be negative");
         }
     }
 

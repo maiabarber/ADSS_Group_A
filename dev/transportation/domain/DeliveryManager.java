@@ -1,4 +1,4 @@
-package domain;
+package transportation.domain;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Set;
 
 import employee.service.EmployeeTransportationService;
+import employee.repository.impl.InMemoryEmployeeRepository;
+import employee.repository.impl.InMemoryShiftRepository;
 
 public class DeliveryManager {
 
@@ -22,6 +24,11 @@ public class DeliveryManager {
     private int nextDocumentNumber;
     private final EmployeeTransportationService employeeTransportationService;
 
+    public DeliveryManager() {
+        this(new EmployeeTransportationService(
+                new InMemoryShiftRepository(),
+                new InMemoryEmployeeRepository()));
+    }
     public DeliveryManager(EmployeeTransportationService employeeTransportationService) {
         if (employeeTransportationService == null) {
             throw new IllegalArgumentException("employeeTransportationService cannot be null");
@@ -539,8 +546,8 @@ public class DeliveryManager {
         addTruck(truck1);
         addTruck(truck2);
 
-        Driver driver1 = new Driver("Moshe Cohen", new HashSet<>(Arrays.asList(LicenseType.C1, LicenseType.B)));
-        Driver driver2 = new Driver("Dana Israel", new HashSet<>(Arrays.asList(LicenseType.C, LicenseType.C1)));
+        Driver driver1 = new Driver("D001", "Moshe Cohen", new HashSet<>(Arrays.asList(LicenseType.C1, LicenseType.B)));
+        Driver driver2 = new Driver("D002", "Dana Israel", new HashSet<>(Arrays.asList(LicenseType.C, LicenseType.C1)));
 
         addDriver(driver1);
         addDriver(driver2);
