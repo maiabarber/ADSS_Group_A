@@ -43,8 +43,8 @@ public class Branch {
         if (branchName == null || branchName.trim().isEmpty()) {
             throw new IllegalArgumentException("Branch name cannot be empty");
         }
-        if (branchName.length() > 20) {
-            throw new IllegalArgumentException("Branch name cannot exceed 20 characters");
+        if (branchName.length() > 100) {
+            throw new IllegalArgumentException("Branch name cannot exceed 100 characters");
         }
     }
 
