@@ -234,8 +234,9 @@ public class DeliveriesUI {
         }
 
         double initialWeight = readDouble("Enter initial measured weight: ");
-        while (initialWeight < 0) {
-            System.out.println("Weight cannot be negative.");
+        while (initialWeight < truck.getNetWeight()) {
+            System.out.println("Weight cannot be smaller than the truck net weight ("
+                    + truck.getNetWeight() + ").");
             initialWeight = readDouble("Enter initial measured weight: ");
         }
 
@@ -261,9 +262,12 @@ public class DeliveriesUI {
     private void handleRecordWeightMeasurement() {
         Delivery delivery = chooseDelivery("Choose delivery to record weight for:");
 
+        double minimumWeight = delivery.getTruck().getNetWeight();
+
         double weight = readDouble("Enter measured weight: ");
-        while (weight < 0) {
-            System.out.println("Weight cannot be negative.");
+        while (weight < minimumWeight) {
+            System.out.println("Weight cannot be smaller than the truck net weight ("
+                    + minimumWeight + ").");
             weight = readDouble("Enter measured weight: ");
         }
 
@@ -653,3 +657,4 @@ public class DeliveriesUI {
         }
     }
 }
+

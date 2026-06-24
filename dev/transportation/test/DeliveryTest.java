@@ -669,4 +669,44 @@ public class DeliveryTest {
 
         assertNull(delivery.getDocument());
     }
+    
+    @Test
+    void newConstructor_weightSmallerThanTruckNetWeight_throwsException() {
+        List<DeliveryStop> stops = new ArrayList<>();
+        stops.add(createNorthStopWithDocument(0));
+
+        assertThrows(IllegalArgumentException.class, () ->
+                new Delivery(
+                        LocalDate.of(2026, 4, 20),
+                        createNorthSite("North Warehouse"),
+                        stops,
+                        LocalTime.of(10, 30),
+                        4000,
+                        createTruck(10000),
+                        createDriver(),
+                        createNorthZone(),
+                        DeliveryStatus.PLANNED,
+                        new DeliveryForm()
+                )
+        );
+    }
+
+    @Test
+    void setFinalMeasuredWeight_smallerThanTruckNetWeight_throwsException() {
+        Delivery delivery = createNewDelivery(7000);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                delivery.setFinalMeasuredWeightBeforeDeparture(4000)
+        );
+    }
+
+    @Test
+    void recordWeightMeasurement_smallerThanTruckNetWeight_throwsException() {
+        Delivery delivery = createNewDelivery(7000);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                delivery.recordWeightMeasurement(4000)
+        );
+    }
+
 }
