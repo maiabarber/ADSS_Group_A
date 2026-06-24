@@ -1,4 +1,6 @@
-package dataaccess;
+package dataaccess.dao;
+
+import dataaccess.DatabaseConnection;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
