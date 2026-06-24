@@ -47,7 +47,6 @@ import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.Set;
 
 public class Tests {
@@ -846,7 +845,7 @@ public class Tests {
 
 		employee.setName("Updated Name");
 
-		assertEquals(employee.getName(), "Employee name should reflect the update", "Updated Name");
+		assertEquals(employee.getName(), "Updated Name", "Employee name should reflect the update");
 	}
 
 	@Test
@@ -1181,7 +1180,7 @@ public class Tests {
 		controller.substituteEmployee(hr, shift, original, replacement);
 
 		assertEquals(1, shift.getAssignments().size(), "Shift should still have one assignment after substitution");
-		assertEquals(shift.getAssignments().get(0).getEmployee().getId(), "Replacement should be the assigned employee after substitution", "100000136");
+		assertEquals(shift.getAssignments().get(0).getEmployee().getId(), "100000136", "Replacement employee should be assigned after substitution");
 	}
 
 	@Test
@@ -1225,7 +1224,7 @@ public class Tests {
 		controller.handleCancellationWithSubstitution(hr, request, replacement);
 
 		assertEquals(1, shift.getAssignments().size(), "After handling cancellation, shift should still have one assignment");
-			assertEquals(shift.getAssignments().get(0).getEmployee().getId(), "Replacement employee should be assigned", "100000134");
+			assertEquals(shift.getAssignments().get(0).getEmployee().getId(), "100000134", "Replacement employee should be assigned after handling cancellation with substitution");
 	}
 
 	@Test
@@ -1393,9 +1392,9 @@ public class Tests {
 	public void branch_creation_successWithValidDetails() {
 		Branch branch = new Branch("B-001", "Main Branch", "Downtown");
 
-		assertEquals(branch.getBranchId(), "Branch ID should match", "B-001");
-		assertEquals(branch.getBranchName(), "Branch name should match", "Main Branch");
-		assertEquals(branch.getLocation(), "Branch location should match", "Downtown");
+		assertEquals(branch.getBranchId(), "B-001", "Branch ID should match");
+		assertEquals(branch.getBranchName(), "Main Branch", "Branch name should match");
+		assertEquals(branch.getLocation(), "Downtown", "Branch location should match");
 	}
 
 	@Test
