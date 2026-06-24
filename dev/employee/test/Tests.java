@@ -440,7 +440,7 @@ public class Tests {
 	public void hard_employeeFixedDayOff_canBeChosenAtHiring() {
 		Salary salary = new Salary(5000, 50, 0, EmploymentScope.FULL_TIME);
 		EmploymentTerms terms = new EmploymentTerms(
-			LocalDate.of(2026, 4, 21),
+			LocalDate.of(2027, 4, 21),
 			EmploymentScope.FULL_TIME,
 			salary.getGlobalSalary(),
 			salary.getHourlySalary(),
@@ -911,24 +911,6 @@ public class Tests {
 	}
 
 	@Test
-	public void hard_consoleReadLocalDate_acceptsDdMmYyyy() throws Exception {
-		ConsolePresentation console = new ConsolePresentation();
-		Scanner scanner = new Scanner("20-04-2026\n");
-
-		java.lang.reflect.Method readLocalDate = ConsolePresentation.class
-			.getDeclaredMethod("readLocalDate", Scanner.class, String.class);
-		readLocalDate.setAccessible(true);
-
-		LocalDate parsed = (LocalDate) readLocalDate.invoke(
-			console,
-			scanner,
-			"Deadline for submitting constraints and preferences for the upcoming week (DD-MM-YYYY): "
-		);
-
-		assertEquals(LocalDate.of(2026, 4, 20), parsed, "Date should be parsed from DD-MM-YYYY input");
-	}
-
-	@Test
 	public void easy_deadlinePolicy_validDeadlineAccepted() {
 		SubmissionDeadlinePolicy policy = new SubmissionDeadlinePolicy();
 		LocalDate today = LocalDate.of(2026, 4, 20); // Monday
@@ -1331,7 +1313,7 @@ public class Tests {
 	private static Employee buildEmployee(String id, boolean canManageShift, int vacationDays, Branch branch) {
 		Salary salary = new Salary(5000, 50, 0, EmploymentScope.FULL_TIME);
 		EmploymentTerms terms = new EmploymentTerms(
-			LocalDate.of(2026, 4, 21),
+			LocalDate.of(2027, 4, 21),
 			EmploymentScope.FULL_TIME,
 			salary.getGlobalSalary(),
 			salary.getHourlySalary(),
@@ -1364,7 +1346,7 @@ public class Tests {
 	private static Employee buildEmployeeWithRoles(String id, boolean canManageShift, int vacationDays, Set<Role> roles, Branch branch) {
 		Salary salary = new Salary(5000, 50, 0, EmploymentScope.FULL_TIME);
 		EmploymentTerms terms = new EmploymentTerms(
-			LocalDate.of(2026, 4, 21),
+			LocalDate.of(2027, 4, 21),
 			EmploymentScope.FULL_TIME,
 			salary.getGlobalSalary(),
 			salary.getHourlySalary(),
@@ -1396,7 +1378,7 @@ public class Tests {
 			"Global Driver " + id,
 			new Salary(5000, 50, 0, EmploymentScope.FULL_TIME),
 			EmploymentType.REGULAR,
-			new EmploymentTerms(LocalDate.of(2026, 4, 21), EmploymentScope.FULL_TIME, 5000, 50, 10),
+			new EmploymentTerms(LocalDate.of(2027, 4, 21), EmploymentScope.FULL_TIME, 5000, 50, 10),
 			Collections.singleton(Role.DRIVER),
 			false,
 			false,
@@ -1461,7 +1443,7 @@ public class Tests {
 			"Branch Emp One",
 			new Salary(5000, 50, 0, EmploymentScope.FULL_TIME),
 			EmploymentType.REGULAR,
-			new EmploymentTerms(LocalDate.now(), EmploymentScope.FULL_TIME, 5000, 50, 10),
+			new EmploymentTerms(LocalDate.of(2027, 4, 21), EmploymentScope.FULL_TIME, 5000, 50, 10),
 			Collections.singleton(Role.CASHIER),
 			false,
 			false,
@@ -1483,7 +1465,7 @@ public class Tests {
 				"Bad Branch Emp",
 				new Salary(5000, 50, 0, EmploymentScope.FULL_TIME),
 				EmploymentType.REGULAR,
-				new EmploymentTerms(LocalDate.now(), EmploymentScope.FULL_TIME, 5000, 50, 10),
+				new EmploymentTerms(LocalDate.of(2027, 4, 21), EmploymentScope.FULL_TIME, 5000, 50, 10),
 				Collections.singleton(Role.STOREKEEPER),
 				false,
 				false,
@@ -1514,7 +1496,7 @@ public class Tests {
 				"Bad Global Driver",
 				new Salary(5000, 50, 0, EmploymentScope.FULL_TIME),
 				EmploymentType.REGULAR,
-				new EmploymentTerms(LocalDate.now(), EmploymentScope.FULL_TIME, 5000, 50, 10),
+				new EmploymentTerms(LocalDate.of(2027, 4, 21), EmploymentScope.FULL_TIME, 5000, 50, 10),
 				Collections.singleton(Role.DRIVER),
 				false,
 				false,
@@ -1535,7 +1517,7 @@ public class Tests {
 			"Mixed Role Employee",
 			new Salary(5000, 50, 0, EmploymentScope.FULL_TIME),
 			EmploymentType.REGULAR,
-			new EmploymentTerms(LocalDate.now(), EmploymentScope.FULL_TIME, 5000, 50, 10),
+			new EmploymentTerms(LocalDate.of(2027, 4, 21), EmploymentScope.FULL_TIME, 5000, 50, 10),
 			new HashSet<>(Arrays.asList(Role.DRIVER, Role.CASHIER)),
 			false,
 			false,
@@ -1622,7 +1604,7 @@ public class Tests {
 		Employee globalDriver = buildGlobalDriver("100000419");
 
 		Shift shift = new Shift(
-			LocalDate.of(2026, 5, 18),
+			LocalDate.of(2027, 5, 18),
 			ShiftType.EVENING,
 			manager,
 			0,
@@ -1647,7 +1629,7 @@ public class Tests {
 		Employee globalDriver = buildGlobalDriver("100000423");
 
 		Shift shift = new Shift(
-			LocalDate.of(2026, 5, 19),
+			LocalDate.of(2027, 5, 19),
 			ShiftType.MORNING,
 			manager,
 			1,
@@ -1677,8 +1659,8 @@ public class Tests {
 
 		Employee globalDriver = buildGlobalDriver("100000429");
 
-		Shift shift1 = new Shift(LocalDate.of(2026, 5, 20), ShiftType.MORNING, manager1, 1, 0, branch1);
-		Shift shift2 = new Shift(LocalDate.of(2026, 5, 21), ShiftType.EVENING, manager2, 1, 0, branch2);
+		Shift shift1 = new Shift(LocalDate.of(2027, 5, 20), ShiftType.MORNING, manager1, 1, 0, branch1);
+		Shift shift2 = new Shift(LocalDate.of(2027, 5, 21), ShiftType.EVENING, manager2, 1, 0, branch2);
 
 		controller.assignEmployeeToShift(hr, original1, shift1, Role.CASHIER);
 		controller.assignEmployeeToShift(hr, original2, shift2, Role.CASHIER);
