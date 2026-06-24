@@ -1,8 +1,8 @@
 package employee.test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.Test;
 
 import employee.domain.BankAccount;
 import employee.domain.Constraint;
@@ -36,7 +36,6 @@ import transportation.domain.Site;
 import transportation.domain.ShippingZone;
 import transportation.domain.SiteType;
 
-import org.junit.Test;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
