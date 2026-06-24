@@ -3,8 +3,6 @@ package employee.service;
 import employee.domain.Employee;
 import employee.domain.Role;
 import employee.domain.Shift;
-import employee.domain.ShiftAssignment;
-import employee.repository.EmployeeRepository;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,11 +17,9 @@ import java.util.List;
  * - Drivers should be assigned to the same shift as the storekeeper they're supporting
  */
 public class DriverShiftAssignmentService {
-    private EmployeeRepository employeeRepository;
     private BranchEmployeeService branchEmployeeService;
 
-    public DriverShiftAssignmentService(EmployeeRepository employeeRepository, BranchEmployeeService branchEmployeeService) {
-        this.employeeRepository = employeeRepository;
+    public DriverShiftAssignmentService(BranchEmployeeService branchEmployeeService) {
         this.branchEmployeeService = branchEmployeeService;
     }
 

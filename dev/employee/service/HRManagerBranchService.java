@@ -4,7 +4,6 @@ import employee.domain.Branch;
 import employee.domain.Employee;
 import employee.domain.Role;
 import employee.domain.Shift;
-import employee.domain.ShiftAssignment;
 import employee.repository.EmployeeRepository;
 import employee.repository.ShiftRepository;
 import java.util.ArrayList;
@@ -28,12 +27,10 @@ import java.util.Objects;
 public class HRManagerBranchService {
     private Branch managedBranch;
     private EmployeeRepository employeeRepository;
-    private ShiftRepository shiftRepository;
 
     public HRManagerBranchService(Branch managedBranch, EmployeeRepository employeeRepository, ShiftRepository shiftRepository) {
         this.managedBranch = Objects.requireNonNull(managedBranch, "Managed branch cannot be null");
         this.employeeRepository = Objects.requireNonNull(employeeRepository, "Employee repository cannot be null");
-        this.shiftRepository = Objects.requireNonNull(shiftRepository, "Shift repository cannot be null");
     }
 
     /**
