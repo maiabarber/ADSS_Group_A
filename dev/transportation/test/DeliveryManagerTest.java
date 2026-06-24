@@ -83,9 +83,6 @@ public class DeliveryManagerTest {
         return new DeliveryStop(order, StopType.DROPOFF, createNorthDropoffSite());
     }
 
-    private DeliveryStop createNorthDropoffStopWithDocument(int order, int documentNumber) {
-        return new DeliveryStop(order, StopType.DROPOFF, createNorthDropoffSite(), createDocument(documentNumber));
-    }
 
     private DeliveryStop createSouthDropoffStop(int order) {
         return new DeliveryStop(order, StopType.DROPOFF, createSouthSite(), createDocument(9999));

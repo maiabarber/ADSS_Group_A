@@ -270,21 +270,4 @@ public class EmployeePresentation {
         }
     }
 
-    private Branch readBranchInput(Scanner scanner) {
-        while (true) {
-            System.out.print("Branch ID: ");
-            String branchId = scanner.nextLine().trim();
-            System.out.print("Branch name: ");
-            String branchName = scanner.nextLine().trim();
-            System.out.print("Branch location: ");
-            String location = scanner.nextLine().trim();
-
-            try {
-                return new Branch(branchId, branchName, location);
-            } catch (IllegalArgumentException e) {
-                System.out.println("Error: " + e.getMessage());
-            }
-        }
-    }
-
 }

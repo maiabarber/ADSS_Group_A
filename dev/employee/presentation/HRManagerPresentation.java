@@ -2,7 +2,6 @@ package employee.presentation;
 
 import employee.domain.Branch;
 import employee.domain.Employee;
-import employee.domain.Role;
 import employee.domain.BranchManager;
 import employee.service.HRManagerBranchService;
 import employee.repository.EmployeeRepository;

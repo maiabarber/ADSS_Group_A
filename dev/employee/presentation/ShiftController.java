@@ -11,9 +11,6 @@ import employee.domain.ShiftAssignment;
 import employee.domain.ShiftType;
 import employee.domain.User;
 import employee.domain.WeeklyAvailabilityRequest;
-
-import java.time.DayOfWeek;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
