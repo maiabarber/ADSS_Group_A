@@ -845,7 +845,7 @@ public class Tests {
 
 		employee.setName("Updated Name");
 
-		assertEquals("Updated Name", employee.getName(), "Employee name should reflect the update");
+		assertEquals(employee.getName(), "Employee name should reflect the update", "Updated Name");
 	}
 
 	@Test
@@ -1198,7 +1198,7 @@ public class Tests {
 		controller.substituteEmployee(hr, shift, original, replacement);
 
 		assertEquals(1, shift.getAssignments().size(), "Shift should still have one assignment after substitution");
-		assertEquals("100000136", shift.getAssignments().get(0).getEmployee().getId(), "Replacement should be the assigned employee after substitution");
+		assertEquals(shift.getAssignments().get(0).getEmployee().getId(), "Replacement should be the assigned employee after substitution", "100000136");
 	}
 
 	@Test
@@ -1242,7 +1242,7 @@ public class Tests {
 		controller.handleCancellationWithSubstitution(hr, request, replacement);
 
 		assertEquals(1, shift.getAssignments().size(), "After handling cancellation, shift should still have one assignment");
-			assertEquals("100000134", shift.getAssignments().get(0).getEmployee().getId(), "Replacement employee should be assigned");
+			assertEquals(shift.getAssignments().get(0).getEmployee().getId(), "Replacement employee should be assigned", "100000134");
 	}
 
 	@Test
@@ -1410,9 +1410,9 @@ public class Tests {
 	public void branch_creation_successWithValidDetails() {
 		Branch branch = new Branch("B-001", "Main Branch", "Downtown");
 
-		assertEquals("B-001", branch.getBranchId(), "Branch ID should match");
-		assertEquals("Main Branch", branch.getBranchName(), "Branch name should match");
-		assertEquals("Downtown", branch.getLocation(), "Branch location should match");
+		assertEquals(branch.getBranchId(), "Branch ID should match", "B-001");
+		assertEquals(branch.getBranchName(), "Branch name should match", "Main Branch");
+		assertEquals(branch.getLocation(), "Branch location should match", "Downtown");
 	}
 
 	@Test
