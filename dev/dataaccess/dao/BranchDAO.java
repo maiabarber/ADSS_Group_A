@@ -2,7 +2,6 @@ package dataaccess.dao;
 
 import dataaccess.DatabaseConnection;
 import dataaccess.dto.BranchDto;
-import dataaccess.dto.BranchManagerDto;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -91,7 +90,5 @@ public class BranchDAO {
 		}
 	}
 
-	public BranchManagerDto getBranchManagerView() throws SQLException {
-		return new BranchManagerDto(listBranches());
-	}
+	
 }
