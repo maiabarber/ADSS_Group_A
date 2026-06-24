@@ -1,4 +1,4 @@
-package tests;
+package transportation.test;
 
 import transportation.domain.DeliveryItem;
 import org.junit.jupiter.api.Test;
