@@ -1,4 +1,4 @@
-﻿package employee.repository.impl;
+package employee.repository.impl;
 
 import employee.domain.Shift;
 import employee.domain.ShiftType;

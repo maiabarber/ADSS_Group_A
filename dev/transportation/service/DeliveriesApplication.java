@@ -1,4 +1,4 @@
-package service;
+package transportation.service;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -6,23 +6,30 @@ import java.util.ArrayList;
 import java.util.List;
 
 import employee.service.EmployeeTransportationService;
-import employees.presentation.ShiftController;
-import domain.Delivery;
-import domain.DeliveryDocument;
-import domain.DeliveryItem;
-import domain.DeliveryManager;
-import domain.DeliveryStatus;
-import domain.DeliveryStop;
-import domain.Driver;
-import domain.ShippingZone;
-import domain.Site;
-import domain.StopType;
-import domain.Truck;
+import employee.repository.impl.InMemoryEmployeeRepository;
+import employee.repository.impl.InMemoryShiftRepository;
+import employee.presentation.ShiftController;
+import transportation.domain.Delivery;
+import transportation.domain.DeliveryDocument;
+import transportation.domain.DeliveryItem;
+import transportation.domain.DeliveryManager;
+import transportation.domain.DeliveryStatus;
+import transportation.domain.DeliveryStop;
+import transportation.domain.Driver;
+import transportation.domain.ShippingZone;
+import transportation.domain.Site;
+import transportation.domain.StopType;
+import transportation.domain.Truck;
 
 public class DeliveriesApplication {
 
     private DeliveryManager deliveryManager;
 
+    public DeliveriesApplication() {
+        this(new EmployeeTransportationService(
+                new InMemoryShiftRepository(),
+                new InMemoryEmployeeRepository()));
+    }
     public DeliveriesApplication(EmployeeTransportationService employeeTransportationService) {
         this.deliveryManager = new DeliveryManager(employeeTransportationService);
     }
@@ -105,7 +112,7 @@ public class DeliveriesApplication {
     }
 
     public void setShiftController(ShiftController shiftController) {
-        deliveryManager.setShiftController(shiftController);
+        // Kept for compatibility. Real shift integration is done through EmployeeTransportationService.
     }
 
     // ============================== Finders ==============================
