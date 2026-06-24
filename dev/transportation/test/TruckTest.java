@@ -1,4 +1,4 @@
-package tests;
+package transportation.test;
 
 import transportation.domain.LicenseType;
 import transportation.domain.Truck;

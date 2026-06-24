@@ -102,8 +102,8 @@ public class Tests {
 		LocalDate newWeek = LocalDate.of(2026, 4, 20);
 		request.resetForWeek(newWeek);
 
-		assertTrue("Constraints should be cleared after reset", request.getConstraints().isEmpty());
-		assertTrue("Preferences should be cleared after reset", request.getPreferences().isEmpty());
+		assertTrue(request.getConstraints().isEmpty(),"Constraints should be cleared after reset");
+		assertTrue(request.getPreferences().isEmpty(), "Preferences should be cleared after reset");
 		assertEquals(newWeek, request.getWeekStartDate(), "Week start date should be updated");
 	}
 
@@ -119,8 +119,8 @@ public class Tests {
 
 		// Reset for week 2
 		request.resetForWeek(LocalDate.of(2026, 7, 27));
-		assertTrue("Constraints should be cleared for week 2", request.getConstraints().isEmpty());
-		assertTrue("Preferences should be cleared for week 2", request.getPreferences().isEmpty());
+		assertTrue(request.getConstraints().isEmpty(), "Constraints should be cleared for week 2");
+		assertTrue(request.getPreferences().isEmpty(), "Preferences should be cleared for week 2");
 
 		// Week 2 re-submission with different data
 		request.addConstraint(new Constraint(DayOfWeek.WEDNESDAY, ShiftType.EVENING));
@@ -152,11 +152,11 @@ public class Tests {
 		ensureWeeklyAvailabilityCurrent.invoke(console, second);
 
 		LocalDate currentWeekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-		assertTrue("First employee constraints should reset at week start", first.getWeeklyAvailabilityRequest().getConstraints().isEmpty());
-		assertTrue("First employee preferences should reset at week start", first.getWeeklyAvailabilityRequest().getPreferences().isEmpty());
+		assertTrue(first.getWeeklyAvailabilityRequest().getConstraints().isEmpty(), "First employee constraints should reset at week start");
+		assertTrue(first.getWeeklyAvailabilityRequest().getPreferences().isEmpty(), "First employee preferences should reset at week start");
 		assertEquals(currentWeekStart, first.getWeeklyAvailabilityRequest().getWeekStartDate(), "First employee week should advance to current week");
-		assertTrue("Second employee constraints should reset at week start", second.getWeeklyAvailabilityRequest().getConstraints().isEmpty());
-		assertTrue("Second employee preferences should reset at week start", second.getWeeklyAvailabilityRequest().getPreferences().isEmpty());
+		assertTrue(second.getWeeklyAvailabilityRequest().getConstraints().isEmpty(), "Second employee constraints should reset at week start");
+		assertTrue(second.getWeeklyAvailabilityRequest().getPreferences().isEmpty(), "Second employee preferences should reset at week start");
 		assertEquals(currentWeekStart, second.getWeeklyAvailabilityRequest().getWeekStartDate(), "Second employee week should advance to current week");
 	}
 
@@ -205,10 +205,10 @@ public class Tests {
 			}
 
 			assertEquals(4, tuesdayConstraints, "Vacation day should map to exactly four shift constraints");
-			assertTrue("Vacation day should block MORNING", hasMorning);
-			assertTrue("Vacation day should block MORNING_OVERTIME", hasMorningOvertime);
-			assertTrue("Vacation day should block EVENING", hasEvening);
-			assertTrue("Vacation day should block DOUBLE_SHIFT", hasDoubleShift);
+			assertTrue(hasMorning, "Vacation day should block MORNING");
+			assertTrue(hasMorningOvertime, "Vacation day should block MORNING_OVERTIME");
+			assertTrue(hasEvening, "Vacation day should block EVENING");
+			assertTrue(hasDoubleShift, "Vacation day should block DOUBLE_SHIFT");
 		} catch (RepositoryException e) {
 			throw new RuntimeException(e);
 		}
@@ -404,10 +404,10 @@ public class Tests {
 	public void easy_shiftAssignmentPendingLogic() {
 		ShiftAssignment assignment = new ShiftAssignment(null, null, Role.CASHIER, true);
 
-		assertTrue("Assignment requiring approval should start as pending", assignment.isPending());
+		assertTrue(assignment.isPending(), "Assignment requiring approval should start as pending");
 
 		assignment.setApproved(true);
-		assertFalse("Approved assignment should no longer be pending", assignment.isPending());
+		assertFalse(assignment.isPending(), "Approved assignment should no longer be pending");
 	}
 
 	@Test
@@ -506,7 +506,7 @@ public class Tests {
 		shift.assignShiftManager(hr, secondManager);
 
 		assertEquals(secondManager, shift.getShiftManager(), "Reassignment should replace previous manager so shift has only one manager");
-		assertFalse("Shift manager should no longer be the first manager after reassignment", shift.getShiftManager().equals(firstManager));
+		assertFalse(shift.getShiftManager().equals(firstManager), "Shift manager should no longer be the first manager after reassignment");
 	}
 
 	@Test
@@ -523,11 +523,11 @@ public class Tests {
 	public void hard_authorizeShiftManager_grantsPermission() {
 		Employee employee = buildEmployee("100000015", false, 10);
 
-		assertFalse("Employee should not be authorized as shift manager initially", employee.canManageShift());
+		assertFalse(employee.canManageShift(), "Employee should not be authorized as shift manager initially");
 
 		employee.setCanManageShift(true);
 
-		assertTrue("Employee should be authorized as shift manager after setCanManageShift(true)", employee.canManageShift());
+		assertTrue(employee.canManageShift(), "Employee should be authorized as shift manager after setCanManageShift(true)");
 	}
 
 	@Test
@@ -582,7 +582,7 @@ public class Tests {
 		Shift shift = new Shift();
 
 		for (Map.Entry<Role, Integer> entry : shift.getRequiredRoleCounts().entrySet()) {
-			assertTrue("Default required count for role " + entry.getKey() + " should be at least 1", entry.getValue() >= 1);
+			assertTrue(entry.getValue() >= 1, "Default required count for role " + entry.getKey() + " should be at least 1");
 		}
 	}
 
@@ -595,7 +595,7 @@ public class Tests {
 		assertThrows(IllegalArgumentException.class, () -> shift.transferCancellationCard(otherEmployee));
 
 		shift.transferCancellationCard(shiftManager);
-		assertTrue("Cancellation card should be transferred by shift manager", shift.isCancellationCardTransferred());
+		assertTrue(shift.isCancellationCardTransferred(), "Cancellation card should be transferred by shift manager");
 		assertEquals(shiftManager.getId(), shift.getCancellationCardTransferredBy().getId(), "Transfer actor should be the shift manager");
 	}
 
@@ -610,8 +610,8 @@ public class Tests {
 			throw new RuntimeException(e);
 		}
 
-		assertTrue("Login should succeed for valid credentials", auth.login("100000041", "secret").isPresent());
-		assertTrue("Auth state should be logged-in after successful login", auth.isLoggedIn());
+		assertTrue(auth.login("100000041", "secret").isPresent(), "Login should succeed for valid credentials");
+		assertTrue(auth.isLoggedIn(), "Auth state should be logged-in after successful login");
 	}
 
 	@Test
@@ -625,8 +625,8 @@ public class Tests {
 			throw new RuntimeException(e);
 		}
 
-		assertTrue("Employee login should succeed with valid credentials", auth.login("100000042", "pass").isPresent());
-		assertTrue("Logged-in user should be an Employee", auth.getCurrentUser().orElse(null) instanceof Employee);
+		assertTrue(auth.login("100000042", "pass").isPresent(), "Employee login should succeed with valid credentials");
+		assertTrue(auth.getCurrentUser().orElse(null) instanceof Employee, "Logged-in user should be an Employee");
 	}
 
 	@Test
@@ -640,8 +640,8 @@ public class Tests {
 			throw new RuntimeException(e);
 		}
 
-		assertTrue("HR Manager login should succeed with valid credentials", auth.login("100000043", "hrpass").isPresent());
-		assertTrue("Logged-in user should be an HR_Manager", auth.getCurrentUser().orElse(null) instanceof HR_Manager);
+		assertTrue(auth.login("100000043", "hrpass").isPresent(), "HR Manager login should succeed with valid credentials");
+		assertTrue(auth.getCurrentUser().orElse(null) instanceof HR_Manager	, "Logged-in user should be an HR_Manager");
 	}
 
 	@Test
@@ -655,8 +655,8 @@ public class Tests {
 			throw new RuntimeException(e);
 		}
 
-		assertFalse("Login should fail with wrong password", auth.login("100000044", "wrongpass").isPresent());
-		assertFalse("Auth state should remain logged-out after failed login", auth.isLoggedIn());
+		assertFalse(auth.login("100000044", "wrongpass").isPresent(), "Login should fail with wrong password");
+		assertFalse(auth.isLoggedIn(), "Auth state should remain logged-out after failed login");
 	}
 
 	@Test
@@ -670,8 +670,8 @@ public class Tests {
 			throw new RuntimeException(e);
 		}
 
-		assertFalse("Login should fail with wrong ID", auth.login("100000046", "pass").isPresent());
-		assertFalse("Auth state should remain logged-out after failed login", auth.isLoggedIn());
+		assertFalse(auth.login("100000046", "pass").isPresent(), "Login should fail with wrong ID");
+		assertFalse(auth.isLoggedIn(), "Auth state should remain logged-out after failed login");
 	}
 
 	@Test
@@ -686,8 +686,8 @@ public class Tests {
 			throw new RuntimeException(e);
 		}
 
-		assertFalse("Fired employee should be blocked from login", auth.login("100000051", "pass").isPresent());
-		assertTrue("Fired credentials should be detected", auth.isFiredCredentials("100000051", "pass"));
+		assertFalse(auth.login("100000051", "pass").isPresent(), "Fired employee should be blocked from login");
+		assertTrue(auth.isFiredCredentials("100000051", "pass"), "Fired credentials should be detected");
 	}
 
 	@Test
@@ -702,10 +702,10 @@ public class Tests {
 		}
 
 		auth.login("100000052", "pass");
-		assertTrue("Employee should be logged in before logout", auth.isLoggedIn());
+		assertTrue(auth.isLoggedIn(), "Employee should be logged in before logout");
 
-		assertTrue("Logout should return true for a logged-in employee", auth.logout());
-		assertFalse("Employee should be logged out after logout", auth.isLoggedIn());
+		assertTrue(auth.logout(), "Logout should return true for a logged-in employee");
+		assertFalse(auth.isLoggedIn(), "Employee should be logged out after logout");
 	}
 
 	@Test
@@ -720,18 +720,18 @@ public class Tests {
 		}
 
 		auth.login("100000053", "hrpass");
-		assertTrue("HR Manager should be logged in before logout", auth.isLoggedIn());
+		assertTrue(auth.isLoggedIn(), "HR Manager should be logged in before logout");
 
-		assertTrue("Logout should return true for a logged-in HR Manager", auth.logout());
-		assertFalse("HR Manager should be logged out after logout", auth.isLoggedIn());
+		assertTrue(auth.logout(), "Logout should return true for a logged-in HR Manager");
+		assertFalse(auth.isLoggedIn(), "HR Manager should be logged out after logout");
 	}
 
 	@Test
 	public void easy_authenticationLogout_whenNotLoggedIn() {
 		AuthenticationService auth = new AuthenticationService(new InMemoryUserRepository());
 
-		assertFalse("Logout should return false when no user is logged in", auth.logout());
-		assertFalse("Auth state should remain logged-out", auth.isLoggedIn());
+		assertFalse(auth.logout(), "Logout should return false when no user is logged in");
+		assertFalse(auth.isLoggedIn(), "Auth state should remain logged-out");
 	}
 
 	@Test
@@ -745,8 +745,8 @@ public class Tests {
 			repository.save(employee);
 
 			Employee found = repository.findById("100000147").orElse(null);
-			assertFalse("Fired employee record should still exist in the repository", found == null);
-			assertTrue("Retrieved employee should still be marked as fired", found.isFired());
+			assertFalse(found == null, "Fired employee record should still exist in the repository");
+			assertTrue(found.isFired(), "Retrieved employee should still be marked as fired");
 			assertEquals(employee.getName(), found.getName(), "Fired employee's name should still be intact");
 		} catch (RepositoryException e) {
 			throw new RuntimeException(e);
@@ -760,9 +760,9 @@ public class Tests {
 
 		try {
 			repository.save(employee);
-			assertTrue("Saved employee should be retrievable by id", repository.findById("100000061").isPresent());
+			assertTrue(repository.findById("100000061").isPresent(), "Saved employee should be retrievable by id");
 			repository.deleteById("100000061");
-			assertFalse("Deleted employee should no longer exist", repository.findById("100000061").isPresent());
+			assertFalse(repository.findById("100000061").isPresent(), "Deleted employee should no longer exist");
 		} catch (RepositoryException e) {
 			throw new RuntimeException(e);
 		}
@@ -799,7 +799,7 @@ public class Tests {
 		} catch (RepositoryException e) {
 			throw new RuntimeException(e);
 		}
-		assertTrue("Non-HR user should not be allowed to add employee", addRejected);
+		assertTrue(addRejected, "Non-HR user should not be allowed to add employee");
 
 		try {
 			employeeRepository.save(employee);
@@ -815,7 +815,7 @@ public class Tests {
 		} catch (RepositoryException e) {
 			throw new RuntimeException(e);
 		}
-		assertTrue("Non-HR user should not be allowed to update employee", updateRejected);
+		assertTrue(updateRejected, "Non-HR user should not be allowed to update employee");
 
 		boolean fireRejected = false;
 		try {
@@ -825,18 +825,18 @@ public class Tests {
 		} catch (RepositoryException e) {
 			throw new RuntimeException(e);
 		}
-		assertTrue("Non-HR user should not be allowed to fire employee", fireRejected);
+		assertTrue(fireRejected, "Non-HR user should not be allowed to fire employee");
 	}
 
 	@Test
 	public void easy_fireEmployee_marksAsFired() {
 		Employee employee = buildEmployee("100000063", false, 10);
 
-		assertFalse("Employee should not be fired initially", employee.isFired());
+		assertFalse(employee.isFired(), "Employee should not be fired initially");
 
 		employee.setFired(true);
 
-		assertTrue("Employee should be marked as fired after setFired(true)", employee.isFired());
+		assertTrue(employee.isFired(), "Employee should be marked as fired after setFired(true)");
 	}
 
 	@Test
@@ -984,9 +984,9 @@ public class Tests {
 		controller.addShift(activeShift);
 		controller.addToShiftHistory(historicalShift);
 
-		assertTrue("Active shifts should contain the active shift", controller.getShifts().contains(activeShift));
-		assertTrue("Shift history should contain the historical shift", controller.getShiftHistory().contains(historicalShift));
-		assertFalse("Active shifts should not contain the historical shift", controller.getShifts().contains(historicalShift));
+		assertTrue(controller.getShifts().contains(activeShift), "Active shifts should contain the active shift");
+		assertTrue(controller.getShiftHistory().contains(historicalShift), "Shift history should contain the historical shift");
+		assertFalse(controller.getShifts().contains(historicalShift), "Active shifts should not contain the historical shift");
 	}
 
 	@Test
@@ -999,7 +999,7 @@ public class Tests {
 		controller.assignEmployeeToShift(hr, employee, shift, Role.CASHIER);
 
 		assertEquals(1, shift.getAssignments().size(), "Shift should have one assignment");
-		assertTrue("No-conflict assignment should be auto-approved", shift.getAssignments().get(0).isApproved());
+		assertTrue(shift.getAssignments().get(0).isApproved(), "No-conflict assignment should be auto-approved");
 	}
 
 	@Test
@@ -1042,8 +1042,8 @@ public class Tests {
 		controller.assignEmployeeToShift(hr, employee, shift, Role.CASHIER);
 
 		ShiftAssignment assignment = shift.getAssignments().get(0);
-		assertTrue("Conflict assignment should stay pending employee response", assignment.isPending());
-		assertFalse("Pending assignment should not be approved yet", assignment.isApproved());
+		assertTrue(assignment.isPending(), "Conflict assignment should stay pending employee response");
+		assertFalse(assignment.isApproved(), "Pending assignment should not be approved yet");
 	}
 
 	@Test
@@ -1095,12 +1095,12 @@ public class Tests {
 		controller.assignEmployeeToShift(hr, employee, shift, Role.CASHIER);
 
 		ShiftAssignment pending = shift.getAssignments().get(0);
-		assertTrue("Assignment should be pending before employee responds", pending.isPending());
+		assertTrue(pending.isPending(), "Assignment should be pending before employee responds");
 
 		controller.respondToAssignment(employee, pending, true);
 
-		assertFalse("Assignment should no longer be pending after employee accepts", pending.isPending());
-		assertTrue("Assignment should be approved after employee accepts", pending.isApproved());
+		assertFalse(pending.isPending(), "Assignment should no longer be pending after employee accepts");
+		assertTrue(pending.isApproved(), "Assignment should be approved after employee accepts");
 		assertEquals(1, shift.getAssignments().size(), "Assignment should remain in the shift after acceptance");
 	}
 
@@ -1149,8 +1149,8 @@ public class Tests {
 	public void easy_employeeRoles_storedAndRetrievable() {
 		Employee employee = buildEmployeeWithRoles("100000142", false, 10, Collections.singleton(Role.STOREKEEPER));
 
-		assertTrue("Employee's roles should contain the role assigned at construction", employee.getRoles().contains(Role.STOREKEEPER));
-		assertFalse("Employee's roles should not contain a role that was not assigned", employee.getRoles().contains(Role.CASHIER));
+		assertTrue(employee.getRoles().contains(Role.STOREKEEPER), "Employee's roles should contain the role assigned at construction");
+		assertFalse(employee.getRoles().contains(Role.CASHIER), "Employee's roles should not contain a role that was not assigned");
 	}
 
 	@Test
@@ -1255,7 +1255,7 @@ public class Tests {
 		controller.addShift(shift);
 		controller.assignEmployeeToShift(hr, employee, shift, Role.CASHIER);
 
-		assertTrue("No cancellation requests expected before submission", controller.getCancellationRequests().isEmpty());
+		assertTrue(controller.getCancellationRequests().isEmpty(), "No cancellation requests expected before submission");
 
 		controller.requestShiftCancellation(employee, shift);
 
@@ -1499,8 +1499,7 @@ public class Tests {
 		Employee globalDriver = buildGlobalDriver("100000403");
 
 		assertEquals(null, globalDriver.getBranch(), "Global driver should have no branch");
-		assertTrue("Global driver should be authorized for DRIVER role",
-			globalDriver.getAuthorizedRoles().contains(Role.DRIVER));
+		assertTrue(globalDriver.getAuthorizedRoles().contains(Role.DRIVER), "Global driver should be authorized for DRIVER role");
 	}
 
 	@Test
