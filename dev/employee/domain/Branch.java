@@ -1,6 +1,6 @@
 package employee.domain;
 
-import domain.Site;
+import transportation.domain.Site;
 import java.util.Objects;
 
 /**
@@ -21,7 +21,7 @@ public class Branch {
         validateBranchId(branchId);
         validateBranchName(branchName);
         validateLocation(location);
-        if (deliveryStop != null && deliveryStop.getSiteType() != domain.SiteType.BRANCH) {
+        if (deliveryStop != null && deliveryStop.getSiteType() != transportation.domain.SiteType.BRANCH) {
             throw new IllegalArgumentException("Branch delivery stop must be a branch site");
         }
         this.branchId = branchId;
@@ -81,7 +81,7 @@ public class Branch {
     }
 
     public void setDeliveryStop(Site deliveryStop) {
-        if (deliveryStop != null && deliveryStop.getSiteType() != domain.SiteType.BRANCH) {
+        if (deliveryStop != null && deliveryStop.getSiteType() != transportation.domain.SiteType.BRANCH) {
             throw new IllegalArgumentException("Branch delivery stop must be a branch site");
         }
         this.deliveryStop = deliveryStop;

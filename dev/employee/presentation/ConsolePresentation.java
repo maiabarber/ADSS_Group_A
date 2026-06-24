@@ -14,6 +14,7 @@ import employee.domain.Shift;
 import employee.domain.ShiftAssignment;
 import employee.domain.ShiftType;
 import employee.domain.DriverAssignmentRequest;
+import employee.domain.Branch;
 import employee.domain.BranchManager;
 import employee.domain.User;
 import employee.domain.WeeklyAvailabilityRequest;
@@ -41,9 +42,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
-import domain.Site;
-import domain.SiteType;
-import domain.ShippingZone;
+import transportation.domain.Site;
+import transportation.domain.SiteType;
+import transportation.domain.ShippingZone;
 
 /**
  * ConsolePresentation class provides a console-based user interface for the
@@ -262,6 +263,20 @@ public class ConsolePresentation {
     private void registerDemoUsers() throws RepositoryException {
         authenticationService.registerUser(new HR_Manager("100000201", "hrpass"));
 
+        Branch demoBranch = new Branch(
+            "B-100000202",
+            "Demo Branch",
+            "Demo Location",
+            new Site(
+                "Demo Branch Site",
+                "Demo Address",
+                "000-0000",
+                "Demo Contact",
+                new ShippingZone("DZ", "Demo Zone"),
+                SiteType.BRANCH,
+                null));
+        branchManager.addBranch(demoBranch);
+
         Employee demoEmployee = new Employee(
                 "100000202",
                 "pass123",
@@ -274,7 +289,8 @@ public class ConsolePresentation {
                 false,
                 false,
                 null,
-                new WeeklyAvailabilityRequest());
+                new WeeklyAvailabilityRequest(),
+                demoBranch);
 
         authenticationService.registerUser(demoEmployee);
         employeeRepository.save(demoEmployee);

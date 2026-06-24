@@ -70,21 +70,6 @@ public class HRManagerBranchService {
         return result;
     }
 
-    /**
-     * Get drivers assigned to this branch (mixed-role drivers with branch assignment)
-     */
-    public List<Employee> getBranchDrivers() {
-        List<Employee> result = new ArrayList<>();
-        List<Employee> branchEmployees = getBranchEmployees();
-        
-        for (Employee employee : branchEmployees) {
-            if (employee.getAuthorizedRoles().contains(Role.DRIVER)) {
-                result.add(employee);
-            }
-        }
-        
-        return result;
-    }
 
     /**
      * Assign a shift to an employee (only if employee belongs to this branch)
@@ -123,22 +108,6 @@ public class HRManagerBranchService {
         // This would require shift swap logic
     }
 
-    /**
-     * Get storekeepers and cashiers in this branch
-     */
-    public List<Employee> getBranchSpecificEmployees() {
-        List<Employee> result = new ArrayList<>();
-        List<Employee> branchEmployees = getBranchEmployees();
-        
-        for (Employee employee : branchEmployees) {
-            if (employee.getAuthorizedRoles().contains(Role.STOREKEEPER) ||
-                employee.getAuthorizedRoles().contains(Role.CASHIER)) {
-                result.add(employee);
-            }
-        }
-        
-        return result;
-    }
 
     /**
      * Get drivers assigned to this branch (drivers with additional roles)
