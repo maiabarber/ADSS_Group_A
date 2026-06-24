@@ -102,7 +102,7 @@ public class Delivery {
                     DeliveryForm deliveryForm) {
 
         validateCoreFields(deliveryId, deliveryDate, source, stops, departureTime, truck, driver, shippingZone, status, deliveryForm);
-        validateWeight(finalMeasuredWeightBeforeDeparture);
+        validateMeasuredWeightForTruck(finalMeasuredWeightBeforeDeparture, truck);
 
         this.deliveryId = deliveryId;
         this.deliveryDate = deliveryDate;
@@ -189,6 +189,7 @@ public class Delivery {
         if (truck == null) {
             throw new IllegalArgumentException("truck cannot be null");
         }
+        validateMeasuredWeightForTruck(finalMeasuredWeightBeforeDeparture, truck);
         this.truck = truck;
     }
 
@@ -219,7 +220,7 @@ public class Delivery {
 
     public void setFinalMeasuredWeightBeforeDeparture(double finalMeasuredWeightBeforeDeparture) {
         ensureCanStillBeModified();
-        validateWeight(finalMeasuredWeightBeforeDeparture);
+        validateMeasuredWeightForTruck(finalMeasuredWeightBeforeDeparture, truck);
         this.finalMeasuredWeightBeforeDeparture = finalMeasuredWeightBeforeDeparture;
         deliveryForm.addWeightMeasurement(finalMeasuredWeightBeforeDeparture);
     }
@@ -268,7 +269,7 @@ public class Delivery {
 
     public void recordWeightMeasurement(double weight) {
         ensureCanStillBeModified();
-        validateWeight(weight);
+        validateMeasuredWeightForTruck(weight, truck);
         deliveryForm.addWeightMeasurement(weight);
         this.finalMeasuredWeightBeforeDeparture = weight;
 
@@ -353,6 +354,14 @@ public class Delivery {
         }
     }
 
+    private void validateMeasuredWeightForTruck(double weight, Truck truck) {
+        validateWeight(weight);
+
+        if (truck != null && weight < truck.getNetWeight()) {
+            throw new IllegalArgumentException("weight cannot be smaller than truck net weight");
+        }
+    }
+
     
     private void validateStopsArrivalTimes() {
         LocalDateTime departureDateTime = LocalDateTime.of(deliveryDate, departureTime);
@@ -390,3 +399,5 @@ public class Delivery {
                 '}';
     }
 }
+
+
