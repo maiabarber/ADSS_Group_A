@@ -661,15 +661,19 @@ public class TransportationEmployeeIntegrationTest {
         Driver driver = buildTransportDriver(DRIVER_ID, "Moshe Cohen", LicenseType.C);
         app.addDriver(driver);
 
-        assertThrows(IllegalArgumentException.class,
-                () -> app.planDelivery(DELIVERY_DATE, app.findSiteByName("Warehouse"), basicStops(),
-                        MORNING_TIME, 10001, app.getTruckByIndex(0), driver, app.getShippingZoneByIndex(0)));
+        Delivery delivery = app.planDelivery(DELIVERY_DATE, app.findSiteByName("Warehouse"), basicStops(),
+                MORNING_TIME, 10001, app.getTruckByIndex(0), driver, app.getShippingZoneByIndex(0));
+
+        assertNotNull(delivery);
+        assertEquals(DeliveryStatus.PENDING_REPLAN, delivery.getStatus(),
+                "Overweight delivery should be created and marked for replanning");
     }
 
     // 26. Employee service returns only drivers, not regular non-driver employees
     @Test
     void getAvailableDriversFromEmployeeService_employeeWithoutDriverRole_isExcluded()
             throws RepositoryException {
+        Branch branch = new Branch("BR-02", "Cashier Branch", "Tel Aviv");
         Employee cashier = new Employee(
                 DRIVER_ID,
                 "password123",
@@ -684,7 +688,7 @@ public class TransportationEmployeeIntegrationTest {
                 false,
                 null,
                 null,
-                null);
+                branch);
 
         employeeRepository.save(cashier);
 
