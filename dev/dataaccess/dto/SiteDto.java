@@ -2,7 +2,7 @@ package dataaccess.dto;
 
 import transportation.domain.SiteType;
 
-public final class SiteDto {
+public class SiteDto {
     private final String siteName;
     private final String address;
     private final String contactName;

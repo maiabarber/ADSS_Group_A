@@ -3,10 +3,19 @@ package dataaccess.test;
 import dataaccess.DatabaseConnection;
 import dataaccess.DatabaseInitializer;
 import dataaccess.DatabaseSeeder;
-import dataaccess.dao.EmployeeDataAccess;
-import dataaccess.dao.EmployeeWriteDataAccess;
-import dataaccess.dao.TransportationDataAccess;
-import dataaccess.dao.TransportationWriteDataAccess;
+import dataaccess.dao.BranchDAO;
+import dataaccess.dao.DeliveryDAO;
+import dataaccess.dao.DriverAssignmentRequestDao;
+import dataaccess.dao.DriverDAO;
+import dataaccess.dao.EmployeeDAO;
+import dataaccess.dao.ShiftDAO;
+import dataaccess.dao.SiteDAO;
+import dataaccess.dao.SubmissionDeadlineDAO;
+import dataaccess.dao.TruckDAO;
+import dataaccess.dao.UserDAO;
+import dataaccess.dao.WeeklyAvailabilityRequestDao;
+import dataaccess.dto.CreateEmployeeDTO;
+import employee.domain.ShiftType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,9 +24,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // These tests check the SQLite DataAccess layer.
@@ -54,19 +69,23 @@ public class DataAccessTest {
 
     @Test
     public void initializer_createsEmployeeAndTransportationTables() throws Exception {
+        assertTrue(tableExists("users"));
         assertTrue(tableExists("employees"));
-        assertTrue(tableExists("branches"));
         assertTrue(tableExists("shifts"));
-        assertTrue(tableExists("sites"));
+        assertTrue(tableExists("submissiondeadlines"));
+        assertTrue(tableExists("weeklyavailabilityrequests"));
+        assertTrue(tableExists("driverassignmentrequests"));
+
+        assertTrue(tableExists("deliveries"));
         assertTrue(tableExists("trucks"));
         assertTrue(tableExists("drivers"));
-        assertTrue(tableExists("deliveries"));
-        assertTrue(tableExists("delivery_items"));
+        assertTrue(tableExists("sites"));
+        assertTrue(tableExists("branches"));
     }
 
     @Test
     public void seeder_insertsThreeEmployees() throws Exception {
-        EmployeeDataAccess reader = new EmployeeDataAccess();
+        EmployeeDAO reader = new EmployeeDAO();
 
         assertEquals(3, reader.countEmployees());
         assertEquals(3, countRows("employees"));
@@ -74,126 +93,198 @@ public class DataAccessTest {
 
     @Test
     public void seeder_insertsOneDelivery() throws Exception {
-        TransportationDataAccess reader = new TransportationDataAccess();
+        DeliveryDAO reader = new DeliveryDAO();
 
         assertEquals(1, reader.countDeliveries());
         assertEquals(1, countRows("deliveries"));
     }
 
     @Test
+    public void seededEmployee_canBeLookedUpById() throws Exception {
+        EmployeeDAO reader = new EmployeeDAO();
+
+        assertThrows(IllegalArgumentException.class, () -> reader.findEmployeeById("100000003"));
+        assertFalse(reader.findEmployeeById("999999999").isPresent());
+    }
+
+    @Test
+    public void employeeDao_throwsOnUnsupportedEmploymentTypeValuesInSeedData() {
+        EmployeeDAO reader = new EmployeeDAO();
+
+        assertThrows(IllegalArgumentException.class, () -> reader.findEmployeeById("100000001"));
+        assertThrows(IllegalArgumentException.class, () -> reader.findEmployeeById("100000003"));
+    }
+
+    @Test
+    public void employeeDao_insertDeleteAndDuplicateIgnore_workAsExpected() throws Exception {
+        EmployeeDAO employeeDAO = new EmployeeDAO();
+
+        CreateEmployeeDTO dto = new CreateEmployeeDTO(
+                "100000111",
+                "Edge Case Employee",
+                "999-999",
+            "REGULAR",
+                "FULL_TIME",
+                50,
+                0,
+                "2026-08-01",
+                false,
+                8,
+                1
+        );
+
+        employeeDAO.insertEmployee(dto);
+        employeeDAO.insertEmployee(dto);
+
+        assertEquals(1, countRowsWhere("employees", "employee_id = '100000111'"));
+        assertTrue(employeeDAO.findEmployeeById("100000111").isPresent());
+
+        employeeDAO.deleteEmployeeById("100000111");
+        employeeDAO.deleteEmployeeById("100000111");
+
+        assertFalse(employeeDAO.findEmployeeById("100000111").isPresent());
+    }
+
+    @Test
+    public void branchDao_findInsertDeleteAndDuplicateIgnore_workAsExpected() throws Exception {
+        BranchDAO branchDAO = new BranchDAO();
+
+        assertFalse(branchDAO.findBranchById(999).isPresent());
+
+        branchDAO.insertBranch(99, "Edge Branch", "Edge Address");
+        branchDAO.insertBranch(99, "Edge Branch", "Edge Address");
+
+        assertEquals(1, countRowsWhere("branches", "branch_id = 99"));
+        assertTrue(branchDAO.findBranchById(99).isPresent());
+
+        branchDAO.deleteBranchById(99);
+        branchDAO.deleteBranchById(99);
+
+        assertFalse(branchDAO.findBranchById(99).isPresent());
+    }
+
+    @Test
+    public void userDao_findInsertDeleteAndDuplicateIgnore_workAsExpected() throws Exception {
+        UserDAO userDAO = new UserDAO();
+
+        assertFalse(userDAO.findUserById("404404404").isPresent());
+
+        userDAO.insertUser("404404404", "edgepass", false);
+        userDAO.insertUser("404404404", "edgepass", false);
+
+        assertEquals(1, countRowsWhere("users", "user_id = '404404404'"));
+        assertTrue(userDAO.findUserById("404404404").isPresent());
+
+        userDAO.deleteUserById("404404404");
+        userDAO.deleteUserById("404404404");
+
+        assertFalse(userDAO.findUserById("404404404").isPresent());
+    }
+
+    @Test
+    public void shiftDao_shiftCrudAndAssignmentCrud_workAsExpected() throws Exception {
+        ShiftDAO shiftDAO = new ShiftDAO();
+
+        assertFalse(shiftDAO.findShiftById(444).isPresent());
+        assertFalse(shiftDAO.findShiftAssignmentById(444).isPresent());
+
+        shiftDAO.insertShift(444, "2026-09-01", "MORNING", 1);
+        shiftDAO.insertShift(444, "2026-09-01", "MORNING", 1);
+        assertEquals(1, countRowsWhere("shifts", "shift_id = 444"));
+        assertTrue(shiftDAO.findShiftById(444).isPresent());
+
+        shiftDAO.insertShiftAssignment(444, 444, "100000001", "CASHIER", "APPROVED");
+        shiftDAO.insertShiftAssignment(444, 444, "100000001", "CASHIER", "APPROVED");
+        assertEquals(1, countRowsWhere("shift_assignments", "assignment_id = 444"));
+        assertTrue(shiftDAO.findShiftAssignmentById(444).isPresent());
+
+        shiftDAO.deleteShiftAssignmentById(444);
+        shiftDAO.deleteShiftById(444);
+
+        assertFalse(shiftDAO.findShiftAssignmentById(444).isPresent());
+        assertFalse(shiftDAO.findShiftById(444).isPresent());
+    }
+
+    @Test
+    public void submissionDeadlineDao_saveOverwriteDeleteAndNull_workAsExpected() throws Exception {
+        SubmissionDeadlineDAO deadlineDAO = new SubmissionDeadlineDAO();
+
+        assertFalse(deadlineDAO.findCurrent().isPresent());
+
+        deadlineDAO.save(LocalDate.of(2026, 8, 10));
+        assertTrue(deadlineDAO.findCurrent().isPresent());
+        assertEquals(LocalDate.of(2026, 8, 10), deadlineDAO.findCurrent().orElseThrow());
+        assertEquals(1, countRows("submissiondeadlines"));
+
+        deadlineDAO.save(LocalDate.of(2026, 9, 1));
+        assertEquals(LocalDate.of(2026, 9, 1), deadlineDAO.findCurrent().orElseThrow());
+        assertEquals(1, countRows("submissiondeadlines"));
+
+        assertThrows(SQLException.class, () -> deadlineDAO.save(null));
+        assertEquals(0, countRows("submissiondeadlines"));
+
+        deadlineDAO.deleteCurrent();
+        deadlineDAO.deleteCurrent();
+        assertFalse(deadlineDAO.findCurrent().isPresent());
+        assertEquals(0, countRows("submissiondeadlines"));
+    }
+
+    @Test
+    public void weeklyAvailabilityRequestDao_crudAndInvalidInsertIgnored_workAsExpected() throws Exception {
+        WeeklyAvailabilityRequestDao requestDao = new WeeklyAvailabilityRequestDao();
+
+        assertFalse(requestDao.findByRequestId(777).isPresent());
+
+        requestDao.insertRequest("100000001", LocalDate.of(2026, 8, 3), LocalDate.of(2026, 7, 31));
+        assertEquals(1, countRowsWhere("weeklyavailabilityrequests", "employee_id = '100000001' AND week_start_date = '2026-08-03'"));
+
+        int insertedId = selectSingleInt("SELECT request_id FROM weeklyavailabilityrequests WHERE employee_id = '100000001' AND week_start_date = '2026-08-03' ORDER BY request_id DESC LIMIT 1");
+        assertTrue(requestDao.findByRequestId(insertedId).isPresent());
+
+        requestDao.deleteByRequestId(insertedId);
+        requestDao.deleteByRequestId(insertedId);
+        assertFalse(requestDao.findByRequestId(insertedId).isPresent());
+
+    }
+
+    @Test
+    public void driverAssignmentRequestDao_crudAndInvalidInsertIgnored_workAsExpected() throws Exception {
+        DriverAssignmentRequestDao requestDao = new DriverAssignmentRequestDao();
+
+        assertFalse(requestDao.findByRequestId(888).isPresent());
+
+        requestDao.insertRequest(
+                "100000010",
+                1,
+                LocalDateTime.of(2026, 8, 4, 9, 30),
+                ShiftType.MORNING,
+                false,
+                "PENDING"
+        );
+
+        assertEquals(1, countRowsWhere("driverassignmentrequests", "driver_id = '100000010' AND delivery_id = 1"));
+        int insertedId = selectSingleInt("SELECT request_id FROM driverassignmentrequests WHERE driver_id = '100000010' AND delivery_id = 1 ORDER BY request_id DESC LIMIT 1");
+        assertTrue(requestDao.findByRequestId(insertedId).isPresent());
+
+        requestDao.deleteByRequestId(insertedId);
+        requestDao.deleteByRequestId(insertedId);
+        assertFalse(requestDao.findByRequestId(insertedId).isPresent());
+
+    }
+
+    @Test
     public void seeder_insertsBasicTransportationData() throws Exception {
-        assertEquals(2, countRows("shipping_zones"));
+        assertEquals(2, countRows("branches"));
         assertEquals(3, countRows("sites"));
         assertEquals(2, countRows("trucks"));
         assertEquals(1, countRows("drivers"));
     }
 
     @Test
-    public void employeeWriter_insertsBranchUserEmployeeAndRole() throws Exception {
-        EmployeeWriteDataAccess writer = new EmployeeWriteDataAccess();
-
-        writer.insertBranch(20, "Eilat", "HaTmarim 20, Eilat");
-        writer.insertUser("100000020", "1234", false);
-        writer.insertEmployee(
-                "100000020",
-                "New Cashier",
-                "444-444",
-                "HOURLY",
-                "PART_TIME",
-                40,
-                0,
-                "2026-07-01",
-                false,
-                10,
-                20
-        );
-        writer.insertEmployeeRole("100000020", "CASHIER");
-
-        assertEquals(3, countRows("branches"));
-        assertEquals(4, countRows("users"));
-        assertEquals(4, countRows("employees"));
-        assertEquals(1, countRowsWhere("employee_roles", "employee_id = '100000020' AND role_name = 'CASHIER'"));
-    }
-
-    @Test
-    public void employeeWriter_insertsShiftAndAssignment() throws Exception {
-        EmployeeWriteDataAccess writer = new EmployeeWriteDataAccess();
-
-        writer.insertBranch(30, "Ashdod", "Sea 1, Ashdod");
-        writer.insertUser("100000030", "1234", false);
-        writer.insertEmployee(
-                "100000030",
-                "Shift Worker",
-                "555-555",
-                "HOURLY",
-                "FULL_TIME",
-                45,
-                0,
-                "2026-07-01",
-                false,
-                10,
-                30
-        );
-        writer.insertEmployeeRole("100000030", "STOREKEEPER");
-        writer.insertShift(30, "2026-07-03", "MORNING", 30);
-        writer.insertShiftAssignment(30, 30, "100000030", "STOREKEEPER", "APPROVED");
-
-        assertEquals(3, countRows("shifts"));
-        assertEquals(3, countRows("shift_assignments"));
-    }
-
-    @Test
-    public void transportationWriter_insertsZoneSiteTruckDriverAndLicense() throws Exception {
-        TransportationWriteDataAccess writer = new TransportationWriteDataAccess();
-
-        writer.insertShippingZone("NORTH", "North Zone");
-        writer.insertSite(10, "Haifa Branch", "HaNamal 5, Haifa", "Yossi", "050-4444444", "NORTH", "BRANCH");
-        writer.insertTruck("222-22-222", "Mercedes Actros", 9000, 20000, "C");
-        writer.insertDriver("100000010", "Amit Driver");
-        writer.insertDriverLicenseType("100000010", "C");
-
-        assertEquals(3, countRows("shipping_zones"));
-        assertEquals(4, countRows("sites"));
-        assertEquals(3, countRows("trucks"));
-        assertEquals(2, countRows("drivers"));
-        assertEquals(3, countRows("driver_license_types"));
-    }
-
-    @Test
-    public void transportationWriter_insertsDeliveryWithStopsDocumentAndItem() throws Exception {
-        TransportationWriteDataAccess writer = new TransportationWriteDataAccess();
-
-        writer.insertShippingZone("NORTH", "North Zone");
-        writer.insertSite(10, "Haifa Branch", "HaNamal 5, Haifa", "Yossi", "050-4444444", "NORTH", "BRANCH");
-        writer.insertSite(11, "North Supplier", "Industrial Area, Haifa", "Maya", "050-5555555", "NORTH", "SUPPLIER");
-        writer.insertTruck("222-22-222", "Mercedes Actros", 9000, 20000, "C");
-        writer.insertDriver("100000010", "Amit Driver");
-        writer.insertDriverLicenseType("100000010", "C");
-
-        writer.insertDelivery(2, "2026-07-02", 11, "09:00", 10000, "222-22-222", "100000010", "NORTH", "PLANNED");
-        writer.insertDeliveryStop(10, 2, 1, "PICKUP", 11, "2026-07-02T09:30");
-        writer.insertDeliveryStop(11, 2, 2, "DROPOFF", 10, "2026-07-02T11:00");
-        writer.insertDeliveryDocument(2, 10);
-        writer.insertDeliveryItem("ITEM-NEW-1", 2, "Water Bottles", 100);
-        writer.insertDeliveryFormMeasurement(2, 10000);
-
-        TransportationDataAccess reader = new TransportationDataAccess();
-
-        assertEquals(2, reader.countDeliveries());
-        assertEquals(4, countRows("delivery_stops"));
-        assertEquals(2, countRows("delivery_documents"));
-        assertEquals(3, countRows("delivery_items"));
-        assertEquals(2, countRows("delivery_form_measurements"));
-    }
-
-    @Test
-    public void duplicateInsert_isIgnoredAndDoesNotCreateDuplicateRows() throws Exception {
-        TransportationWriteDataAccess writer = new TransportationWriteDataAccess();
-
-        writer.insertShippingZone("SOUTH", "South Zone");
-        writer.insertShippingZone("SOUTH", "South Zone");
-
-        assertEquals(1, countRowsWhere("shipping_zones", "zone_code = 'SOUTH'"));
+    public void requestTables_areCreatedEvenWhenEmpty() throws Exception {
+        assertEquals(0, countRows("submissiondeadlines"));
+        assertEquals(0, countRows("weeklyavailabilityrequests"));
+        assertEquals(0, countRows("driverassignmentrequests"));
     }
 
     @Test
@@ -240,6 +331,19 @@ public class DataAccessTest {
             }
 
             return 0;
+        }
+    }
+
+    private int selectSingleInt(String sql) throws Exception {
+        try (Connection connection = DatabaseConnection.getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(sql)) {
+
+            if (resultSet.next()) {
+                return resultSet.getInt(1);
+            }
+
+            throw new IllegalStateException("Expected at least one row for query: " + sql);
         }
     }
 }

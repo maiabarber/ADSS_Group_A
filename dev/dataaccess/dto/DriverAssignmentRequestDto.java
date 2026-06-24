@@ -4,7 +4,7 @@ import employee.domain.ShiftType;
 
 import java.time.LocalDateTime;
 
-public final class DriverAssignmentRequestDto {
+public class DriverAssignmentRequestDto {
     private final String driverId;
     private final int deliveryId;
     private final LocalDateTime deliveryDateTime;

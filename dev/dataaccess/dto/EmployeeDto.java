@@ -8,7 +8,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-public final class EmployeeDto {
+public class EmployeeDto {
     private final String employeeId;
     private final String name;
     private final BankAccountDto bankAccount;

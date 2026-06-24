@@ -2,7 +2,7 @@ package dataaccess.dto;
 
 import transportation.domain.LicenseType;
 
-public final class TruckDto {
+public class TruckDto {
     private final String licenseNumber;
     private final String model;
     private final double netWeight;
