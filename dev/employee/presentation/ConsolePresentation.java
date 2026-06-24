@@ -859,7 +859,7 @@ public class ConsolePresentation {
 
             System.out.println("\n=== Assign Employee to Shift ===");
 
-            List<Employee> employees = getEmployeesForCurrentScope(false);
+            List<Employee> employees = getEmployeesForCurrentScope(true);
             if (employees.isEmpty()) {
                 System.out.println("No employees found.");
                 return;
@@ -1042,7 +1042,7 @@ public class ConsolePresentation {
             Employee originalEmployee = assignments.get(origChoice).getEmployee();
 
             // Show available replacements (not already on shift)
-            List<Employee> allEmployees = getEmployeesForCurrentScope(false);
+            List<Employee> allEmployees = getEmployeesForCurrentScope(true);
             List<Employee> available = new ArrayList<>();
             for (Employee emp : allEmployees) {
                 if (!emp.isFired()) {
@@ -1174,7 +1174,7 @@ public class ConsolePresentation {
             ShiftAssignment selectedRequest = requests.get(requestChoice);
             Shift selectedShift = selectedRequest.getShift();
 
-            List<Employee> allEmployees = getEmployeesForCurrentScope(false);
+            List<Employee> allEmployees = getEmployeesForCurrentScope(true);
             List<Employee> available = new ArrayList<>();
             for (Employee emp : allEmployees) {
                 if (!emp.isFired()) {
