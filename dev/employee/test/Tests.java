@@ -102,7 +102,7 @@ public class Tests {
 		LocalDate newWeek = LocalDate.of(2026, 4, 20);
 		request.resetForWeek(newWeek);
 
-		assertTrue(request.getConstraints().isEmpty(), "Constraints should be cleared after reset");
+		assertTrue(request.getConstraints().isEmpty(),"Constraints should be cleared after reset");
 		assertTrue(request.getPreferences().isEmpty(), "Preferences should be cleared after reset");
 		assertEquals(newWeek, request.getWeekStartDate(), "Week start date should be updated");
 	}
@@ -641,7 +641,7 @@ public class Tests {
 		}
 
 		assertTrue(auth.login("100000043", "hrpass").isPresent(), "HR Manager login should succeed with valid credentials");
-		assertTrue(auth.getCurrentUser().orElse(null) instanceof HR_Manager, "Logged-in user should be an HR_Manager");
+		assertTrue(auth.getCurrentUser().orElse(null) instanceof HR_Manager	, "Logged-in user should be an HR_Manager");
 	}
 
 	@Test
