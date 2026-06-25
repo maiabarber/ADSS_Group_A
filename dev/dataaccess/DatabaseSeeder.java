@@ -19,6 +19,7 @@ public class DatabaseSeeder {
 
             seedEmployees(statement);
             seedTransportation(statement);
+        //     seedRequests(statement);
         }
     }
 
@@ -53,15 +54,15 @@ public class DatabaseSeeder {
                     branch_id
                 )
                 VALUES
-                ('100000001', 'HR Manager', '111-111', 'GLOBAL', 'FULL_TIME', 0, 12000, '2026-01-01', 0, 10, 1),
-                ('100000002', 'Store Keeper', '222-222', 'HOURLY', 'FULL_TIME', 45, 0, '2026-01-01', 0, 10, 1),
-                ('100000003', 'Driver Employee', '333-333', 'HOURLY', 'FULL_TIME', 50, 0, '2026-01-01', 0, 10, NULL)
+                ('100000001', 'HR Manager', '111-111-111111', 'REGULAR', 'FULL_TIME', 0, 12000, '2026-01-01', 0, 10, 1),
+                ('100000002', 'Store Keeper', '222-222-222222', 'REGULAR', 'FULL_TIME', 45, 0, '2026-01-01', 0, 10, 1),
+                ('100000003', 'Driver Employee', '333-333-333333', 'REGULAR', 'FULL_TIME', 50, 0, '2026-01-01', 0, 10, NULL)
                 """);
 
         statement.execute("""
                 INSERT OR IGNORE INTO employee_roles (employee_id, role_name)
                 VALUES
-                ('100000001', 'HR_MANAGER'),
+                ('100000001', 'CASHIER'),
                 ('100000002', 'STOREKEEPER'),
                 ('100000003', 'DRIVER')
                 """);
@@ -101,7 +102,7 @@ public class DatabaseSeeder {
                 )
                 VALUES
                 (1, 'Beer Sheva Branch', 'Rager 1, Beer Sheva', 'Avi Cohen', '050-1111111', 'SOUTH', 'BRANCH'),
-                (2, 'South Supplier', 'Industrial Area, Beer Sheva', 'Dana Levi', '050-2222222', 'SOUTH', 'SUPPLIER'),
+                (2, 'South Supplier', 'Industrial Area, Beer Sheva', 'Dana Levi', '050-2222222', 'SOUTH', 'REGULAR'),
                 (3, 'Tel Aviv Branch', 'Dizengoff 10, Tel Aviv', 'Noa Israel', '050-3333333', 'CENTER', 'BRANCH')
                 """);
 
@@ -180,4 +181,40 @@ public class DatabaseSeeder {
                 (1, 1, 9000)
                 """);
     }
+    
+    private static void seedRequests(Statement statement) throws SQLException {
+        statement.execute("""
+                INSERT OR IGNORE INTO submissiondeadlines (
+                        deadline_date
+                )
+                VALUES
+                ('2026-07-03')
+                """);
+
+        statement.execute("""
+                INSERT OR IGNORE INTO weeklyavailabilityrequests (
+                        request_id,
+                        employee_id,
+                        week_start_date,
+                        submission_deadline
+                )
+                VALUES
+                (1, '100000002', '2026-07-06', '2026-07-03'),
+                (2, '100000003', '2026-07-06', '2026-07-03')
+                """);
+
+        statement.execute("""
+                INSERT OR IGNORE INTO driverassignmentrequests (
+                        request_id,
+                        driver_id,
+                        delivery_id,
+                        delivery_date_time,
+                        shift_type,
+                        handled,
+                        status_message
+                )
+                VALUES
+                (1, '100000003', 1, '2026-07-01T08:00', 'MORNING', 0, 'PENDING')
+                """);
+        }
 }

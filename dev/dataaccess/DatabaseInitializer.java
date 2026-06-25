@@ -88,25 +88,10 @@ public class DatabaseInitializer {
                 """);
 
         statement.execute("""
-                CREATE TABLE IF NOT EXISTS submission_deadlines (
-                    deadline_date TEXT NOT NULL
-                )
-                """);
-
-        statement.execute("""
             CREATE TABLE IF NOT EXISTS submissiondeadlines (
                 deadline_date TEXT NOT NULL
             )
             """);
-
-        statement.execute("""
-                CREATE TABLE IF NOT EXISTS weekly_availability_requests (
-                    request_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    employee_id TEXT NOT NULL,
-                    week_start_date TEXT NOT NULL,
-                    submission_deadline TEXT NOT NULL
-                )
-                """);
 
         statement.execute("""
                 CREATE TABLE IF NOT EXISTS weeklyavailabilityrequests (
@@ -114,18 +99,6 @@ public class DatabaseInitializer {
                     employee_id TEXT NOT NULL,
                     week_start_date TEXT NOT NULL,
                     submission_deadline TEXT NOT NULL
-                )
-                """);
-
-        statement.execute("""
-                CREATE TABLE IF NOT EXISTS driver_assignment_requests (
-                    request_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    driver_id TEXT NOT NULL,
-                    delivery_id INTEGER NOT NULL,
-                    delivery_date_time TEXT NOT NULL,
-                    shift_type TEXT NOT NULL,
-                    handled INTEGER NOT NULL DEFAULT 0,
-                    status_message TEXT NOT NULL
                 )
                 """);
 
