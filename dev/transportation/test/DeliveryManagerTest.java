@@ -1,5 +1,6 @@
 package transportation.test;
 
+import dataaccess.DatabaseInitializer;
 import transportation.domain.Delivery;
 import transportation.domain.DeliveryDocument;
 import transportation.domain.DeliveryForm;
@@ -13,8 +14,13 @@ import transportation.domain.ShippingZone;
 import transportation.domain.Site;
 import transportation.domain.StopType;
 import transportation.domain.Truck;
+import transportation.service.DeliveriesApplication;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -24,6 +30,25 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class DeliveryManagerTest {
+    private Path testDatabasePath;
+
+    @BeforeEach
+    public void setUpDatabase() throws Exception {
+        testDatabasePath = Path.of("data", "delivery_manager_test_" + System.nanoTime() + ".db");
+        System.setProperty("adss.db.path", testDatabasePath.toString());
+        Files.deleteIfExists(testDatabasePath);
+        DatabaseInitializer.initializeDatabase();
+    }
+
+    @AfterEach
+    public void tearDownDatabase() throws Exception {
+        System.clearProperty("adss.db.path");
+        if (testDatabasePath != null) {
+            Files.deleteIfExists(testDatabasePath);
+            Files.deleteIfExists(Path.of(testDatabasePath.toString() + "-wal"));
+            Files.deleteIfExists(Path.of(testDatabasePath.toString() + "-shm"));
+        }
+    }
 
     private ShippingZone createNorthZone() {
         return new ShippingZone("NORTH", "Northern Zone");
@@ -584,14 +609,14 @@ public class DeliveryManagerTest {
 
     @Test
     void loadSampleData_loadsEntitiesAndAtLeastOneDelivery() {
-        DeliveryManager manager = new DeliveryManager();
+        DeliveriesApplication application = new DeliveriesApplication();
 
-        manager.loadSampleData();
+        application.initializeWithSampleData();
 
-        assertFalse(manager.getShippingZones().isEmpty());
-        assertFalse(manager.getSites().isEmpty());
-        assertFalse(manager.getTrucks().isEmpty());
-        assertFalse(manager.getDrivers().isEmpty());
-        assertFalse(manager.getDeliveries().isEmpty());
+        assertFalse(application.getAllShippingZones().isEmpty());
+        assertFalse(application.getAllSites().isEmpty());
+        assertFalse(application.getAllTrucks().isEmpty());
+        assertFalse(application.getAllDrivers().isEmpty());
+        assertFalse(application.getAllDeliveries().isEmpty());
     }
 }

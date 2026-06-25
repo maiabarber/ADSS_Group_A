@@ -1,7 +1,9 @@
 package dataaccess.dao;
 
 import dataaccess.DatabaseConnection;
+import dataaccess.dto.ShippingZoneDto;
 import dataaccess.dto.SiteDto;
+import transportation.domain.SiteType;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -32,8 +34,8 @@ public class SiteDAO {
 						resultSet.getString("address"),
 						resultSet.getString("contact_name"),
 						resultSet.getString("phone_number"),
-						null,
-						null
+						new ShippingZoneDto(resultSet.getString("zone_code"), resultSet.getString("zone_code")),
+						parseSiteType(resultSet.getString("site_type"))
 				));
 			}
 		}
@@ -59,8 +61,8 @@ public class SiteDAO {
 						resultSet.getString("address"),
 						resultSet.getString("contact_name"),
 						resultSet.getString("phone_number"),
-						null,
-						null
+						new ShippingZoneDto(resultSet.getString("zone_code"), resultSet.getString("zone_code")),
+						parseSiteType(resultSet.getString("site_type"))
 					));
 				}
 			}
@@ -109,6 +111,17 @@ public class SiteDAO {
 			 PreparedStatement statement = connection.prepareStatement(sql)) {
 			statement.setInt(1, siteId);
 			statement.executeUpdate();
+		}
+	}
+
+	private static SiteType parseSiteType(String rawValue) {
+		if (rawValue == null || rawValue.isBlank()) {
+			return SiteType.REGULAR;
+		}
+		try {
+			return SiteType.valueOf(rawValue);
+		} catch (IllegalArgumentException e) {
+			return SiteType.REGULAR;
 		}
 	}
 }
