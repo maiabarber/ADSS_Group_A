@@ -60,6 +60,7 @@ The following tools and libraries were used in the project:
 * Maven Surefire Plugin 3.2.5
 * Maven JAR Plugin 3.3.0
 * Maven Shade Plugin 3.5.3
+• junit-platform-console-standalone-1.10.2.jar
 
 ---
 
