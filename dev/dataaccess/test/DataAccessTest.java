@@ -16,9 +16,13 @@ import dataaccess.dao.UserDAO;
 import dataaccess.dao.WeeklyAvailabilityRequestDao;
 import dataaccess.dto.CreateEmployeeDTO;
 import employee.domain.ShiftType;
+import dataaccess.dto.WeeklyAvailabilityRequestDto;
+import dataaccess.dto.DriverAssignmentRequestDto;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import java.util.Optional;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -101,17 +105,29 @@ public class DataAccessTest {
     @Test
     public void seededEmployee_canBeLookedUpById() throws Exception {
         EmployeeDAO reader = new EmployeeDAO();
-
-        assertThrows(IllegalArgumentException.class, () -> reader.findEmployeeById("100000003"));
+        assertTrue(reader.findEmployeeById("100000003").isPresent());
         assertFalse(reader.findEmployeeById("999999999").isPresent());
+
+        // assertThrows(IllegalArgumentException.class, () -> reader.findEmployeeById("100000003"));
+        // assertFalse(reader.findEmployeeById("999999999").isPresent());
     }
 
+    // @Test
+    // public void employeeDao_throwsOnUnsupportedEmploymentTypeValuesInSeedData() {
+    //     EmployeeDAO reader = new EmployeeDAO();
+
+    //     assertTrue(reader.findEmployeeById("100000001").isPresent());
+    //     assertTrue(reader.findEmployeeById("100000003").isPresent());
+
+    //     // assertThrows(IllegalArgumentException.class, () -> reader.findEmployeeById("100000001"));
+    //     // assertThrows(IllegalArgumentException.class, () -> reader.findEmployeeById("100000003"));
+    // }
     @Test
-    public void employeeDao_throwsOnUnsupportedEmploymentTypeValuesInSeedData() {
+    public void employeeDao_readsSupportedEmploymentTypeValuesInSeedData() throws Exception {
         EmployeeDAO reader = new EmployeeDAO();
 
-        assertThrows(IllegalArgumentException.class, () -> reader.findEmployeeById("100000001"));
-        assertThrows(IllegalArgumentException.class, () -> reader.findEmployeeById("100000003"));
+        assertTrue(reader.findEmployeeById("100000001").isPresent());
+        assertTrue(reader.findEmployeeById("100000003").isPresent());
     }
 
     @Test
@@ -280,6 +296,106 @@ public class DataAccessTest {
     }
 
     @Test
+    public void seeder_insertsEmployeeRoles() throws Exception {
+        assertEquals(3, countRows("employee_roles"));
+
+        assertEquals(1, countRowsWhere(
+                "employee_roles",
+                "employee_id = '100000001' AND role_name = 'CASHIER'"
+        ));
+
+        assertEquals(1, countRowsWhere(
+                "employee_roles",
+                "employee_id = '100000002' AND role_name = 'STOREKEEPER'"
+        ));
+
+        assertEquals(1, countRowsWhere(
+                "employee_roles",
+                "employee_id = '100000003' AND role_name = 'DRIVER'"
+        ));
+    }
+
+    @Test
+    public void seeder_insertsShippingZones() throws Exception {
+        assertEquals(2, countRows("shipping_zones"));
+
+        assertEquals(1, countRowsWhere(
+                "shipping_zones",
+                "zone_code = 'SOUTH' AND zone_name = 'South Zone'"
+        ));
+
+        assertEquals(1, countRowsWhere(
+                "shipping_zones",
+                "zone_code = 'CENTER' AND zone_name = 'Center Zone'"
+        ));
+    }
+
+    @Test
+    public void seeder_insertsDriverLicenseTypes() throws Exception {
+        assertEquals(2, countRows("driver_license_types"));
+
+        assertEquals(1, countRowsWhere(
+                "driver_license_types",
+                "employee_id = '100000003' AND license_type = 'C'"
+        ));
+
+        assertEquals(1, countRowsWhere(
+                "driver_license_types",
+                "employee_id = '100000003' AND license_type = 'C1'"
+        ));
+    }
+
+    @Test
+    public void seeder_insertsDeliveryStops() throws Exception {
+        assertEquals(2, countRows("delivery_stops"));
+
+        assertEquals(1, countRowsWhere(
+                "delivery_stops",
+                "delivery_id = 1 AND stop_order = 1 AND stop_type = 'PICKUP' AND site_id = 2"
+        ));
+
+        assertEquals(1, countRowsWhere(
+                "delivery_stops",
+                "delivery_id = 1 AND stop_order = 2 AND stop_type = 'DROPOFF' AND site_id = 1"
+        ));
+    }
+
+    @Test
+    public void seeder_insertsDeliveryDocuments() throws Exception {
+        assertEquals(1, countRows("delivery_documents"));
+
+        assertEquals(1, countRowsWhere(
+                "delivery_documents",
+                "document_number = 1 AND stop_id = 1"
+        ));
+    }
+
+    @Test
+    public void seeder_insertsDeliveryItems() throws Exception {
+        assertEquals(2, countRows("delivery_items"));
+
+        assertEquals(1, countRowsWhere(
+                "delivery_items",
+                "item_id = 'ITEM-1' AND document_number = 1 AND item_name = 'Milk Boxes' AND quantity = 40"
+        ));
+
+        assertEquals(1, countRowsWhere(
+                "delivery_items",
+                "item_id = 'ITEM-2' AND document_number = 1 AND item_name = 'Bread Crates' AND quantity = 25"
+        ));
+    }
+
+    @Test
+    public void seeder_insertsDeliveryFormMeasurements() throws Exception {
+        assertEquals(1, countRows("delivery_form_measurements"));
+
+        assertEquals(1, countRowsWhere(
+                "delivery_form_measurements",
+                "delivery_id = 1 AND measured_weight = 9000"
+        ));
+    }
+
+    @Test
     public void requestTables_areCreatedEvenWhenEmpty() throws Exception {
         assertEquals(0, countRows("submissiondeadlines"));
         assertEquals(0, countRows("weeklyavailabilityrequests"));
@@ -344,5 +460,85 @@ public class DataAccessTest {
 
             throw new IllegalStateException("Expected at least one row for query: " + sql);
         }
+    }
+
+    @Test
+    public void submissionDeadline_persistsAfterDaoReopen() throws Exception {
+        SubmissionDeadlineDAO writer = new SubmissionDeadlineDAO();
+
+        LocalDate deadline = LocalDate.of(2026, 10, 5);
+        writer.save(deadline);
+
+        // New DAO object simulates using the program again with the same database file.
+        SubmissionDeadlineDAO reader = new SubmissionDeadlineDAO();
+
+        assertTrue(reader.findCurrent().isPresent());
+        assertEquals(deadline, reader.findCurrent().orElseThrow());
+        assertEquals(1, countRows("submissiondeadlines"));
+    }
+
+    @Test
+    public void weeklyAvailabilityRequest_persistsAfterDaoReopen() throws Exception {
+        WeeklyAvailabilityRequestDao writer = new WeeklyAvailabilityRequestDao();
+
+        writer.insertRequest(
+                "100000003",
+                LocalDate.of(2026, 10, 12),
+                LocalDate.of(2026, 10, 9)
+        );
+
+        int insertedId = selectSingleInt("""
+                SELECT request_id
+                FROM weeklyavailabilityrequests
+                WHERE employee_id = '100000003'
+                AND week_start_date = '2026-10-12'
+                ORDER BY request_id DESC
+                LIMIT 1
+                """);
+
+        // New DAO object simulates reopening the program.
+        WeeklyAvailabilityRequestDao reader = new WeeklyAvailabilityRequestDao();
+
+        assertTrue(reader.findByRequestId(insertedId).isPresent());
+        assertEquals(
+                LocalDate.of(2026, 10, 12),
+                reader.findByRequestId(insertedId).orElseThrow().getWeekStartDate()
+        );
+    }
+
+    @Test
+    public void driverAssignmentRequest_persistsAfterDaoReopen() throws Exception {
+        DriverAssignmentRequestDao writer = new DriverAssignmentRequestDao();
+
+        writer.insertRequest(
+                "100000003",
+                1,
+                LocalDateTime.of(2026, 10, 12, 8, 0),
+                ShiftType.MORNING,
+                false,
+                "PENDING"
+        );
+
+        int insertedId = selectSingleInt("""
+                SELECT request_id
+                FROM driverassignmentrequests
+                WHERE driver_id = '100000003'
+                AND delivery_id = 1
+                AND delivery_date_time = '2026-10-12T08:00'
+                ORDER BY request_id DESC
+                LIMIT 1
+                """);
+
+        // New DAO object simulates reopening the program.
+        DriverAssignmentRequestDao reader = new DriverAssignmentRequestDao();
+
+        DriverAssignmentRequestDto dto = reader.findByRequestId(insertedId).orElseThrow();
+
+        assertEquals("100000003", dto.getDriverId());
+        assertEquals(1, dto.getDeliveryId());
+        assertEquals(LocalDateTime.of(2026, 10, 12, 8, 0), dto.getDeliveryDateTime());
+        assertEquals(ShiftType.MORNING, dto.getShiftType());
+        assertFalse(dto.isHandled());
+        assertEquals("PENDING", dto.getStatusMessage());
     }
 }

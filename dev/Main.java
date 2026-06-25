@@ -1,9 +1,10 @@
+import java.util.Scanner;
+
 import dataaccess.DatabaseInitializer;
 import dataaccess.DatabaseSeeder;
 import employee.presentation.ConsolePresentation;
 import transportation.presentation.DeliveriesUI;
 import transportation.service.DeliveriesApplication;
-import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {

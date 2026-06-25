@@ -52,6 +52,7 @@
                 </configuration>
             </plugin>
         </plugins>
+        <finalName>adss2025_v02</finalName>
     </build>
 
     <dependencies>
