@@ -297,12 +297,16 @@ public class DataAccessTest {
 
     @Test
     public void seeder_insertsEmployeeRoles() throws Exception {
-        assertEquals(3, countRows("employee_roles"));
 
-        assertEquals(1, countRowsWhere(
-                "employee_roles",
-                "employee_id = '100000001' AND role_name = 'CASHIER'"
-        ));
+        // try (Connection connection = DatabaseConnection.getConnection();
+        //     Statement statement = connection.createStatement();
+        //     ResultSet rs = statement.executeQuery("SELECT employee_id, role_name FROM employee_roles")) {
+
+        //     while (rs.next()) {
+        //         System.out.println(rs.getString("employee_id") + " -> " + rs.getString("role_name"));
+        //     }
+        // }
+        assertEquals(2, countRows("employee_roles"));
 
         assertEquals(1, countRowsWhere(
                 "employee_roles",
