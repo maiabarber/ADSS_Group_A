@@ -62,7 +62,6 @@ public class DatabaseSeeder {
         statement.execute("""
                 INSERT OR IGNORE INTO employee_roles (employee_id, role_name)
                 VALUES
-                ('100000001', 'CASHIER'),
                 ('100000002', 'STOREKEEPER'),
                 ('100000003', 'DRIVER')
                 """);
