@@ -68,7 +68,7 @@ public class DeliveryDAO {
 								resultSet.getString("contact_name"),
 								resultSet.getString("phone_number"),
 								new ShippingZoneDto(resultSet.getString("zone_code"), resultSet.getString("zone_name")),
-								SiteType.valueOf(resultSet.getString("site_type"))
+								parseSiteType(resultSet.getString("site_type"))
 						),
 						Collections.emptyList(),
 						LocalTime.parse(resultSet.getString("departure_time")),
@@ -98,6 +98,17 @@ public class DeliveryDAO {
 			 Statement statement = connection.createStatement();
 			 ResultSet resultSet = statement.executeQuery(sql)) {
 			return resultSet.next() ? resultSet.getInt("total") : 0;
+		}
+	}
+
+	private static SiteType parseSiteType(String rawValue) {
+		if (rawValue == null || rawValue.isBlank()) {
+			return SiteType.REGULAR;
+		}
+		try {
+			return SiteType.valueOf(rawValue);
+		} catch (IllegalArgumentException e) {
+			return SiteType.REGULAR;
 		}
 	}
 }

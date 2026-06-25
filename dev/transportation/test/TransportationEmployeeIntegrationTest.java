@@ -1,15 +1,19 @@
 package transportation.test;
 
+import dataaccess.DatabaseInitializer;
 import employee.domain.*;
 import employee.repository.RepositoryException;
-import employee.repository.impl.InMemoryEmployeeRepository;
-import employee.repository.impl.InMemoryShiftRepository;
+import dataaccess.repository.impl.DatabaseEmployeeRepository;
+import dataaccess.repository.impl.DatabaseShiftRepository;
 import employee.service.EmployeeTransportationService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import transportation.domain.*;
 import transportation.service.DeliveriesApplication;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -25,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * and shifts.
  */
 public class TransportationEmployeeIntegrationTest {
+    private Path testDatabasePath;
 
     // 2026-04-20 is a Monday; use a past date so that the default stop arrival
     // time (LocalDateTime.now() + 1h) is never before the delivery departure.
@@ -34,15 +39,20 @@ public class TransportationEmployeeIntegrationTest {
     // Employee IDs must be exactly 9 digits per User.validateId()
     private static final String DRIVER_ID = "100000001";
 
-    private InMemoryShiftRepository shiftRepository;
-    private InMemoryEmployeeRepository employeeRepository;
+    private DatabaseShiftRepository shiftRepository;
+    private DatabaseEmployeeRepository employeeRepository;
     private EmployeeTransportationService employeeTransportationService;
     private DeliveriesApplication app;
 
     @BeforeEach
-    void setUp() {
-        shiftRepository = new InMemoryShiftRepository();
-        employeeRepository = new InMemoryEmployeeRepository();
+    void setUp() throws Exception {
+        testDatabasePath = Path.of("data", "transport_employee_test_" + System.nanoTime() + ".db");
+        System.setProperty("adss.db.path", testDatabasePath.toString());
+        Files.deleteIfExists(testDatabasePath);
+        DatabaseInitializer.initializeDatabase();
+
+        shiftRepository = new DatabaseShiftRepository();
+        employeeRepository = new DatabaseEmployeeRepository();
         employeeTransportationService = new EmployeeTransportationService(shiftRepository, employeeRepository);
         app = new DeliveriesApplication(employeeTransportationService);
 
@@ -56,6 +66,16 @@ public class TransportationEmployeeIntegrationTest {
 
         Truck truck = new Truck("123-45-678", "Volvo", 5000, 10000, LicenseType.C);
         app.addTruck(truck);
+    }
+
+    @AfterEach
+    void tearDownDatabase() throws Exception {
+        System.clearProperty("adss.db.path");
+        if (testDatabasePath != null) {
+            Files.deleteIfExists(testDatabasePath);
+            Files.deleteIfExists(Path.of(testDatabasePath.toString() + "-wal"));
+            Files.deleteIfExists(Path.of(testDatabasePath.toString() + "-shm"));
+        }
     }
 
     // ─── Helper factories ────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 package transportation.test;
 
+import dataaccess.DatabaseInitializer;
 import transportation.domain.Delivery;
 import transportation.domain.DeliveryItem;
 import transportation.domain.DeliveryManager;
@@ -10,9 +11,13 @@ import transportation.domain.LicenseType;
 import transportation.domain.ShippingZone;
 import transportation.domain.Site;
 import transportation.domain.Truck;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import transportation.service.DeliveriesApplication;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -22,6 +27,25 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class DeliveriesApplicationTest {
+    private Path testDatabasePath;
+
+    @BeforeEach
+    public void setUpDatabase() throws Exception {
+        testDatabasePath = Path.of("data", "deliveries_app_test_" + System.nanoTime() + ".db");
+        System.setProperty("adss.db.path", testDatabasePath.toString());
+        Files.deleteIfExists(testDatabasePath);
+        DatabaseInitializer.initializeDatabase();
+    }
+
+    @AfterEach
+    public void tearDownDatabase() throws Exception {
+        System.clearProperty("adss.db.path");
+        if (testDatabasePath != null) {
+            Files.deleteIfExists(testDatabasePath);
+            Files.deleteIfExists(Path.of(testDatabasePath.toString() + "-wal"));
+            Files.deleteIfExists(Path.of(testDatabasePath.toString() + "-shm"));
+        }
+    }
 
     private ShippingZone createNorthZone() {
         return new ShippingZone("NORTH", "Northern Zone");

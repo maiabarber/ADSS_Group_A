@@ -2,6 +2,9 @@ package employee.test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import dataaccess.DatabaseInitializer;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import employee.domain.BankAccount;
@@ -26,10 +29,10 @@ import employee.presentation.ShiftController;
 import employee.presentation.UserController;
 import employee.repository.EmployeeRepository;
 import employee.repository.RepositoryException;
-import employee.repository.impl.InMemoryEmployeeRepository;
+import dataaccess.repository.impl.DatabaseEmployeeRepository;
 import employee.domain.SubmissionDeadlinePolicy;
-import employee.repository.impl.InMemorySubmissionDeadlineRepository;
-import employee.repository.impl.InMemoryUserRepository;
+import dataaccess.repository.impl.DatabaseSubmissionDeadlineRepository;
+import dataaccess.repository.impl.DatabaseUserRepository;
 import employee.service.AuthenticationService;
 import employee.service.WeeklyAvailabilityService;
 import transportation.domain.Site;
@@ -40,6 +43,8 @@ import transportation.domain.SiteType;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Arrays;
@@ -50,6 +55,25 @@ import java.util.Map;
 import java.util.Set;
 
 public class Tests {
+	private Path testDatabasePath;
+
+	@BeforeEach
+	public void setUpDatabase() throws Exception {
+		testDatabasePath = Path.of("data", "employee_test_" + System.nanoTime() + ".db");
+		System.setProperty("adss.db.path", testDatabasePath.toString());
+		Files.deleteIfExists(testDatabasePath);
+		DatabaseInitializer.initializeDatabase();
+	}
+
+	@AfterEach
+	public void tearDownDatabase() throws Exception {
+		System.clearProperty("adss.db.path");
+		if (testDatabasePath != null) {
+			Files.deleteIfExists(testDatabasePath);
+			Files.deleteIfExists(Path.of(testDatabasePath.toString() + "-wal"));
+			Files.deleteIfExists(Path.of(testDatabasePath.toString() + "-shm"));
+		}
+	}
 	private static final Branch DEFAULT_TEST_BRANCH = new Branch("B-DEFAULT", "Default Test Branch", "Default Location");
 
 	@Test
@@ -161,8 +185,8 @@ public class Tests {
 
 	@Test
 	public void hard_weeklyAvailability_vacationDayConstraintConsumesBalance() {
-		InMemorySubmissionDeadlineRepository deadlineRepository = new InMemorySubmissionDeadlineRepository();
-		InMemoryEmployeeRepository employeeRepository = new InMemoryEmployeeRepository();
+		DatabaseSubmissionDeadlineRepository deadlineRepository = new DatabaseSubmissionDeadlineRepository();
+		DatabaseEmployeeRepository employeeRepository = new DatabaseEmployeeRepository();
 		WeeklyAvailabilityService service = new WeeklyAvailabilityService(deadlineRepository, employeeRepository);
 		Employee employee = buildEmployee("100000173", false, 10);
 
@@ -215,8 +239,8 @@ public class Tests {
 
 	@Test
 	public void hard_weeklyAvailability_submitRejectedWithoutDeadline_keepsVacationBalance() {
-		InMemorySubmissionDeadlineRepository deadlineRepository = new InMemorySubmissionDeadlineRepository();
-		InMemoryEmployeeRepository employeeRepository = new InMemoryEmployeeRepository();
+		DatabaseSubmissionDeadlineRepository deadlineRepository = new DatabaseSubmissionDeadlineRepository();
+		DatabaseEmployeeRepository employeeRepository = new DatabaseEmployeeRepository();
 		WeeklyAvailabilityService service = new WeeklyAvailabilityService(deadlineRepository, employeeRepository);
 		Employee employee = buildEmployee("100000178", false, 10);
 
@@ -294,8 +318,8 @@ public class Tests {
 
 	@Test
 	public void hard_addEmployee_setsDefaultVacationDaysToTenAtHiring() {
-		AuthenticationService authenticationService = new AuthenticationService(new InMemoryUserRepository());
-		InMemoryEmployeeRepository employeeRepository = new InMemoryEmployeeRepository();
+		AuthenticationService authenticationService = new AuthenticationService(new DatabaseUserRepository());
+		DatabaseEmployeeRepository employeeRepository = new DatabaseEmployeeRepository();
 		UserController controller = new UserController(authenticationService, employeeRepository);
 		HR_Manager hr = new HR_Manager("100000174", "pass");
 		Employee newHire = buildEmployee("100000175", false, 2);
@@ -601,7 +625,7 @@ public class Tests {
 
 	@Test
 	public void easy_authenticationLogin_success() {
-		AuthenticationService auth = new AuthenticationService(new InMemoryUserRepository());
+		AuthenticationService auth = new AuthenticationService(new DatabaseUserRepository());
 		User user = new User("100000041", "secret");
 
 		try {
@@ -616,7 +640,7 @@ public class Tests {
 
 	@Test
 	public void easy_authenticationLogin_employeeSuccess() {
-		AuthenticationService auth = new AuthenticationService(new InMemoryUserRepository());
+		AuthenticationService auth = new AuthenticationService(new DatabaseUserRepository());
 		Employee employee = buildEmployee("100000042", false, 10);
 
 		try {
@@ -631,7 +655,7 @@ public class Tests {
 
 	@Test
 	public void easy_authenticationLogin_hrManagerSuccess() {
-		AuthenticationService auth = new AuthenticationService(new InMemoryUserRepository());
+		AuthenticationService auth = new AuthenticationService(new DatabaseUserRepository());
 		HR_Manager hr = new HR_Manager("100000043", "hrpass");
 
 		try {
@@ -646,7 +670,7 @@ public class Tests {
 
 	@Test
 	public void easy_authenticationLogin_wrongPassword() {
-		AuthenticationService auth = new AuthenticationService(new InMemoryUserRepository());
+		AuthenticationService auth = new AuthenticationService(new DatabaseUserRepository());
 		Employee employee = buildEmployee("100000044", false, 10);
 
 		try {
@@ -661,7 +685,7 @@ public class Tests {
 
 	@Test
 	public void easy_authenticationLogin_wrongId() {
-		AuthenticationService auth = new AuthenticationService(new InMemoryUserRepository());
+		AuthenticationService auth = new AuthenticationService(new DatabaseUserRepository());
 		Employee employee = buildEmployee("100000045", false, 10);
 
 		try {
@@ -676,7 +700,7 @@ public class Tests {
 
 	@Test
 	public void easy_authenticationLogin_blocksFiredEmployee() {
-		AuthenticationService auth = new AuthenticationService(new InMemoryUserRepository());
+		AuthenticationService auth = new AuthenticationService(new DatabaseUserRepository());
 		Employee firedEmployee = buildEmployee("100000051", false, 10);
 		firedEmployee.setFired(true);
 
@@ -692,7 +716,7 @@ public class Tests {
 
 	@Test
 	public void easy_authenticationLogout_employeeSuccess() {
-		AuthenticationService auth = new AuthenticationService(new InMemoryUserRepository());
+		AuthenticationService auth = new AuthenticationService(new DatabaseUserRepository());
 		Employee employee = buildEmployee("100000052", false, 10);
 
 		try {
@@ -710,7 +734,7 @@ public class Tests {
 
 	@Test
 	public void easy_authenticationLogout_hrManagerSuccess() {
-		AuthenticationService auth = new AuthenticationService(new InMemoryUserRepository());
+		AuthenticationService auth = new AuthenticationService(new DatabaseUserRepository());
 		HR_Manager hr = new HR_Manager("100000053", "hrpass");
 
 		try {
@@ -728,7 +752,7 @@ public class Tests {
 
 	@Test
 	public void easy_authenticationLogout_whenNotLoggedIn() {
-		AuthenticationService auth = new AuthenticationService(new InMemoryUserRepository());
+		AuthenticationService auth = new AuthenticationService(new DatabaseUserRepository());
 
 		assertFalse(auth.logout(), "Logout should return false when no user is logged in");
 		assertFalse(auth.isLoggedIn(), "Auth state should remain logged-out");
@@ -736,7 +760,7 @@ public class Tests {
 
 	@Test
 	public void easy_firedEmployee_recordStillRetrievable() {
-		InMemoryEmployeeRepository repository = new InMemoryEmployeeRepository();
+		DatabaseEmployeeRepository repository = new DatabaseEmployeeRepository();
 		Employee employee = buildEmployee("100000147", false, 10);
 
 		try {
@@ -755,7 +779,7 @@ public class Tests {
 
 	@Test
 	public void easy_employeeRepositorySaveFindDelete_cycle() {
-		InMemoryEmployeeRepository repository = new InMemoryEmployeeRepository();
+		DatabaseEmployeeRepository repository = new DatabaseEmployeeRepository();
 		Employee employee = buildEmployee("100000061", false, 10);
 
 		try {
@@ -770,7 +794,7 @@ public class Tests {
 
 	@Test
 	public void easy_addEmployee_persistsInRepository() {
-		InMemoryEmployeeRepository repository = new InMemoryEmployeeRepository();
+		DatabaseEmployeeRepository repository = new DatabaseEmployeeRepository();
 		Employee employee = buildEmployee("100000062", false, 10);
 
 		try {
@@ -785,8 +809,8 @@ public class Tests {
 
 	@Test
 	public void hard_userController_nonHrUser_cannotAddUpdateOrFireEmployee() {
-		AuthenticationService authenticationService = new AuthenticationService(new InMemoryUserRepository());
-		InMemoryEmployeeRepository employeeRepository = new InMemoryEmployeeRepository();
+		AuthenticationService authenticationService = new AuthenticationService(new DatabaseUserRepository());
+		DatabaseEmployeeRepository employeeRepository = new DatabaseEmployeeRepository();
 		UserController controller = new UserController(authenticationService, employeeRepository);
 		User nonHr = new User("100000181", "pass");
 		Employee employee = buildEmployee("100000182", false, 10);
@@ -899,7 +923,7 @@ public class Tests {
 
 	@Test
 	public void easy_submissionDeadlineRepository_roundTrip() {
-		InMemorySubmissionDeadlineRepository repository = new InMemorySubmissionDeadlineRepository();
+		DatabaseSubmissionDeadlineRepository repository = new DatabaseSubmissionDeadlineRepository();
 		LocalDate deadline = LocalDate.of(2027, 4, 25);
 
 		try {

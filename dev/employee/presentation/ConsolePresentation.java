@@ -22,10 +22,10 @@ import employee.repository.EmployeeRepository;
 import employee.repository.RepositoryException;
 import employee.repository.ShiftRepository;
 import employee.repository.SubmissionDeadlineRepository;
-import employee.repository.impl.InMemoryEmployeeRepository;
-import employee.repository.impl.InMemoryShiftRepository;
-import employee.repository.impl.InMemorySubmissionDeadlineRepository;
-import employee.repository.impl.InMemoryUserRepository;
+import dataaccess.repository.impl.DatabaseEmployeeRepository;
+import dataaccess.repository.impl.DatabaseShiftRepository;
+import dataaccess.repository.impl.DatabaseSubmissionDeadlineRepository;
+import dataaccess.repository.impl.DatabaseUserRepository;
 import employee.service.AuthenticationService;
 import employee.service.SubmissionDeadlineService;
 import employee.service.WeeklyAvailabilityService;
@@ -71,15 +71,15 @@ public class ConsolePresentation {
     private int lastVacationResetYear = -1;
 
     public ConsolePresentation() {
-        this.authenticationService = new AuthenticationService(new InMemoryUserRepository());
-        this.employeeRepository = new InMemoryEmployeeRepository();
+        this.authenticationService = new AuthenticationService(new DatabaseUserRepository());
+        this.employeeRepository = new DatabaseEmployeeRepository();
         this.loginPresentation = new LoginPresentation();
         this.employeePresentation = new EmployeePresentation();
         this.shiftPresentation = new ShiftPresentation();
         this.userController = new UserController(authenticationService, employeeRepository);
         this.shiftController = new ShiftController();
-        this.shiftRepository = new InMemoryShiftRepository();
-        this.submissionDeadlineRepository = new InMemorySubmissionDeadlineRepository();
+        this.shiftRepository = new DatabaseShiftRepository();
+        this.submissionDeadlineRepository = new DatabaseSubmissionDeadlineRepository();
         this.submissionDeadlineService = new SubmissionDeadlineService();
         this.weeklyAvailabilityService = new WeeklyAvailabilityService(submissionDeadlineRepository,
                 employeeRepository);
@@ -89,13 +89,6 @@ public class ConsolePresentation {
     }
 
     public void run() {
-        try {
-            registerDemoUsers();
-        } catch (Exception e) {
-            System.out.println("Failed to register demo users: " + e.getMessage());
-            return;
-        }
-
         try (Scanner scanner = new Scanner(System.in)) {
             boolean appRunning = true;
             while (appRunning) {
@@ -256,42 +249,6 @@ public class ConsolePresentation {
 
     private boolean isHrManager(User user) {
         return user instanceof HR_Manager && ((HR_Manager) user).isHRManager();
-    }
-
-    private void registerDemoUsers() throws RepositoryException {
-        authenticationService.registerUser(new HR_Manager("100000201", "hrpass"));
-
-        Branch demoBranch = new Branch(
-            "B-100000202",
-            "Demo Branch",
-            "Demo Location",
-            new Site(
-                "Demo Branch Site",
-                "Demo Address",
-                "000-0000",
-                "Demo Contact",
-                new ShippingZone("DZ", "Demo Zone"),
-                SiteType.BRANCH,
-                null));
-        branchManager.addBranch(demoBranch);
-
-        Employee demoEmployee = new Employee(
-                "100000202",
-                "pass123",
-                new BankAccount("10", "123", "555555"),
-                "Demo Employee",
-                new Salary(5000, 50, 0, EmploymentScope.FULL_TIME),
-                EmploymentType.REGULAR,
-                new EmploymentTerms(LocalDate.now(), EmploymentScope.FULL_TIME, 5000, 50, 12),
-                java.util.Collections.singleton(Role.CASHIER),
-                false,
-                false,
-                null,
-                new WeeklyAvailabilityRequest(),
-                demoBranch);
-
-        authenticationService.registerUser(demoEmployee);
-        employeeRepository.save(demoEmployee);
     }
 
     private void addNewEmployeeFlow(Scanner scanner) {

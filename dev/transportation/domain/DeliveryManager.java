@@ -9,8 +9,8 @@ import java.util.HashSet;
 import java.util.List;
 
 import employee.service.EmployeeTransportationService;
-import employee.repository.impl.InMemoryEmployeeRepository;
-import employee.repository.impl.InMemoryShiftRepository;
+import dataaccess.repository.impl.DatabaseEmployeeRepository;
+import dataaccess.repository.impl.DatabaseShiftRepository;
 
 public class DeliveryManager {
 
@@ -25,8 +25,8 @@ public class DeliveryManager {
 
     public DeliveryManager() {
         this(new EmployeeTransportationService(
-                new InMemoryShiftRepository(),
-                new InMemoryEmployeeRepository()));
+                new DatabaseShiftRepository(),
+                new DatabaseEmployeeRepository()));
     }
     public DeliveryManager(EmployeeTransportationService employeeTransportationService) {
         if (employeeTransportationService == null) {
@@ -483,95 +483,6 @@ public class DeliveryManager {
         shippingZones.clear();
         nextDeliveryId = 1;
         nextDocumentNumber = 1;
-    }
-
-    public void loadSampleData() {
-        clearAllData();
-
-        ShippingZone northZone = new ShippingZone("NORTH", "Northern Zone");
-        ShippingZone southZone = new ShippingZone("SOUTH", "Southern Zone");
-
-        addShippingZone(northZone);
-        addShippingZone(southZone);
-
-        Site northWarehouse = new Site(
-                "North Warehouse",
-                "10 Haifa Port Rd, Haifa",
-                "04-1111111",
-                "Dana Levi",
-                northZone
-        );
-
-        Site supplierA = new Site(
-                "Supplier A",
-                "25 Industrial St, Haifa",
-                "04-2222222",
-                "Yossi Cohen",
-                northZone
-        );
-
-        Site supplierB = new Site(
-                "Supplier B",
-                "48 Market Rd, Acre",
-                "04-3333333",
-                "Rina Peretz",
-                northZone
-        );
-
-        Site northStore = new Site(
-                "North Store",
-                "3 Ben Gurion St, Nahariya",
-                "04-4444444",
-                "Avi Mizrahi",
-                northZone
-        );
-
-        Site southWarehouse = new Site(
-                "South Warehouse",
-                "5 Negev Center, Be'er Sheva",
-                "08-5555555",
-                "Shira Dayan",
-                southZone
-        );
-
-        addSite(northWarehouse);
-        addSite(supplierA);
-        addSite(supplierB);
-        addSite(northStore);
-        addSite(southWarehouse);
-
-        Truck truck1 = new Truck("123-45-678", "Volvo Medium", 4500, 12000, LicenseType.C1);
-        Truck truck2 = new Truck("987-65-432", "MAN Heavy", 7000, 18000, LicenseType.C);
-
-        addTruck(truck1);
-        addTruck(truck2);
-
-        Driver driver1 = new Driver("D001", "Moshe Cohen", new HashSet<>(Arrays.asList(LicenseType.C1, LicenseType.B)));
-        Driver driver2 = new Driver("D002", "Dana Israel", new HashSet<>(Arrays.asList(LicenseType.C, LicenseType.C1)));
-
-        addDriver(driver1);
-        addDriver(driver2);
-
-        DeliveryItem milk = new DeliveryItem("ITEM-001", "Milk 3%", 40);
-        DeliveryItem bread = new DeliveryItem("ITEM-002", "Whole Wheat Bread", 25);
-        DeliveryItem shampoo = new DeliveryItem("ITEM-003", "Shampoo 250ml", 15);
-
-        DeliveryDocument supplierPickupDocument = createDocument(Arrays.asList(milk, bread));
-        DeliveryDocument storeDropoffDocument = createDocument(Arrays.asList(milk, bread, shampoo));
-
-        DeliveryStop stop1 = new DeliveryStop(0, StopType.PICKUP, supplierA, supplierPickupDocument);
-        DeliveryStop stop2 = new DeliveryStop(1, StopType.DROPOFF, northStore, storeDropoffDocument);
-
-        createDelivery(
-                LocalDate.now(),
-                northWarehouse,
-                Arrays.asList(stop1, stop2),
-                LocalTime.of(8, 30),
-                9500,
-                truck1,
-                driver1,
-                northZone
-        );
     }
 
     private void prepareStopsForCreation(List<DeliveryStop> stops) {
