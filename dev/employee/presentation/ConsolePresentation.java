@@ -1,15 +1,11 @@
 package employee.presentation;
 
-import employee.domain.BankAccount;
 import employee.domain.Constraint;
 import employee.domain.Employee;
-import employee.domain.EmploymentScope;
-import employee.domain.EmploymentTerms;
-import employee.domain.EmploymentType;
+
 import employee.domain.HR_Manager;
 import employee.domain.Preference;
 import employee.domain.Role;
-import employee.domain.Salary;
 import employee.domain.Shift;
 import employee.domain.ShiftAssignment;
 import employee.domain.ShiftType;

@@ -32,6 +32,13 @@ public class WeeklyAvailabilityRequest {
         this.submissionDeadline = Objects.requireNonNull(submissionDeadline, "submissionDeadline must not be null");
     }
 
+    public WeeklyAvailabilityRequest(List<Constraint> constraints, List<Preference> preferences, LocalDate submissionDeadline, LocalDate weekStartDate) {
+        this.constraints = new ArrayList<>(constraints != null ? constraints : Collections.emptyList());
+        this.preferences = new ArrayList<>(preferences != null ? preferences : Collections.emptyList());
+        this.submissionDeadline = Objects.requireNonNull(submissionDeadline, "submissionDeadline must not be null");
+        this.weekStartDate = weekStartDate;
+    }
+
     public List<Constraint> getConstraints() {
         return Collections.unmodifiableList(constraints);
     }

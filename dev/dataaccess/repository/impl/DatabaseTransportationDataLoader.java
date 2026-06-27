@@ -2,9 +2,9 @@ package dataaccess.repository.impl;
 
 import dataaccess.DatabaseConnection;
 import dataaccess.DatabaseInitializer;
-import dataaccess.dao.DeliveryDAO;
-import dataaccess.dao.DriverDAO;
-import dataaccess.dao.SiteDAO;
+import dataaccess.dao.DeliveryDAOImpl;
+import dataaccess.dao.DriverDAOImpl;
+import dataaccess.dao.SiteDAOImpl;
 import dataaccess.dao.TruckDAO;
 import dataaccess.dto.DeliveryDto;
 import dataaccess.dto.DriverDto;
@@ -22,6 +22,8 @@ import transportation.domain.Truck;
 import transportation.domain.DeliveryManager;
 import transportation.domain.DeliveryStop;
 import transportation.domain.StopType;
+import dataaccess.mapper.SiteMapper;
+import dataaccess.repository.RepositoryException;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -37,14 +39,21 @@ import java.util.Map;
 import java.util.Set;
 
 public class DatabaseTransportationDataLoader {
-    private final TruckDAO truckDAO = new TruckDAO();
-    private final SiteDAO siteDAO = new SiteDAO();
-    private final DriverDAO driverDAO = new DriverDAO();
-    private final DeliveryDAO deliveryDAO = new DeliveryDAO();
+    private final Connection connection;
+    private final TruckDAO truckDAO;
+    private final SiteDAOImpl siteDAO;
+    private final DriverDAOImpl driverDAO;
+    private final DeliveryDAOImpl deliveryDAO;
 
-    public DatabaseTransportationDataLoader() {
+    public DatabaseTransportationDataLoader() throws SQLException {
         ensureSchema();
+        this.connection = DatabaseConnection.getConnection();
+        this.truckDAO = new TruckDAO(connection);
+        this.siteDAO = new SiteDAOImpl(connection);
+        this.driverDAO = new DriverDAOImpl(connection);
+        this.deliveryDAO = new DeliveryDAOImpl(connection);
     }
+
 
     public void loadInto(DeliveryManager deliveryManager) throws SQLException {
         Map<String, ShippingZone> zones = loadShippingZones(deliveryManager);
@@ -73,19 +82,12 @@ public class DatabaseTransportationDataLoader {
 
     private Map<String, Site> loadSites(DeliveryManager deliveryManager, Map<String, ShippingZone> zones) throws SQLException {
         Map<String, Site> sites = new HashMap<>();
-        for (SiteDto dto : siteDAO.listSites()) {
-            ShippingZone zone = dto.getShippingZone() == null ? null : zones.get(dto.getShippingZone().getZoneCode());
+        for (SiteDto siteDto : siteDAO.findAll()) {
+            ShippingZone zone = siteDto.getShippingZone() == null ? null : zones.get(siteDto.getShippingZone().getZoneCode());
             if (zone == null) {
                 zone = zones.values().stream().findFirst().orElse(new ShippingZone("UNKNOWN", "Unknown"));
             }
-            Site site = new Site(
-                    dto.getSiteName(),
-                    dto.getAddress(),
-                    dto.getPhoneNumber(),
-                    dto.getContactName(),
-                    zone,
-                    dto.getSiteType() == null ? SiteType.REGULAR : dto.getSiteType(),
-                    null);
+            Site site = SiteMapper.toDomain(siteDto);
             deliveryManager.addSite(site);
             sites.put(site.getSiteName(), site);
         }
@@ -109,13 +111,18 @@ public class DatabaseTransportationDataLoader {
 
     private Map<String, Driver> loadDrivers(DeliveryManager deliveryManager) throws SQLException {
         Map<String, Driver> drivers = new HashMap<>();
-        for (DriverDto dto : driverDAO.listDrivers()) {
-            Driver driver = new Driver(
-                    dto.getEmployeeId(),
-                    dto.getDriverName(),
-                    loadLicenseTypes(dto.getEmployeeId()));
-            deliveryManager.addDriver(driver);
-            drivers.put(driver.getEmployeeId(), driver);
+        try {
+    for (DriverDto dto : driverDAO.findAll()) {
+        Driver driver = new Driver(
+                dto.getEmployeeId(),
+                dto.getDriverName(),
+                loadLicenseTypes(dto.getEmployeeId())
+                );
+                deliveryManager.addDriver(driver);
+                drivers.put(driver.getEmployeeId(), driver);
+            }
+        } catch (RepositoryException e) {
+            throw new SQLException("Failed to load drivers", e);
         }
         return drivers;
     }
@@ -126,7 +133,8 @@ public class DatabaseTransportationDataLoader {
             Map<String, Truck> trucks,
             Map<String, Driver> drivers,
             Map<String, ShippingZone> zones) throws SQLException {
-        for (DeliveryDto dto : deliveryDAO.listDeliveries()) {
+                try {
+        for (DeliveryDto dto : deliveryDAO.findAll()) {
             Site source = sites.get(dto.getSource().getSiteName());
             Truck truck = trucks.get(dto.getTruck().getLicenseNumber());
             Driver driver = drivers.get(dto.getDriver().getEmployeeId());
@@ -151,6 +159,8 @@ public class DatabaseTransportationDataLoader {
                     dto.getStatus(),
                     new DeliveryForm());
             deliveryManager.addDelivery(delivery);
+        }} catch (RepositoryException e) {
+            throw new SQLException("Failed to load deliveries", e);
         }
     }
 

@@ -1,7 +1,9 @@
 package dataaccess.dto;
 
+
 import employee.domain.EmploymentType;
 import employee.domain.Role;
+
 
 import java.time.DayOfWeek;
 import java.util.Collections;
@@ -9,52 +11,55 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class EmployeeDto {
-    private final String employeeId;
-    private final String name;
-    private final BankAccountDto bankAccount;
-    private final SalaryDto salary;
-    private final EmploymentType employmentType;
-    private final EmploymentTermsDto employmentTerms;
-    private final Set<Role> roles;
-    private final boolean canManageShift;
-    private final boolean fired;
-    private final DayOfWeek fixedDayOff;
-    private final WeeklyAvailabilityRequestDto weeklyAvailabilityRequest;
-    private final BranchDto branch;
+        private final String id;
+        private final String password;
+        private final BankAccountDto bankAccount;
+        private final String name;
+        private final SalaryDto salary;
+        private final EmploymentType employmentType;
+        private final EmploymentTermsDto employmentTerms;
+        private final Set<Role> authorizedRoles;
+        private final boolean canManageShift;
+        private final boolean isFired;
+        private final DayOfWeek fixedDayOff;
+        private final WeeklyAvailabilityRequestDto weeklyAvailabilityRequest;
+        private final BranchDto branch;
 
     public EmployeeDto(
-            String employeeId,
-            String name,
-            BankAccountDto bankAccount,
-            SalaryDto salary,
-            EmploymentType employmentType,
-            EmploymentTermsDto employmentTerms,
-            Set<Role> roles,
-            boolean canManageShift,
-            boolean fired,
-            DayOfWeek fixedDayOff,
-            WeeklyAvailabilityRequestDto weeklyAvailabilityRequest,
-            BranchDto branch) {
-        this.employeeId = employeeId;
-        this.name = name;
+        String id,
+        String password,
+        BankAccountDto bankAccount,
+        String name,
+        SalaryDto salary,
+        EmploymentType employmentType,
+        EmploymentTermsDto employmentTerms,
+        Set<Role> authorizedRoles,
+        boolean canManageShift,
+        boolean isFired,
+        DayOfWeek fixedDayOff,
+        WeeklyAvailabilityRequestDto weeklyAvailabilityRequest,
+        BranchDto branch) {
+        this.id = id;
+        this.password = password;
         this.bankAccount = bankAccount;
+        this.name = name;
         this.salary = salary;
         this.employmentType = employmentType;
         this.employmentTerms = employmentTerms;
-        this.roles = roles == null ? new HashSet<>() : new HashSet<>(roles);
+        this.authorizedRoles = new HashSet<>(authorizedRoles);
         this.canManageShift = canManageShift;
-        this.fired = fired;
+        this.isFired = isFired;
         this.fixedDayOff = fixedDayOff;
         this.weeklyAvailabilityRequest = weeklyAvailabilityRequest;
         this.branch = branch;
     }
 
     public String getEmployeeId() {
-        return employeeId;
+        return id;
     }
 
-    public String getName() {
-        return name;
+    public String getPassword() {
+        return password;
     }
 
     public BankAccountDto getBankAccount() {
@@ -74,15 +79,15 @@ public class EmployeeDto {
     }
 
     public Set<Role> getRoles() {
-        return Collections.unmodifiableSet(roles);
+        return Collections.unmodifiableSet(authorizedRoles);
     }
 
-    public boolean isCanManageShift() {
+    public boolean canManageShift() {
         return canManageShift;
     }
 
     public boolean isFired() {
-        return fired;
+        return isFired ;
     }
 
     public DayOfWeek getFixedDayOff() {
@@ -96,4 +101,9 @@ public class EmployeeDto {
     public BranchDto getBranch() {
         return branch;
     }
+
+    public String getName() {
+        return name;
+    }
+
 }

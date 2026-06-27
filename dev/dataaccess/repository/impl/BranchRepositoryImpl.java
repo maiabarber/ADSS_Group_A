@@ -24,9 +24,8 @@ public class BranchRepositoryImpl implements BranchRepository {
     @Override
     public BranchDto save(BranchDto branchDto) throws RepositoryException {
         try {
-            Branch domain = BranchMapper.toDomain(branchDto);
-            dao.createOrUpdate(domain);
-            identityMap.put(domain.getBranchId(), domain);
+            dao.createOrUpdate(branchDto);
+            identityMap.put(branchDto.getBranchId(), BranchMapper.toDomain(branchDto));
             return branchDto;
         } catch (Exception e) {
             throw new RepositoryException("Error saving branch", e);
@@ -39,11 +38,13 @@ public class BranchRepositoryImpl implements BranchRepository {
             return Optional.of(BranchMapper.toDto(identityMap.get(id)));
         }
         try {
-            Branch branch = dao.findbyId(id);
-            if (branch == null) {
+            BranchDto branchDto = dao.findbyId(id);
+            if (branchDto != null) {
+                identityMap.put(id, BranchMapper.toDomain(branchDto));
+                return Optional.of(branchDto);
+            } else {
                 return Optional.empty();
             }
-            return Optional.of(BranchMapper.toDto(branch));
         } catch (Exception e) {
             throw new RepositoryException("Error finding branch by ID", e);
         }
@@ -52,10 +53,9 @@ public class BranchRepositoryImpl implements BranchRepository {
     @Override
     public List<BranchDto> findAll() throws RepositoryException {
         try {
-            List<Branch> branches = dao.findAll();
-            List<BranchDto> branchDtos = new ArrayList<>();
-            for (Branch branch : branches) {
-                branchDtos.add(BranchMapper.toDto(branch));
+            List<BranchDto> branchDtos = dao.findAll();
+            for (BranchDto branchDto : branchDtos) {
+                identityMap.put(branchDto.getBranchId(), BranchMapper.toDomain(branchDto));
             }
             return branchDtos;
         } catch (Exception e) {

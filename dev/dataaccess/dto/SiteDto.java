@@ -3,26 +3,36 @@ package dataaccess.dto;
 import transportation.domain.SiteType;
 
 public class SiteDto {
-    private final String siteName;
-    private final String address;
-    private final String contactName;
-    private final String phoneNumber;
-    private final ShippingZoneDto shippingZone;
-    private final SiteType siteType;
+    private Integer siteId;
+    private String siteName;
+    private String address;
+    private String phoneNumber;
+    private String contactName;
+    private ShippingZoneDto shippingZone;
+    private SiteType siteType;
+    private BranchDto branch;
 
     public SiteDto(
+        Integer siteId,
             String siteName,
             String address,
             String contactName,
             String phoneNumber,
             ShippingZoneDto shippingZone,
-            SiteType siteType) {
+            SiteType siteType,
+            BranchDto branch) {
+        this.siteId = siteId;
         this.siteName = siteName;
         this.address = address;
         this.contactName = contactName;
         this.phoneNumber = phoneNumber;
         this.shippingZone = shippingZone;
         this.siteType = siteType;
+        this.branch = branch;
+    }
+
+    public Integer getId() {
+        return siteId;
     }
 
     public String getSiteName() {
@@ -47,5 +57,9 @@ public class SiteDto {
 
     public SiteType getSiteType() {
         return siteType;
+    }
+
+    public BranchDto getBranch() {
+        return branch;
     }
 }

@@ -9,12 +9,12 @@ import employee.domain.Shift;
 import employee.domain.ShiftAssignment;
 import employee.domain.ShiftType;
 import employee.domain.WeeklyAvailabilityRequest;
-import dataaccess.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import dataaccess.repository.EmployeeRepository;
 import dataaccess.repository.RepositoryException;
 import dataaccess.repository.ShiftRepository;
 

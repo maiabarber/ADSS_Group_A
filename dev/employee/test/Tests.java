@@ -1435,7 +1435,7 @@ public class Tests {
 		);
 		Branch branch = new Branch("B-002", "Secondary Branch", "Uptown", branchSite);
 
-		assertEquals(branchSite, branch.getDeliveryStop(), "Branch should have delivery stop");
+		assertEquals(branchSite, branch.getSite(), "Branch should have delivery stop");
 		assertEquals(SiteType.BRANCH, branchSite.getSiteType(), "Delivery stop should be BRANCH type");
 	}
 

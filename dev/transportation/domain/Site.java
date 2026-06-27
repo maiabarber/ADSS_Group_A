@@ -154,4 +154,6 @@ public class Site {
                 ", branch=" + (branch != null ? branch.getBranchName() : "null") +
                 '}';
     }
+
+    
 }

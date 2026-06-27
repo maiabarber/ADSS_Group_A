@@ -35,15 +35,19 @@ public class DatabaseInitializer {
                 CREATE TABLE IF NOT EXISTS branches (
                     branch_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     branch_name TEXT NOT NULL UNIQUE,
-                    address TEXT
+                    address TEXT,
+                    delivery_stop_site_id INTEGER,
+                    FOREIGN KEY (delivery_stop_site_id) REFERENCES sites(site_id)
                 )
                 """);
-
+                
         statement.execute("""
                 CREATE TABLE IF NOT EXISTS employees (
                     employee_id TEXT PRIMARY KEY,
                     name TEXT NOT NULL,
-                    bank_account TEXT,
+                    bank_number TEXT,
+                    bank_branch_number TEXT,
+                    bank_account_number TEXT,
                     employment_type TEXT,
                     employment_scope TEXT,
                     hourly_salary REAL,
@@ -124,17 +128,19 @@ public class DatabaseInitializer {
                 """);
 
         statement.execute("""
-                CREATE TABLE IF NOT EXISTS sites (
-                    site_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    site_name TEXT NOT NULL UNIQUE,
-                    address TEXT NOT NULL,
-                    contact_name TEXT NOT NULL,
-                    phone_number TEXT NOT NULL,
-                    zone_code TEXT NOT NULL,
-                    site_type TEXT,
-                    FOREIGN KEY (zone_code) REFERENCES shipping_zones(zone_code)
-                )
-                """);
+        CREATE TABLE IF NOT EXISTS sites (
+            site_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            site_name TEXT NOT NULL UNIQUE,
+            address TEXT NOT NULL,
+            contact_name TEXT NOT NULL,
+            phone_number TEXT NOT NULL,
+            zone_code TEXT NOT NULL,
+            site_type TEXT,
+            branch_id INTEGER,
+            FOREIGN KEY (zone_code) REFERENCES shipping_zones(zone_code),
+            FOREIGN KEY (branch_id) REFERENCES branches(branch_id)
+        )
+        """);
 
         statement.execute("""
                 CREATE TABLE IF NOT EXISTS trucks (

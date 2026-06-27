@@ -15,6 +15,12 @@ import java.util.Optional;
 import java.util.List;
 
 public class TruckDAO {
+	
+	private final Connection connection;
+
+	public TruckDAO(Connection connection) {
+		this.connection = connection;
+	}
 	public List<TruckDto> listTrucks() throws SQLException {
 		String sql = """
 				SELECT license_number, model, net_weight, max_allowed_weight, required_license_type
@@ -24,8 +30,7 @@ public class TruckDAO {
 
 		List<TruckDto> trucks = new ArrayList<>();
 
-		try (Connection connection = DatabaseConnection.getConnection();
-			 Statement statement = connection.createStatement();
+		try (Statement statement = connection.createStatement();
 			 ResultSet resultSet = statement.executeQuery(sql)) {
 
 			while (resultSet.next()) {
@@ -49,8 +54,7 @@ public class TruckDAO {
 				WHERE license_number = ?
 				""";
 
-		try (Connection connection = DatabaseConnection.getConnection();
-			 PreparedStatement statement = connection.prepareStatement(sql)) {
+		try (PreparedStatement statement = connection.prepareStatement(sql)) {
 			statement.setString(1, licenseNumber);
 
 			try (ResultSet resultSet = statement.executeQuery()) {
@@ -85,8 +89,7 @@ public class TruckDAO {
 				VALUES (?, ?, ?, ?, ?)
 				""";
 
-		try (Connection connection = DatabaseConnection.getConnection();
-			 PreparedStatement statement = connection.prepareStatement(sql)) {
+		try (PreparedStatement statement = connection.prepareStatement(sql)) {
 			statement.setString(1, licenseNumber);
 			statement.setString(2, model);
 			statement.setDouble(3, netWeight);
@@ -99,8 +102,7 @@ public class TruckDAO {
 	public void deleteTruckByLicenseNumber(String licenseNumber) throws SQLException {
 		String sql = "DELETE FROM trucks WHERE license_number = ?";
 
-		try (Connection connection = DatabaseConnection.getConnection();
-			 PreparedStatement statement = connection.prepareStatement(sql)) {
+		try (PreparedStatement statement = connection.prepareStatement(sql)) {
 			statement.setString(1, licenseNumber);
 			statement.executeUpdate();
 		}

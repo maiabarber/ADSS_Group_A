@@ -1,22 +1,23 @@
 package dataaccess.dto;
 
+
 public final class BankAccountDto {
-    private final String bankCode;
-    private final String branchCode;
+    private final String bankNumber;
+    private final String branchNumber;
     private final String accountNumber;
 
-    public BankAccountDto(String bankCode, String branchCode, String accountNumber) {
-        this.bankCode = bankCode;
-        this.branchCode = branchCode;
+    public BankAccountDto(String bankNumber, String branchNumber, String accountNumber) {
+        this.bankNumber = bankNumber;
+        this.branchNumber = branchNumber;
         this.accountNumber = accountNumber;
     }
 
-    public String getBankCode() {
-        return bankCode;
+    public String getBankNumber() {
+        return bankNumber;
     }
 
-    public String getBranchCode() {
-        return branchCode;
+    public String getBranchNumber() {
+        return branchNumber;
     }
 
     public String getAccountNumber() {
