@@ -14,19 +14,27 @@ import employee.domain.Branch;
 import employee.domain.BranchManager;
 import employee.domain.User;
 import employee.domain.WeeklyAvailabilityRequest;
+import dataaccess.DatabaseConnection;
+import dataaccess.dao.EmployeeDAOImpl;
+import dataaccess.dao.ShiftDaoImpl;
+import dataaccess.dto.EmployeeDto;
+import dataaccess.dto.ShiftDto;
+import dataaccess.mapper.EmployeeMapper;
 import dataaccess.repository.EmployeeRepository;
 import dataaccess.repository.RepositoryException;
 import dataaccess.repository.ShiftRepository;
 import dataaccess.repository.SubmissionDeadlineRepository;
 import dataaccess.repository.impl.EmployeeRepositoryImpl;
-import dataaccess.repository.impl.DatabaseShiftRepository;
+import dataaccess.repository.impl.ShiftRepositoryImpl;
 import dataaccess.repository.impl.DatabaseSubmissionDeadlineRepository;
-import dataaccess.repository.impl.DatabaseUserRepository;
+import dataaccess.repository.impl.UserRepositoryImpl;
 import employee.service.AuthenticationService;
 import employee.service.SubmissionDeadlineService;
 import employee.service.WeeklyAvailabilityService;
 import employee.service.EmployeeTransportationService;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.Year;
@@ -39,6 +47,7 @@ import java.util.Scanner;
 import transportation.domain.Site;
 import transportation.domain.SiteType;
 import transportation.domain.ShippingZone;
+import dataaccess.mapper.ShiftMapper;
 
 /**
  * ConsolePresentation class provides a console-based user interface for the
@@ -66,15 +75,18 @@ public class ConsolePresentation {
     private Branch activeBranch;
     private int lastVacationResetYear = -1;
 
-    public ConsolePresentation() {
-        this.authenticationService = new AuthenticationService(new DatabaseUserRepository());
-        this.employeeRepository = new EmployeeRepositoryImpl();
+
+    public ConsolePresentation() throws SQLException {
+        this.authenticationService = new AuthenticationService(new UserRepositoryImpl(new dataaccess.dao.UserDAOImpl(DatabaseConnection.getConnection())));
+        Connection connection = DatabaseConnection.getConnection();
+        EmployeeDAOImpl employeeDAO = new EmployeeDAOImpl(connection);
+        this.employeeRepository = new EmployeeRepositoryImpl(employeeDAO);
         this.loginPresentation = new LoginPresentation();
         this.employeePresentation = new EmployeePresentation();
         this.shiftPresentation = new ShiftPresentation();
         this.userController = new UserController(authenticationService, employeeRepository);
         this.shiftController = new ShiftController();
-        this.shiftRepository = new DatabaseShiftRepository();
+        this.shiftRepository = new ShiftRepositoryImpl(new ShiftDaoImpl(connection));
         this.submissionDeadlineRepository = new DatabaseSubmissionDeadlineRepository();
         this.submissionDeadlineService = new SubmissionDeadlineService();
         this.weeklyAvailabilityService = new WeeklyAvailabilityService(submissionDeadlineRepository,
@@ -334,11 +346,12 @@ public class ConsolePresentation {
         }
 
         try {
-            List<Employee> allEmployees = employeeRepository.findAll();
-            for (Employee employee : allEmployees) {
+            List<EmployeeDto> allEmployees = employeeRepository.findAll();
+            for (EmployeeDto employeeDto : allEmployees) {
+                Employee employee = EmployeeMapper.toDomain(employeeDto);
                 if (employee.getEmploymentTerms() != null) {
                     employee.resetVacationDays(DEFAULT_ANNUAL_VACATION_DAYS);
-                    employeeRepository.save(employee);
+                    employeeRepository.save(EmployeeMapper.toDto(employee));
                 }
             }
             lastVacationResetYear = currentYear;
@@ -361,7 +374,7 @@ public class ConsolePresentation {
         employee.setFixedDayOff(fixedDayOff);
 
         try {
-            employeeRepository.save(employee);
+            employeeRepository.save(EmployeeMapper.toDto(employee));
             System.out.println("Your fixed day off was set to " + fixedDayOff + ".");
         } catch (RepositoryException e) {
             System.out.println("Failed to save fixed day off: " + e.getMessage());
@@ -398,7 +411,7 @@ public class ConsolePresentation {
         System.out.print("Enter employee ID: ");
         String employeeId = scanner.nextLine();
 
-        Optional<Employee> employeeOptional;
+        Optional<EmployeeDto> employeeOptional;
         try {
             employeeOptional = employeeRepository.findById(employeeId);
         } catch (RepositoryException e) {
@@ -411,7 +424,8 @@ public class ConsolePresentation {
             return;
         }
 
-        Employee employee = employeeOptional.get();
+        EmployeeDto employeeDto = employeeOptional.get();
+        Employee employee = EmployeeMapper.toDomain(employeeDto);
 
         String newName = employee.getName();
         Double newGlobalSalary = employee.getSalary().getGlobalSalary();
@@ -784,8 +798,9 @@ public class ConsolePresentation {
                     shiftPresentation.getRequiredStoreKeeperInput(),
                     activeBranch);
             shift.assignShiftManager(currentUser.get(), manager);
-            shiftController.addShift(shift);
-            shiftRepository.save(shift);
+            ShiftDto shiftDto = ShiftMapper.toDto(shift);
+            shiftController.addShift(shiftDto);
+            shiftRepository.save(shiftDto);
 
             System.out.println("Shift created successfully: " + shift.getDate() + " - " + shift.getShiftType());
         } catch (RepositoryException e) {
@@ -873,11 +888,12 @@ public class ConsolePresentation {
                 return;
             }
 
-            shiftController.assignEmployeeToShift(currentUser.get(), selectedEmployee, selectedShift, selectedRole);
-            shiftRepository.save(selectedShift);
+            ShiftDto shiftDto = ShiftMapper.toDto(selectedShift);
+            shiftController.assignEmployeeToShift(currentUser.get(), selectedEmployee, shiftDto, selectedRole);
+            shiftRepository.save(shiftDto);
 
             System.out.println("Employee " + selectedEmployee.getName() + " has been assigned to shift " +
-                    selectedShift.getDate() + " - " + selectedShift.getShiftType() + " as " + selectedRole);
+                    shiftDto.getDate() + " - " + shiftDto.getShiftType() + " as " + selectedRole);
 
         } catch (RepositoryException e) {
             System.out.println("Failed to save shift assignment: " + e.getMessage());
@@ -923,7 +939,8 @@ public class ConsolePresentation {
             boolean approved = "yes".equals(response);
 
             shiftController.respondToAssignment(employee, selected, approved);
-            shiftRepository.save(selected.getShift());
+            ShiftDto shiftDto = ShiftMapper.toDto(selected.getShift());
+            shiftRepository.save(shiftDto);
 
             if (approved) {
                 System.out.println("Assignment approved. You are confirmed for this shift.");

@@ -105,6 +105,26 @@ public class DatabaseInitializer {
                     submission_deadline TEXT NOT NULL
                 )
                 """);
+        
+        statement.execute("""
+                CREATE TABLE IF NOT EXISTS weekly_availability_constraints (
+                    request_id INTEGER NOT NULL,
+                    day_of_week TEXT NOT NULL,
+                    shift_type TEXT NOT NULL,
+                    PRIMARY KEY (request_id, day_of_week, shift_type),
+                    FOREIGN KEY (request_id) REFERENCES weeklyavailabilityrequests(request_id)
+                )
+                """);
+
+        statement.execute("""
+                CREATE TABLE IF NOT EXISTS weekly_availability_preferences (
+                    request_id INTEGER NOT NULL,
+                    day_of_week TEXT NOT NULL,
+                    shift_type TEXT NOT NULL,
+                    PRIMARY KEY (request_id, day_of_week, shift_type),
+                    FOREIGN KEY (request_id) REFERENCES weeklyavailabilityrequests(request_id)
+                )
+                """);
 
         statement.execute("""
                 CREATE TABLE IF NOT EXISTS driverassignmentrequests (

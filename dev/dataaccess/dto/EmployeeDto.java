@@ -53,6 +53,9 @@ public class EmployeeDto {
         this.weeklyAvailabilityRequest = weeklyAvailabilityRequest;
         this.branch = branch;
     }
+    public String getId() {
+        return id;
+    }
 
     public String getEmployeeId() {
         return id;

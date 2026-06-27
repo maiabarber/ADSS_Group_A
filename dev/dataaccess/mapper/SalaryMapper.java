@@ -3,6 +3,7 @@ package dataaccess.mapper;
 import java.sql.ResultSet;
 
 import dataaccess.dto.SalaryDto;
+import employee.domain.EmploymentScope;
 import employee.domain.Salary;
 
 public class SalaryMapper {
@@ -33,10 +34,8 @@ public class SalaryMapper {
         );
     }
 
-    public static Salary mapResultSetToSalary(ResultSet rs) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'mapResultSetToSalary'");
-    }
+    
+
 
 }
 
