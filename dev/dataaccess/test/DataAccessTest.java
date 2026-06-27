@@ -3,7 +3,7 @@ package dataaccess.test;
 import dataaccess.DatabaseConnection;
 import dataaccess.DatabaseInitializer;
 import dataaccess.DatabaseSeeder;
-import dataaccess.dao.BranchDAO;
+import dataaccess.dao.BranchDAOImpl;
 import dataaccess.dao.DeliveryDAO;
 import dataaccess.dao.DriverAssignmentRequestDao;
 import dataaccess.dao.DriverDAO;
@@ -162,7 +162,7 @@ public class DataAccessTest {
 
     @Test
     public void branchDao_findInsertDeleteAndDuplicateIgnore_workAsExpected() throws Exception {
-        BranchDAO branchDAO = new BranchDAO();
+        BranchDAOImpl branchDAO = new BranchDAOImpl();
 
         assertFalse(branchDAO.findBranchById(999).isPresent());
 

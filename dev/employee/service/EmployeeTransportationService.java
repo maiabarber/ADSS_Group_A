@@ -9,14 +9,14 @@ import employee.domain.Shift;
 import employee.domain.ShiftAssignment;
 import employee.domain.ShiftType;
 import employee.domain.WeeklyAvailabilityRequest;
-import employee.repository.EmployeeRepository;
-import employee.repository.RepositoryException;
-import employee.repository.ShiftRepository;
-
+import dataaccess.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import dataaccess.repository.RepositoryException;
+import dataaccess.repository.ShiftRepository;
 
 public class EmployeeTransportationService {
 

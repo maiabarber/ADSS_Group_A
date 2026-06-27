@@ -1,10 +1,11 @@
 package employee.service;
 
 import employee.domain.SubmissionDeadlinePolicy;
-import employee.repository.RepositoryException;
-import employee.repository.SubmissionDeadlineRepository;
 
 import java.time.LocalDate;
+
+import dataaccess.repository.RepositoryException;
+import dataaccess.repository.SubmissionDeadlineRepository;
 
 /**
  * SubmissionDeadlineService contains business rules for weekly submission deadlines.

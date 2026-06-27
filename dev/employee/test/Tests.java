@@ -27,9 +27,9 @@ import employee.domain.WeeklyAvailabilityRules;
 import employee.presentation.ConsolePresentation;
 import employee.presentation.ShiftController;
 import employee.presentation.UserController;
-import employee.repository.EmployeeRepository;
-import employee.repository.RepositoryException;
-import dataaccess.repository.impl.DatabaseEmployeeRepository;
+import dataaccess.repository.EmployeeRepository;
+import dataaccess.repository.RepositoryException;
+import dataaccess.repository.impl.EmployeeRepositoryImpl;
 import employee.domain.SubmissionDeadlinePolicy;
 import dataaccess.repository.impl.DatabaseSubmissionDeadlineRepository;
 import dataaccess.repository.impl.DatabaseUserRepository;
@@ -186,7 +186,7 @@ public class Tests {
 	@Test
 	public void hard_weeklyAvailability_vacationDayConstraintConsumesBalance() {
 		DatabaseSubmissionDeadlineRepository deadlineRepository = new DatabaseSubmissionDeadlineRepository();
-		DatabaseEmployeeRepository employeeRepository = new DatabaseEmployeeRepository();
+		EmployeeRepositoryImpl employeeRepository = new EmployeeRepositoryImpl();
 		WeeklyAvailabilityService service = new WeeklyAvailabilityService(deadlineRepository, employeeRepository);
 		Employee employee = buildEmployee("100000173", false, 10);
 
@@ -240,7 +240,7 @@ public class Tests {
 	@Test
 	public void hard_weeklyAvailability_submitRejectedWithoutDeadline_keepsVacationBalance() {
 		DatabaseSubmissionDeadlineRepository deadlineRepository = new DatabaseSubmissionDeadlineRepository();
-		DatabaseEmployeeRepository employeeRepository = new DatabaseEmployeeRepository();
+		EmployeeRepositoryImpl employeeRepository = new EmployeeRepositoryImpl();
 		WeeklyAvailabilityService service = new WeeklyAvailabilityService(deadlineRepository, employeeRepository);
 		Employee employee = buildEmployee("100000178", false, 10);
 
@@ -319,7 +319,7 @@ public class Tests {
 	@Test
 	public void hard_addEmployee_setsDefaultVacationDaysToTenAtHiring() {
 		AuthenticationService authenticationService = new AuthenticationService(new DatabaseUserRepository());
-		DatabaseEmployeeRepository employeeRepository = new DatabaseEmployeeRepository();
+		EmployeeRepositoryImpl employeeRepository = new EmployeeRepositoryImpl();
 		UserController controller = new UserController(authenticationService, employeeRepository);
 		HR_Manager hr = new HR_Manager("100000174", "pass");
 		Employee newHire = buildEmployee("100000175", false, 2);
@@ -760,7 +760,7 @@ public class Tests {
 
 	@Test
 	public void easy_firedEmployee_recordStillRetrievable() {
-		DatabaseEmployeeRepository repository = new DatabaseEmployeeRepository();
+		EmployeeRepositoryImpl repository = new EmployeeRepositoryImpl();
 		Employee employee = buildEmployee("100000147", false, 10);
 
 		try {
@@ -779,7 +779,7 @@ public class Tests {
 
 	@Test
 	public void easy_employeeRepositorySaveFindDelete_cycle() {
-		DatabaseEmployeeRepository repository = new DatabaseEmployeeRepository();
+		EmployeeRepositoryImpl repository = new EmployeeRepositoryImpl();
 		Employee employee = buildEmployee("100000061", false, 10);
 
 		try {
@@ -794,7 +794,7 @@ public class Tests {
 
 	@Test
 	public void easy_addEmployee_persistsInRepository() {
-		DatabaseEmployeeRepository repository = new DatabaseEmployeeRepository();
+		EmployeeRepositoryImpl repository = new EmployeeRepositoryImpl();
 		Employee employee = buildEmployee("100000062", false, 10);
 
 		try {
@@ -810,7 +810,7 @@ public class Tests {
 	@Test
 	public void hard_userController_nonHrUser_cannotAddUpdateOrFireEmployee() {
 		AuthenticationService authenticationService = new AuthenticationService(new DatabaseUserRepository());
-		DatabaseEmployeeRepository employeeRepository = new DatabaseEmployeeRepository();
+		EmployeeRepositoryImpl employeeRepository = new EmployeeRepositoryImpl();
 		UserController controller = new UserController(authenticationService, employeeRepository);
 		User nonHr = new User("100000181", "pass");
 		Employee employee = buildEmployee("100000182", false, 10);

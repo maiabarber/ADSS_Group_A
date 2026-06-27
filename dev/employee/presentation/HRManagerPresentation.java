@@ -4,10 +4,12 @@ import employee.domain.Branch;
 import employee.domain.Employee;
 import employee.domain.BranchManager;
 import employee.service.HRManagerBranchService;
-import employee.repository.EmployeeRepository;
-import employee.repository.ShiftRepository;
+import dataaccess.repository.EmployeeRepository;
+
 import java.util.List;
 import java.util.Scanner;
+
+import dataaccess.repository.ShiftRepository;
 
 /**
  * HRManagerPresentation handles HR Manager operations for managing their branch.

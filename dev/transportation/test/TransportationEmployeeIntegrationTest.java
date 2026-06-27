@@ -2,8 +2,8 @@ package transportation.test;
 
 import dataaccess.DatabaseInitializer;
 import employee.domain.*;
-import employee.repository.RepositoryException;
-import dataaccess.repository.impl.DatabaseEmployeeRepository;
+import dataaccess.repository.RepositoryException;
+import dataaccess.repository.impl.EmployeeRepositoryImpl;
 import dataaccess.repository.impl.DatabaseShiftRepository;
 import employee.service.EmployeeTransportationService;
 import org.junit.jupiter.api.AfterEach;
@@ -40,7 +40,7 @@ public class TransportationEmployeeIntegrationTest {
     private static final String DRIVER_ID = "100000001";
 
     private DatabaseShiftRepository shiftRepository;
-    private DatabaseEmployeeRepository employeeRepository;
+    private EmployeeRepositoryImpl employeeRepository;
     private EmployeeTransportationService employeeTransportationService;
     private DeliveriesApplication app;
 
@@ -52,7 +52,7 @@ public class TransportationEmployeeIntegrationTest {
         DatabaseInitializer.initializeDatabase();
 
         shiftRepository = new DatabaseShiftRepository();
-        employeeRepository = new DatabaseEmployeeRepository();
+        employeeRepository = new EmployeeRepositoryImpl();
         employeeTransportationService = new EmployeeTransportationService(shiftRepository, employeeRepository);
         app = new DeliveriesApplication(employeeTransportationService);
 

@@ -12,7 +12,6 @@ public class DatabaseConnection {
     private static final String DB_PATH_PROPERTY = "adss.db.path";
 
     private DatabaseConnection() {
-        // Utility class, no objects needed.
     }
 
     public static Connection getConnection() throws SQLException {

@@ -2,14 +2,14 @@ package dataaccess.repository.impl;
 
 import dataaccess.DatabaseConnection;
 import dataaccess.DatabaseInitializer;
+import dataaccess.repository.RepositoryException;
+import dataaccess.repository.ShiftRepository;
 import employee.domain.Branch;
 import employee.domain.Employee;
 import employee.domain.Role;
 import employee.domain.Shift;
 import employee.domain.ShiftAssignment;
 import employee.domain.ShiftType;
-import employee.repository.RepositoryException;
-import employee.repository.ShiftRepository;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Optional;
 
 public class DatabaseShiftRepository implements ShiftRepository {
-    private final DatabaseEmployeeRepository employeeRepository = new DatabaseEmployeeRepository();
+    private final EmployeeRepositoryImpl employeeRepository = new EmployeeRepositoryImpl();
 
     public DatabaseShiftRepository() {
         ensureSchema();

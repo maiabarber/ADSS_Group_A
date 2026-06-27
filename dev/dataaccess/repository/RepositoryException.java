@@ -1,4 +1,4 @@
-package employee.repository;
+package dataaccess.repository;
 
 public class RepositoryException extends Exception {
     public RepositoryException(String message) {

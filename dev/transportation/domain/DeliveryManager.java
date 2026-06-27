@@ -9,7 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 
 import employee.service.EmployeeTransportationService;
-import dataaccess.repository.impl.DatabaseEmployeeRepository;
+import dataaccess.repository.impl.EmployeeRepositoryImpl;
 import dataaccess.repository.impl.DatabaseShiftRepository;
 
 public class DeliveryManager {
@@ -26,7 +26,7 @@ public class DeliveryManager {
     public DeliveryManager() {
         this(new EmployeeTransportationService(
                 new DatabaseShiftRepository(),
-                new DatabaseEmployeeRepository()));
+                new EmployeeRepositoryImpl()));
     }
     public DeliveryManager(EmployeeTransportationService employeeTransportationService) {
         if (employeeTransportationService == null) {

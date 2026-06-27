@@ -1,11 +1,11 @@
 package dataaccess.repository.impl;
 
 import dataaccess.DatabaseInitializer;
+import dataaccess.repository.RepositoryException;
+import dataaccess.repository.UserRepository;
 import dataaccess.DatabaseConnection;
 import employee.domain.Employee;
 import employee.domain.User;
-import employee.repository.RepositoryException;
-import employee.repository.UserRepository;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Optional;
 
 public class DatabaseUserRepository implements UserRepository {
-    private final DatabaseEmployeeRepository employeeRepository = new DatabaseEmployeeRepository();
+    private final EmployeeRepositoryImpl employeeRepository = new EmployeeRepositoryImpl();
 
     public DatabaseUserRepository() {
         ensureSchema();

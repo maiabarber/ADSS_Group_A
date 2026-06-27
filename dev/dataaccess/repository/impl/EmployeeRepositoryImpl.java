@@ -2,11 +2,11 @@ package dataaccess.repository.impl;
 
 import dataaccess.DatabaseConnection;
 import dataaccess.DatabaseInitializer;
+import dataaccess.repository.RepositoryException;
 import employee.domain.Branch;
 import employee.domain.Employee;
 import employee.domain.Role;
-import employee.repository.EmployeeRepository;
-import employee.repository.RepositoryException;
+import dataaccess.repository.EmployeeRepository;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -21,10 +21,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class DatabaseEmployeeRepository implements EmployeeRepository {
+public class EmployeeRepositoryImpl implements EmployeeRepository {
     private static final Map<String, Employee> IDENTITY_CACHE = new ConcurrentHashMap<>();
 
-    public DatabaseEmployeeRepository() {
+    public EmployeeRepositoryImpl() {
         ensureSchema();
     }
 

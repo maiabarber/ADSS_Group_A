@@ -2,10 +2,11 @@ package employee.service;
 
 import employee.domain.Employee;
 import employee.domain.User;
-import employee.repository.RepositoryException;
-import employee.repository.UserRepository;
 
 import java.util.Optional;
+
+import dataaccess.repository.RepositoryException;
+import dataaccess.repository.UserRepository;
 
 /**
  * AuthenticationService class provides methods for user registration, login, logout, and retrieving the current user.

@@ -1,7 +1,15 @@
 package dataaccess.repository;
 
-import dataaccess.dto.EmployeeDto;
-import employee.repository.Repository;
+import employee.domain.Employee;
+import java.util.List;
+import java.util.Collections;
 
-public interface EmployeeRepository extends Repository<EmployeeDto, String> {
+public interface EmployeeRepository extends Repository<Employee, String> {
+    default List<Employee> getAllEmployees() {
+        try {
+            return findAll();
+        } catch (RepositoryException e) {
+            return Collections.emptyList();
+        }
+    }
 }

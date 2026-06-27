@@ -18,11 +18,11 @@ import employee.domain.Branch;
 import employee.domain.BranchManager;
 import employee.domain.User;
 import employee.domain.WeeklyAvailabilityRequest;
-import employee.repository.EmployeeRepository;
-import employee.repository.RepositoryException;
-import employee.repository.ShiftRepository;
-import employee.repository.SubmissionDeadlineRepository;
-import dataaccess.repository.impl.DatabaseEmployeeRepository;
+import dataaccess.repository.EmployeeRepository;
+import dataaccess.repository.RepositoryException;
+import dataaccess.repository.ShiftRepository;
+import dataaccess.repository.SubmissionDeadlineRepository;
+import dataaccess.repository.impl.EmployeeRepositoryImpl;
 import dataaccess.repository.impl.DatabaseShiftRepository;
 import dataaccess.repository.impl.DatabaseSubmissionDeadlineRepository;
 import dataaccess.repository.impl.DatabaseUserRepository;
@@ -72,7 +72,7 @@ public class ConsolePresentation {
 
     public ConsolePresentation() {
         this.authenticationService = new AuthenticationService(new DatabaseUserRepository());
-        this.employeeRepository = new DatabaseEmployeeRepository();
+        this.employeeRepository = new EmployeeRepositoryImpl();
         this.loginPresentation = new LoginPresentation();
         this.employeePresentation = new EmployeePresentation();
         this.shiftPresentation = new ShiftPresentation();

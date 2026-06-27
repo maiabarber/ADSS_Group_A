@@ -2,8 +2,8 @@ package dataaccess.repository.impl;
 
 import dataaccess.DatabaseInitializer;
 import dataaccess.dao.SubmissionDeadlineDAO;
-import employee.repository.RepositoryException;
-import employee.repository.SubmissionDeadlineRepository;
+import dataaccess.repository.RepositoryException;
+import dataaccess.repository.SubmissionDeadlineRepository;
 
 import java.sql.SQLException;
 import java.time.LocalDate;
