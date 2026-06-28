@@ -28,4 +28,5 @@ public final class DeliveryItemDto {
     public int getQuantity() {
         return quantity;
     }
+
 }

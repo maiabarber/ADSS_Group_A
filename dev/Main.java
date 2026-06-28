@@ -24,7 +24,11 @@ public class Main {
         String choice = scanner.nextLine().trim();
         switch (choice) {
             case "1":
-                new ConsolePresentation().run();
+                try {
+                    new ConsolePresentation().run();
+                } catch (Exception e) {
+                    System.out.println("Employee UI failed: " + e.getMessage());
+                }
                 break;
             case "2":
                 new DeliveriesUI(new DeliveriesApplication()).start();

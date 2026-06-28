@@ -4,12 +4,9 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-// This class creates the database tables if they do not already exist.
 public class DatabaseInitializer {
 
-    private DatabaseInitializer() {
-        // Utility class, no objects needed.
-    }
+    private DatabaseInitializer() {}
 
     public static void initializeDatabase() throws SQLException {
         try (Connection connection = DatabaseConnection.getConnection();
@@ -19,6 +16,7 @@ public class DatabaseInitializer {
 
             createEmployeeTables(statement);
             createTransportationTables(statement);
+            createJoinTables(statement);
         }
     }
 
@@ -35,12 +33,10 @@ public class DatabaseInitializer {
                 CREATE TABLE IF NOT EXISTS branches (
                     branch_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     branch_name TEXT NOT NULL UNIQUE,
-                    address TEXT,
-                    delivery_stop_site_id INTEGER,
-                    FOREIGN KEY (delivery_stop_site_id) REFERENCES sites(site_id)
+                    address TEXT
                 )
                 """);
-                
+
         statement.execute("""
                 CREATE TABLE IF NOT EXISTS employees (
                     employee_id TEXT PRIMARY KEY,
@@ -87,25 +83,28 @@ public class DatabaseInitializer {
                     role_name TEXT NOT NULL,
                     status TEXT NOT NULL,
                     FOREIGN KEY (shift_id) REFERENCES shifts(shift_id),
-                    FOREIGN KEY (employee_id) REFERENCES employees(employee_id)
+                    FOREIGN KEY (employee_id) REFERENCES employees(employee_id),
+                    FOREIGN KEY (employee_id, role_name)
+                        REFERENCES employee_roles(employee_id, role_name)
                 )
                 """);
 
         statement.execute("""
-            CREATE TABLE IF NOT EXISTS submissiondeadlines (
-                deadline_date TEXT NOT NULL
-            )
-            """);
+                CREATE TABLE IF NOT EXISTS submissiondeadlines (
+                    deadline_date TEXT NOT NULL
+                )
+                """);
 
         statement.execute("""
                 CREATE TABLE IF NOT EXISTS weeklyavailabilityrequests (
                     request_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     employee_id TEXT NOT NULL,
                     week_start_date TEXT NOT NULL,
-                    submission_deadline TEXT NOT NULL
+                    submission_deadline TEXT NOT NULL,
+                    FOREIGN KEY (employee_id) REFERENCES employees(employee_id)
                 )
                 """);
-        
+
         statement.execute("""
                 CREATE TABLE IF NOT EXISTS weekly_availability_constraints (
                     request_id INTEGER NOT NULL,
@@ -148,19 +147,17 @@ public class DatabaseInitializer {
                 """);
 
         statement.execute("""
-        CREATE TABLE IF NOT EXISTS sites (
-            site_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            site_name TEXT NOT NULL UNIQUE,
-            address TEXT NOT NULL,
-            contact_name TEXT NOT NULL,
-            phone_number TEXT NOT NULL,
-            zone_code TEXT NOT NULL,
-            site_type TEXT,
-            branch_id INTEGER,
-            FOREIGN KEY (zone_code) REFERENCES shipping_zones(zone_code),
-            FOREIGN KEY (branch_id) REFERENCES branches(branch_id)
-        )
-        """);
+                CREATE TABLE IF NOT EXISTS sites (
+                    site_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    site_name TEXT NOT NULL UNIQUE,
+                    address TEXT NOT NULL,
+                    contact_name TEXT NOT NULL,
+                    phone_number TEXT NOT NULL,
+                    zone_code TEXT NOT NULL,
+                    site_type TEXT,
+                    FOREIGN KEY (zone_code) REFERENCES shipping_zones(zone_code)
+                )
+                """);
 
         statement.execute("""
                 CREATE TABLE IF NOT EXISTS trucks (
@@ -175,7 +172,8 @@ public class DatabaseInitializer {
         statement.execute("""
                 CREATE TABLE IF NOT EXISTS drivers (
                     employee_id TEXT PRIMARY KEY,
-                    driver_name TEXT NOT NULL
+                    driver_name TEXT NOT NULL,
+                    FOREIGN KEY (employee_id) REFERENCES employees(employee_id)
                 )
                 """);
 
@@ -244,6 +242,28 @@ public class DatabaseInitializer {
                     delivery_id INTEGER NOT NULL,
                     measured_weight REAL NOT NULL,
                     FOREIGN KEY (delivery_id) REFERENCES deliveries(delivery_id)
+                )
+                """);
+    }
+
+    private static void createJoinTables(Statement statement) throws SQLException {
+        statement.execute("""
+                CREATE TABLE IF NOT EXISTS branch_sites (
+                    branch_id INTEGER NOT NULL,
+                    site_id INTEGER NOT NULL,
+                    PRIMARY KEY (branch_id, site_id),
+                    FOREIGN KEY (branch_id) REFERENCES branches(branch_id),
+                    FOREIGN KEY (site_id) REFERENCES sites(site_id)
+                )
+                """);
+
+        statement.execute("""
+                CREATE TABLE IF NOT EXISTS branch_delivery_stop_sites (
+                    branch_id INTEGER NOT NULL,
+                    site_id INTEGER NOT NULL,
+                    PRIMARY KEY (branch_id, site_id),
+                    FOREIGN KEY (branch_id) REFERENCES branches(branch_id),
+                    FOREIGN KEY (site_id) REFERENCES sites(site_id)
                 )
                 """);
     }

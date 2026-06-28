@@ -4,7 +4,7 @@ import dataaccess.DatabaseInitializer;
 import employee.domain.*;
 import dataaccess.repository.RepositoryException;
 import dataaccess.repository.impl.EmployeeRepositoryImpl;
-import dataaccess.repository.impl.DatabaseShiftRepository;
+import dataaccess.repository.impl.ShiftRepositoryImpl;
 import employee.service.EmployeeTransportationService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,7 +39,7 @@ public class TransportationEmployeeIntegrationTest {
     // Employee IDs must be exactly 9 digits per User.validateId()
     private static final String DRIVER_ID = "100000001";
 
-    private DatabaseShiftRepository shiftRepository;
+    private ShiftRepositoryImpl shiftRepository;
     private EmployeeRepositoryImpl employeeRepository;
     private EmployeeTransportationService employeeTransportationService;
     private DeliveriesApplication app;
@@ -51,7 +51,7 @@ public class TransportationEmployeeIntegrationTest {
         Files.deleteIfExists(testDatabasePath);
         DatabaseInitializer.initializeDatabase();
 
-        shiftRepository = new DatabaseShiftRepository();
+        shiftRepository = new ShiftRepositoryImpl();
         employeeRepository = new EmployeeRepositoryImpl();
         employeeTransportationService = new EmployeeTransportationService(shiftRepository, employeeRepository);
         app = new DeliveriesApplication(employeeTransportationService);

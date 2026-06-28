@@ -1,41 +1,32 @@
 package dataaccess.dto;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+public final class WeeklyAvailabilityRequestDto {
+    private final int requestId;
+    private final String employeeId;
+    private final String weekStartDate;
+    private final String submissionDeadline;
 
-public class WeeklyAvailabilityRequestDto {
-    private final LocalDate weekStartDate;
-    private final LocalDate submissionDeadline;
-    private final List<ConstraintDto> constraints;
-    private final List<PreferenceDto> preferences;
-
-    public WeeklyAvailabilityRequestDto(
-            LocalDate weekStartDate,
-            LocalDate submissionDeadline,
-            List<ConstraintDto> constraints,
-            List<PreferenceDto> preferences) {
+    public WeeklyAvailabilityRequestDto(int requestId, String employeeId, String weekStartDate, String submissionDeadline) {
+        this.requestId = requestId;
+        this.employeeId = employeeId;
         this.weekStartDate = weekStartDate;
         this.submissionDeadline = submissionDeadline;
-        this.constraints = constraints == null ? new ArrayList<>() : new ArrayList<>(constraints);
-        this.preferences = preferences == null ? new ArrayList<>() : new ArrayList<>(preferences);
     }
 
-    public LocalDate getWeekStartDate() {
+    public int getRequestId() {
+        return requestId;
+    }
+
+    public String getEmployeeId() {
+        return employeeId;
+    }
+
+    public String getWeekStartDate() {
         return weekStartDate;
     }
 
-    public LocalDate getSubmissionDeadline() {
+    public String getSubmissionDeadline() {
         return submissionDeadline;
-    }
-
-    public List<ConstraintDto> getConstraints() {
-        return Collections.unmodifiableList(constraints);
-    }
-
-    public List<PreferenceDto> getPreferences() {
-        return Collections.unmodifiableList(preferences);
     }
 
 }

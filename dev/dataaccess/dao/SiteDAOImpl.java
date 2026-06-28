@@ -1,18 +1,13 @@
 package dataaccess.dao;
 
-import dataaccess.DatabaseConnection;
-import dataaccess.dto.BranchDto;
 import dataaccess.dto.SiteDto;
-import transportation.domain.SiteType;
-import dataaccess.dto.ShippingZoneDto;
-
+import dataaccess.repository.RepositoryException;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class SiteDAOImpl implements DaoInterface<SiteDto> {
-
     private final Connection connection;
 
     public SiteDAOImpl(Connection connection) {
@@ -20,201 +15,94 @@ public class SiteDAOImpl implements DaoInterface<SiteDto> {
     }
 
     @Override
-    public void createOrUpdate(SiteDto site) {
+    public void createOrUpdate(SiteDto dto) throws RepositoryException {
         String sql = """
-                INSERT OR REPLACE INTO sites (
-                    site_name,
-                    address,
-                    contact_name,
-                    phone_number,
-                    zone_code,
-                    site_type,
-                    branch_id
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO sites (site_id, site_name, address, contact_name, phone_number, zone_code, site_type) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(site_id) DO UPDATE SET site_name = excluded.site_name, address = excluded.address, contact_name = excluded.contact_name, phone_number = excluded.phone_number, zone_code = excluded.zone_code, site_type = excluded.site_type
                 """;
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-
-            stmt.setString(1, site.getSiteName());
-            stmt.setString(2, site.getAddress());
-            stmt.setString(3, site.getContactName());
-            stmt.setString(4, site.getPhoneNumber());
-            stmt.setString(5, site.getShippingZone().getZoneCode());
-            stmt.setString(6, site.getSiteType().name());
-
-            if (site.getBranch() != null) {
-                stmt.setInt(7, Integer.parseInt(site.getBranch().getBranchId()));
-            } else {
-                stmt.setNull(7, Types.INTEGER);
-            }
-
+            stmt.setInt(1, dto.getSiteId());
+            stmt.setString(2, dto.getSiteName());
+            stmt.setString(3, dto.getAddress());
+            stmt.setString(4, dto.getContactName());
+            stmt.setString(5, dto.getPhoneNumber());
+            stmt.setString(6, dto.getZoneCode());
+            stmt.setString(7, dto.getSiteType());
             stmt.executeUpdate();
-
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RepositoryException("Failed to save sites row", e);
         }
     }
 
     @Override
-    public SiteDto findbyId(String id) {
+    public SiteDto findbyId(String id) throws RepositoryException {
         String sql = """
-                SELECT s.site_name,
-                       s.address,
-                       s.contact_name,
-                       s.phone_number,
-                       s.zone_code,
-                       s.site_type,
-                       z.zone_name,
-                       b.branch_id,
-                       b.branch_name,
-                       b.address AS branch_address
-                FROM sites s
-                JOIN shipping_zones z ON s.zone_code = z.zone_code
-                LEFT JOIN branches b ON s.branch_id = b.branch_id
-                WHERE s.site_id = ?
+                SELECT site_id, site_name, address, contact_name, phone_number, zone_code, site_type
+                FROM sites
+                WHERE site_id = ?
                 """;
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-
-            stmt.setInt(1, Integer.parseInt(id));
+            String[] parts = new String[] { id };
+            stmt.setInt(1, Integer.parseInt(parts[0]));
 
             try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return mapResultSetToSite(rs);
+                if (!rs.next()) {
+                    return null;
                 }
+                return mapRow(rs);
             }
-
         } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return null;
-    }
-
-    @Override
-    public void update(SiteDto site) {
-        String sql = """
-                UPDATE sites SET
-                    address = ?,
-                    contact_name = ?,
-                    phone_number = ?,
-                    zone_code = ?,
-                    site_type = ?,
-                    branch_id = ?
-                WHERE site_name = ?
-                """;
-
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-
-            stmt.setString(1, site.getAddress());
-            stmt.setString(2, site.getContactName());
-            stmt.setString(3, site.getPhoneNumber());
-            stmt.setString(4, site.getShippingZone().getZoneCode());
-            stmt.setString(5, site.getSiteType().name());
-
-            if (site.getBranch() != null) {
-                stmt.setInt(6, Integer.parseInt(site.getBranch().getBranchId()));
-            } else {
-                stmt.setNull(6, Types.INTEGER);
-            }
-
-            stmt.setString(7, site.getSiteName());
-            stmt.executeUpdate();
-
-        } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RepositoryException("Failed to find sites row", e);
         }
     }
 
     @Override
-    public void delete(String id) {
+    public void update(SiteDto dto) throws RepositoryException {
+        createOrUpdate(dto);
+    }
+
+    @Override
+    public void delete(String id) throws RepositoryException {
         String sql = "DELETE FROM sites WHERE site_id = ?";
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-
-            stmt.setInt(1, Integer.parseInt(id));
+            String[] parts = new String[] { id };
+            stmt.setInt(1, Integer.parseInt(parts[0]));
             stmt.executeUpdate();
-
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RepositoryException("Failed to delete sites row", e);
         }
     }
 
     @Override
-    public List<SiteDto> findAll() {
+    public List<SiteDto> findAll() throws RepositoryException {
         String sql = """
-                SELECT s.site_name,
-                       s.address,
-                       s.contact_name,
-                       s.phone_number,
-                       s.zone_code,
-                       s.site_type,
-                       z.zone_name,
-                       b.branch_id,
-                       b.branch_name,
-                       b.address AS branch_address
-                FROM sites s
-                JOIN shipping_zones z ON s.zone_code = z.zone_code
-                LEFT JOIN branches b ON s.branch_id = b.branch_id
-                ORDER BY s.site_id
+                SELECT site_id, site_name, address, contact_name, phone_number, zone_code, site_type
+                FROM sites
                 """;
-
-        List<SiteDto> sites = new ArrayList<>();
+        List<SiteDto> rows = new ArrayList<>();
 
         try (PreparedStatement stmt = connection.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
-
             while (rs.next()) {
-                sites.add(mapResultSetToSite(rs));
+                rows.add(mapRow(rs));
             }
-
+            return rows;
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RepositoryException("Failed to load sites rows", e);
         }
-
-        return sites;
     }
 
-    private SiteDto mapResultSetToSite(ResultSet rs) throws SQLException {
-        ShippingZoneDto zone = new ShippingZoneDto(
-                rs.getString("zone_code"),
-                rs.getString("zone_name")
-        );
-
-        BranchDto branch = null;
-        String branchId = rs.getString("branch_id");
-
-        if (branchId != null) {
-            branch = new BranchDto(
-                    branchId,
-                    rs.getString("branch_name"),
-                    rs.getString("branch_address"),
-                    null
-            );
-        }
-
+    private SiteDto mapRow(ResultSet rs) throws SQLException {
         return new SiteDto(
                 rs.getInt("site_id"),
                 rs.getString("site_name"),
                 rs.getString("address"),
-                rs.getString("phone_number"),
                 rs.getString("contact_name"),
-                zone,
-                parseSiteType(rs.getString("site_type")),
-                branch
+                rs.getString("phone_number"),
+                rs.getString("zone_code"),
+                rs.getString("site_type")
         );
-    }
-
-    private SiteType parseSiteType(String rawValue) {
-        if (rawValue == null || rawValue.isBlank()) {
-            return SiteType.REGULAR;
-        }
-
-        try {
-            return SiteType.valueOf(rawValue);
-        } catch (IllegalArgumentException e) {
-            return SiteType.REGULAR;
-        }
     }
 }

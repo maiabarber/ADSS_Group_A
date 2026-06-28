@@ -1,19 +1,17 @@
 package dataaccess.dto;
 
 public final class BranchDto {
-    private final String branchId;
+    private final int branchId;
     private final String branchName;
-    private final String location;
-    private final SiteDto site;
+    private final String address;
 
-    public BranchDto(String branchId, String branchName, String location, SiteDto site) {
+    public BranchDto(int branchId, String branchName, String address) {
         this.branchId = branchId;
         this.branchName = branchName;
-        this.location = location;
-        this.site = site;
+        this.address = address;
     }
 
-    public String getBranchId() {
+    public int getBranchId() {
         return branchId;
     }
 
@@ -21,11 +19,8 @@ public final class BranchDto {
         return branchName;
     }
 
-    public String getLocation() {
-        return location;
+    public String getAddress() {
+        return address;
     }
 
-    public SiteDto getSite() {
-        return site;
-    }
 }

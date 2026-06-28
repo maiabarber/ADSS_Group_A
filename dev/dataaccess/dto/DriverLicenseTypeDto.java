@@ -1,12 +1,10 @@
 package dataaccess.dto;
 
-import transportation.domain.LicenseType;
-
 public final class DriverLicenseTypeDto {
     private final String employeeId;
-    private final LicenseType licenseType;
+    private final String licenseType;
 
-    public DriverLicenseTypeDto(String employeeId, LicenseType licenseType) {
+    public DriverLicenseTypeDto(String employeeId, String licenseType) {
         this.employeeId = employeeId;
         this.licenseType = licenseType;
     }
@@ -15,7 +13,8 @@ public final class DriverLicenseTypeDto {
         return employeeId;
     }
 
-    public LicenseType getLicenseType() {
+    public String getLicenseType() {
         return licenseType;
     }
+
 }

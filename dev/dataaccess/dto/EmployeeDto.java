@@ -1,112 +1,86 @@
 package dataaccess.dto;
 
+public final class EmployeeDto {
+    private final String employeeId;
+    private final String name;
+    private final String bankNumber;
+    private final String bankBranchNumber;
+    private final String bankAccountNumber;
+    private final String employmentType;
+    private final String employmentScope;
+    private final double hourlySalary;
+    private final double globalSalary;
+    private final String startDate;
+    private final boolean fired;
+    private final int vacationDays;
+    private final Integer branchId;
 
-import employee.domain.EmploymentType;
-import employee.domain.Role;
-
-
-import java.time.DayOfWeek;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
-public class EmployeeDto {
-        private final String id;
-        private final String password;
-        private final BankAccountDto bankAccount;
-        private final String name;
-        private final SalaryDto salary;
-        private final EmploymentType employmentType;
-        private final EmploymentTermsDto employmentTerms;
-        private final Set<Role> authorizedRoles;
-        private final boolean canManageShift;
-        private final boolean isFired;
-        private final DayOfWeek fixedDayOff;
-        private final WeeklyAvailabilityRequestDto weeklyAvailabilityRequest;
-        private final BranchDto branch;
-
-    public EmployeeDto(
-        String id,
-        String password,
-        BankAccountDto bankAccount,
-        String name,
-        SalaryDto salary,
-        EmploymentType employmentType,
-        EmploymentTermsDto employmentTerms,
-        Set<Role> authorizedRoles,
-        boolean canManageShift,
-        boolean isFired,
-        DayOfWeek fixedDayOff,
-        WeeklyAvailabilityRequestDto weeklyAvailabilityRequest,
-        BranchDto branch) {
-        this.id = id;
-        this.password = password;
-        this.bankAccount = bankAccount;
+    public EmployeeDto(String employeeId, String name, String bankNumber, String bankBranchNumber, String bankAccountNumber, String employmentType, String employmentScope, double hourlySalary, double globalSalary, String startDate, boolean fired, int vacationDays, Integer branchId) {
+        this.employeeId = employeeId;
         this.name = name;
-        this.salary = salary;
+        this.bankNumber = bankNumber;
+        this.bankBranchNumber = bankBranchNumber;
+        this.bankAccountNumber = bankAccountNumber;
         this.employmentType = employmentType;
-        this.employmentTerms = employmentTerms;
-        this.authorizedRoles = new HashSet<>(authorizedRoles);
-        this.canManageShift = canManageShift;
-        this.isFired = isFired;
-        this.fixedDayOff = fixedDayOff;
-        this.weeklyAvailabilityRequest = weeklyAvailabilityRequest;
-        this.branch = branch;
-    }
-    public String getId() {
-        return id;
+        this.employmentScope = employmentScope;
+        this.hourlySalary = hourlySalary;
+        this.globalSalary = globalSalary;
+        this.startDate = startDate;
+        this.fired = fired;
+        this.vacationDays = vacationDays;
+        this.branchId = branchId;
     }
 
     public String getEmployeeId() {
-        return id;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public BankAccountDto getBankAccount() {
-        return bankAccount;
-    }
-
-    public SalaryDto getSalary() {
-        return salary;
-    }
-
-    public EmploymentType getEmploymentType() {
-        return employmentType;
-    }
-
-    public EmploymentTermsDto getEmploymentTerms() {
-        return employmentTerms;
-    }
-
-    public Set<Role> getRoles() {
-        return Collections.unmodifiableSet(authorizedRoles);
-    }
-
-    public boolean canManageShift() {
-        return canManageShift;
-    }
-
-    public boolean isFired() {
-        return isFired ;
-    }
-
-    public DayOfWeek getFixedDayOff() {
-        return fixedDayOff;
-    }
-
-    public WeeklyAvailabilityRequestDto getWeeklyAvailabilityRequest() {
-        return weeklyAvailabilityRequest;
-    }
-
-    public BranchDto getBranch() {
-        return branch;
+        return employeeId;
     }
 
     public String getName() {
         return name;
+    }
+
+    public String getBankNumber() {
+        return bankNumber;
+    }
+
+    public String getBankBranchNumber() {
+        return bankBranchNumber;
+    }
+
+    public String getBankAccountNumber() {
+        return bankAccountNumber;
+    }
+
+    public String getEmploymentType() {
+        return employmentType;
+    }
+
+    public String getEmploymentScope() {
+        return employmentScope;
+    }
+
+    public double getHourlySalary() {
+        return hourlySalary;
+    }
+
+    public double getGlobalSalary() {
+        return globalSalary;
+    }
+
+    public String getStartDate() {
+        return startDate;
+    }
+
+    public boolean isFired() {
+        return fired;
+    }
+
+    public int getVacationDays() {
+        return vacationDays;
+    }
+
+    public Integer getBranchId() {
+        return branchId;
     }
 
 }

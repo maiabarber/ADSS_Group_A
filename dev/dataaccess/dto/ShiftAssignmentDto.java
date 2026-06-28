@@ -1,68 +1,38 @@
 package dataaccess.dto;
 
-import employee.domain.Role;
-import employee.domain.ShiftType;
-
-import java.time.LocalDate;
-
 public final class ShiftAssignmentDto {
+    private final int assignmentId;
+    private final int shiftId;
     private final String employeeId;
-    private final LocalDate shiftDate;
-    private final ShiftType shiftType;
-    private final Role role;
-    private final boolean approved;
-    private final boolean requiresApproval;
-    private final boolean cancellationRequested;
-    private final boolean conflictsWithFixedDayOff;
+    private final String roleName;
+    private final String status;
 
-    public ShiftAssignmentDto(
-            String employeeId,
-            LocalDate shiftDate,
-            ShiftType shiftType,
-            Role role,
-            boolean approved,
-            boolean requiresApproval,
-            boolean cancellationRequested,
-            boolean conflictsWithFixedDayOff) {
+    public ShiftAssignmentDto(int assignmentId, int shiftId, String employeeId, String roleName, String status) {
+        this.assignmentId = assignmentId;
+        this.shiftId = shiftId;
         this.employeeId = employeeId;
-        this.shiftDate = shiftDate;
-        this.shiftType = shiftType;
-        this.role = role;
-        this.approved = approved;
-        this.requiresApproval = requiresApproval;
-        this.cancellationRequested = cancellationRequested;
-        this.conflictsWithFixedDayOff = conflictsWithFixedDayOff;
+        this.roleName = roleName;
+        this.status = status;
+    }
+
+    public int getAssignmentId() {
+        return assignmentId;
+    }
+
+    public int getShiftId() {
+        return shiftId;
     }
 
     public String getEmployeeId() {
         return employeeId;
     }
 
-    public LocalDate getShiftDate() {
-        return shiftDate;
+    public String getRoleName() {
+        return roleName;
     }
 
-    public ShiftType getShiftType() {
-        return shiftType;
+    public String getStatus() {
+        return status;
     }
 
-    public Role getRole() {
-        return role;
-    }
-
-    public boolean isApproved() {
-        return approved;
-    }
-
-    public boolean isRequiresApproval() {
-        return requiresApproval;
-    }
-
-    public boolean isCancellationRequested() {
-        return cancellationRequested;
-    }
-
-    public boolean isConflictsWithFixedDayOff() {
-        return conflictsWithFixedDayOff;
-    }
 }

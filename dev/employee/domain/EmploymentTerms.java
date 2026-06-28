@@ -44,10 +44,14 @@ public class EmploymentTerms {
         if (today == null) {
             throw new IllegalArgumentException("Current date is required");
         }
-        if (startDate.isBefore(today)) {
-            throw new IllegalArgumentException("Start date cannot be in the past");
-        }
     }
+
+    public static void validateLoadedStartDate(LocalDate startDate) {
+            if (startDate == null) {
+                throw new IllegalArgumentException("Start date cannot be empty");
+            }
+    }
+    
 
     public EmploymentScope getEmploymentScope() {
         return employmentScope;

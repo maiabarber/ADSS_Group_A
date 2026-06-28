@@ -1,18 +1,13 @@
 package dataaccess.dao;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import dataaccess.dto.BranchDto;
+import dataaccess.repository.RepositoryException;
+
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import dataaccess.dto.BranchDto;
-import dataaccess.dto.SiteDto;
-import dataaccess.repository.RepositoryException;
-
 public class BranchDAOImpl implements DaoInterface<BranchDto> {
-
     private final Connection connection;
 
     public BranchDAOImpl(Connection connection) {
@@ -20,146 +15,86 @@ public class BranchDAOImpl implements DaoInterface<BranchDto> {
     }
 
     @Override
-    public void createOrUpdate(BranchDto b) {
+    public void createOrUpdate(BranchDto dto) throws RepositoryException {
         String sql = """
-                INSERT OR REPLACE INTO branches (
-                    branch_id,
-                    branch_name,
-                    address,
-                    delivery_stop_site_id
-                )
-                VALUES (?, ?, ?, ?)
+                INSERT INTO branches (branch_id, branch_name, address) VALUES (?, ?, ?) ON CONFLICT(branch_id) DO UPDATE SET branch_name = excluded.branch_name, address = excluded.address
                 """;
 
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setInt(1, Integer.parseInt(b.getBranchId()));
-            pstmt.setString(2, b.getBranchName());
-            pstmt.setString(3, b.getLocation());
-
-            if (b.getSite() == null) {
-                pstmt.setNull(4, java.sql.Types.INTEGER);
-            } else {
-                pstmt.setInt(4, b.getSite().getId());
-            }
-
-            pstmt.executeUpdate();
-
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, dto.getBranchId());
+            stmt.setString(2, dto.getBranchName());
+            stmt.setString(3, dto.getAddress());
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RepositoryException("Failed to save branches row", e);
         }
     }
 
     @Override
-public BranchDto findbyId(String id) throws RepositoryException {
-    String sql = """
-            SELECT branch_id, branch_name, address, delivery_stop_site_id
-            FROM branches
-            WHERE branch_id = ?
-            """;
-
-    try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-        pstmt.setInt(1, Integer.parseInt(id));
-
-        try (ResultSet rs = pstmt.executeQuery()) {
-            if (!rs.next()) {
-                return null;
-            }
-
-            Integer siteId = rs.getObject("delivery_stop_site_id") == null
-                    ? null
-                    : rs.getInt("delivery_stop_site_id");
-
-            SiteDto stopSite = null;
-
-            if (siteId != null) {
-                SiteDAOImpl siteDao = new SiteDAOImpl(connection);
-                stopSite = siteDao.findbyId(String.valueOf(siteId));
-            }
-
-            return new BranchDto(
-					rs.getString("branch_id"),
-					rs.getString("branch_name"),
-					rs.getString("address"),
-					stopSite
-			);
-        }
-
-    } catch (SQLException ex) {
-        throw new RepositoryException("Failed to find branch " + id, ex);
-    }
-}
-    @Override
-    public void update(BranchDto b) {
+    public BranchDto findbyId(String id) throws RepositoryException {
         String sql = """
-                UPDATE branches
-                SET branch_name = ?,
-                    address = ?,
-                    delivery_stop_site_id = ?
+                SELECT branch_id, branch_name, address
+                FROM branches
                 WHERE branch_id = ?
                 """;
 
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, b.getBranchName());
-            pstmt.setString(2, b.getLocation());
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            String[] parts = new String[] { id };
+            stmt.setInt(1, Integer.parseInt(parts[0]));
 
-            if (b.getSite() == null) {
-                pstmt.setNull(3, java.sql.Types.INTEGER);
-            } else {
-                pstmt.setInt(3, b.getSite().getId());
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (!rs.next()) {
+                    return null;
+                }
+                return mapRow(rs);
             }
-
-            pstmt.setInt(4, Integer.parseInt(b.getBranchId()));
-            pstmt.executeUpdate();
-
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } catch (SQLException e) {
+            throw new RepositoryException("Failed to find branches row", e);
         }
     }
 
     @Override
-    public void delete(String id) {
+    public void update(BranchDto dto) throws RepositoryException {
+        createOrUpdate(dto);
+    }
+
+    @Override
+    public void delete(String id) throws RepositoryException {
         String sql = "DELETE FROM branches WHERE branch_id = ?";
 
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setInt(1, Integer.parseInt(id));
-            pstmt.executeUpdate();
-
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            String[] parts = new String[] { id };
+            stmt.setInt(1, Integer.parseInt(parts[0]));
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RepositoryException("Failed to delete branches row", e);
         }
     }
 
     @Override
-    public List<BranchDto> findAll() {
-        List<BranchDto> branches = new ArrayList<>();
-
+    public List<BranchDto> findAll() throws RepositoryException {
         String sql = """
-                SELECT
-                    branch_id,
-                    branch_name,
-                    address,
-                    delivery_stop_site_id
+                SELECT branch_id, branch_name, address
                 FROM branches
                 """;
+        List<BranchDto> rows = new ArrayList<>();
 
-        try (PreparedStatement pstmt = connection.prepareStatement(sql);
-             ResultSet rs = pstmt.executeQuery()) {
-
+        try (PreparedStatement stmt = connection.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
-                String siteId = rs.getString("delivery_stop_site_id");
-
-                branches.add(new BranchDto(
-                        rs.getString("branch_id"),
-                        rs.getString("branch_name"),
-                        rs.getString("address"),
-                        siteId == null ? null : new SiteDAOImpl(connection).findbyId(siteId)
-                ));
+                rows.add(mapRow(rs));
             }
-
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+            return rows;
+        } catch (SQLException e) {
+            throw new RepositoryException("Failed to load branches rows", e);
         }
+    }
 
-        return branches;
+    private BranchDto mapRow(ResultSet rs) throws SQLException {
+        return new BranchDto(
+                rs.getInt("branch_id"),
+                rs.getString("branch_name"),
+                rs.getString("address")
+        );
     }
 }

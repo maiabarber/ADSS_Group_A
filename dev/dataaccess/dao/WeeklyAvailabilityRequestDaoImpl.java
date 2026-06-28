@@ -1,137 +1,102 @@
 package dataaccess.dao;
 
-import dataaccess.DatabaseConnection;
-import employee.domain.WeeklyAvailabilityRequest;
+import dataaccess.dto.WeeklyAvailabilityRequestDto;
+import dataaccess.repository.RepositoryException;
 
 import java.sql.*;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class WeeklyAvailabilityRequestDaoImpl implements DaoInterface<WeeklyAvailabilityRequest> {
+public class WeeklyAvailabilityRequestDaoImpl implements DaoInterface<WeeklyAvailabilityRequestDto> {
+    private final Connection connection;
+
+    public WeeklyAvailabilityRequestDaoImpl(Connection connection) {
+        this.connection = connection;
+    }
 
     @Override
-    public void createOrUpdate(WeeklyAvailabilityRequest request) {
+    public void createOrUpdate(WeeklyAvailabilityRequestDto dto) throws RepositoryException {
         String sql = """
-                INSERT OR REPLACE INTO weeklyavailabilityrequests (
-                    request_id,
-                    employee_id,
-                    week_start_date,
-                    submission_deadline
-                )
-                VALUES (?, ?, ?, ?)
+                INSERT INTO weeklyavailabilityrequests (request_id, employee_id, week_start_date, submission_deadline) VALUES (?, ?, ?, ?) ON CONFLICT(request_id) DO UPDATE SET employee_id = excluded.employee_id, week_start_date = excluded.week_start_date, submission_deadline = excluded.submission_deadline
                 """;
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
-
-            stmt.setNull(1, Types.INTEGER);
-            stmt.setString(2, "UNKNOWN");
-            stmt.setString(3, request.getWeekStartDate().toString());
-            stmt.setString(4, request.getSubmissionDeadline().toString());
-
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, dto.getRequestId());
+            stmt.setString(2, dto.getEmployeeId());
+            stmt.setString(3, dto.getWeekStartDate());
+            stmt.setString(4, dto.getSubmissionDeadline());
             stmt.executeUpdate();
-
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RepositoryException("Failed to save weeklyavailabilityrequests row", e);
         }
     }
 
     @Override
-    public WeeklyAvailabilityRequest findbyId(String id) {
+    public WeeklyAvailabilityRequestDto findbyId(String id) throws RepositoryException {
         String sql = """
-                SELECT week_start_date, submission_deadline
+                SELECT request_id, employee_id, week_start_date, submission_deadline
                 FROM weeklyavailabilityrequests
                 WHERE request_id = ?
                 """;
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
-
-            stmt.setInt(1, Integer.parseInt(id));
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            String[] parts = new String[] { id };
+            stmt.setInt(1, Integer.parseInt(parts[0]));
 
             try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return mapResultSetToWeeklyAvailabilityRequest(rs);
+                if (!rs.next()) {
+                    return null;
                 }
+                return mapRow(rs);
             }
-
         } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return null;
-    }
-
-    @Override
-    public void update(WeeklyAvailabilityRequest request) {
-        String sql = """
-                UPDATE weeklyavailabilityrequests
-                SET week_start_date = ?,
-                    submission_deadline = ?
-                WHERE week_start_date = ?
-                """;
-
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
-
-            stmt.setString(1, request.getWeekStartDate().toString());
-            stmt.setString(2, request.getSubmissionDeadline().toString());
-            stmt.setString(3, request.getWeekStartDate().toString());
-
-            stmt.executeUpdate();
-
-        } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RepositoryException("Failed to find weeklyavailabilityrequests row", e);
         }
     }
 
     @Override
-    public void delete(String id) {
+    public void update(WeeklyAvailabilityRequestDto dto) throws RepositoryException {
+        createOrUpdate(dto);
+    }
+
+    @Override
+    public void delete(String id) throws RepositoryException {
         String sql = "DELETE FROM weeklyavailabilityrequests WHERE request_id = ?";
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
-
-            stmt.setInt(1, Integer.parseInt(id));
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            String[] parts = new String[] { id };
+            stmt.setInt(1, Integer.parseInt(parts[0]));
             stmt.executeUpdate();
-
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RepositoryException("Failed to delete weeklyavailabilityrequests row", e);
         }
     }
 
     @Override
-    public List<WeeklyAvailabilityRequest> findAll() {
+    public List<WeeklyAvailabilityRequestDto> findAll() throws RepositoryException {
         String sql = """
-                SELECT week_start_date, submission_deadline
+                SELECT request_id, employee_id, week_start_date, submission_deadline
                 FROM weeklyavailabilityrequests
-                ORDER BY request_id
                 """;
+        List<WeeklyAvailabilityRequestDto> rows = new ArrayList<>();
 
-        List<WeeklyAvailabilityRequest> requests = new ArrayList<>();
-
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql);
+        try (PreparedStatement stmt = connection.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
-
             while (rs.next()) {
-                requests.add(mapResultSetToWeeklyAvailabilityRequest(rs));
+                rows.add(mapRow(rs));
             }
-
+            return rows;
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RepositoryException("Failed to load weeklyavailabilityrequests rows", e);
         }
-
-        return requests;
     }
 
-    private WeeklyAvailabilityRequest mapResultSetToWeeklyAvailabilityRequest(ResultSet rs) throws SQLException {
-        WeeklyAvailabilityRequest request = new WeeklyAvailabilityRequest();
-
-        request.setWeekStartDate(LocalDate.parse(rs.getString("week_start_date")));
-        request.setSubmissionDeadline(LocalDate.parse(rs.getString("submission_deadline")));
-
-        return request;
+    private WeeklyAvailabilityRequestDto mapRow(ResultSet rs) throws SQLException {
+        return new WeeklyAvailabilityRequestDto(
+                rs.getInt("request_id"),
+                rs.getString("employee_id"),
+                rs.getString("week_start_date"),
+                rs.getString("submission_deadline")
+        );
     }
 }

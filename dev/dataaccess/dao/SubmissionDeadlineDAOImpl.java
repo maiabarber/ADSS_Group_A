@@ -1,6 +1,7 @@
 package dataaccess.dao;
 
 import dataaccess.DatabaseConnection;
+import dataaccess.repository.RepositoryException;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -8,9 +9,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
-public class SubmissionDeadlineDAO {
+public class SubmissionDeadlineDAOImpl implements DaoInterface<LocalDate> {
 
     public void save(LocalDate deadline) throws SQLException {
         String deleteSql = "DELETE FROM submissiondeadlines";
@@ -49,5 +51,35 @@ public class SubmissionDeadlineDAO {
 
             return Optional.empty();
         }
+    }
+
+    @Override
+    public void createOrUpdate(LocalDate dto) throws RepositoryException {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'createOrUpdate'");
+    }
+
+    @Override
+    public LocalDate findbyId(String id) throws RepositoryException {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'findbyId'");
+    }
+
+    @Override
+    public void update(LocalDate dto) throws RepositoryException {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'update'");
+    }
+
+    @Override
+    public void delete(String id) throws RepositoryException {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'delete'");
+    }
+
+    @Override
+    public List<LocalDate> findAll() throws RepositoryException {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'findAll'");
     }
 }

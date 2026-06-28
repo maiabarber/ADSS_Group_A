@@ -2,7 +2,6 @@ package employee.presentation;
 
 import employee.domain.Constraint;
 import employee.domain.Employee;
-
 import employee.domain.HR_Manager;
 import employee.domain.Preference;
 import employee.domain.Role;
@@ -11,22 +10,20 @@ import employee.domain.ShiftAssignment;
 import employee.domain.ShiftType;
 import employee.domain.DriverAssignmentRequest;
 import employee.domain.Branch;
-import employee.domain.BranchManager;
 import employee.domain.User;
 import employee.domain.WeeklyAvailabilityRequest;
 import dataaccess.DatabaseConnection;
 import dataaccess.dao.EmployeeDAOImpl;
 import dataaccess.dao.ShiftDaoImpl;
-import dataaccess.dto.EmployeeDto;
-import dataaccess.dto.ShiftDto;
-import dataaccess.mapper.EmployeeMapper;
+import dataaccess.dto.BranchDto;
 import dataaccess.repository.EmployeeRepository;
 import dataaccess.repository.RepositoryException;
 import dataaccess.repository.ShiftRepository;
 import dataaccess.repository.SubmissionDeadlineRepository;
 import dataaccess.repository.impl.EmployeeRepositoryImpl;
 import dataaccess.repository.impl.ShiftRepositoryImpl;
-import dataaccess.repository.impl.DatabaseSubmissionDeadlineRepository;
+import dataaccess.repository.impl.SubmissionDeadlineRepositoryImpl;
+import dataaccess.repository.impl.BranchRepositoryImpl;
 import dataaccess.repository.impl.UserRepositoryImpl;
 import employee.service.AuthenticationService;
 import employee.service.SubmissionDeadlineService;
@@ -47,7 +44,7 @@ import java.util.Scanner;
 import transportation.domain.Site;
 import transportation.domain.SiteType;
 import transportation.domain.ShippingZone;
-import dataaccess.mapper.ShiftMapper;
+import dataaccess.mapper.BranchMapper;
 
 /**
  * ConsolePresentation class provides a console-based user interface for the
@@ -71,9 +68,11 @@ public class ConsolePresentation {
     private final SubmissionDeadlineService submissionDeadlineService;
     private final WeeklyAvailabilityService weeklyAvailabilityService;
     private final EmployeeTransportationService employeeTransportationService;
-    private final BranchManager branchManager;
     private Branch activeBranch;
     private int lastVacationResetYear = -1;
+    private BranchRepositoryImpl branchRepository;
+    private UserRepositoryImpl userRepository;
+    
 
 
     public ConsolePresentation() throws SQLException {
@@ -87,16 +86,17 @@ public class ConsolePresentation {
         this.userController = new UserController(authenticationService, employeeRepository);
         this.shiftController = new ShiftController();
         this.shiftRepository = new ShiftRepositoryImpl(new ShiftDaoImpl(connection));
-        this.submissionDeadlineRepository = new DatabaseSubmissionDeadlineRepository();
+        this.submissionDeadlineRepository = new SubmissionDeadlineRepositoryImpl();
         this.submissionDeadlineService = new SubmissionDeadlineService();
         this.weeklyAvailabilityService = new WeeklyAvailabilityService(submissionDeadlineRepository,
                 employeeRepository);
         this.employeeTransportationService = new EmployeeTransportationService(shiftRepository, employeeRepository);
-        this.branchManager = new BranchManager();
+        this.branchRepository = new BranchRepositoryImpl(new dataaccess.dao.BranchDAOImpl(connection));
         this.activeBranch = null;
+        this.userRepository = new UserRepositoryImpl(new dataaccess.dao.UserDAOImpl(connection));
     }
 
-    public void run() {
+    public void run() throws RepositoryException {
         try (Scanner scanner = new Scanner(System.in)) {
             boolean appRunning = true;
             while (appRunning) {
@@ -255,8 +255,8 @@ public class ConsolePresentation {
         }
     }
 
-    private boolean isHrManager(User user) {
-        return user instanceof HR_Manager && ((HR_Manager) user).isHRManager();
+    private boolean isHrManager(User user) throws RepositoryException {
+            return user != null && userRepository.isHrManager(user);
     }
 
     private void addNewEmployeeFlow(Scanner scanner) {
@@ -346,12 +346,11 @@ public class ConsolePresentation {
         }
 
         try {
-            List<EmployeeDto> allEmployees = employeeRepository.findAll();
-            for (EmployeeDto employeeDto : allEmployees) {
-                Employee employee = EmployeeMapper.toDomain(employeeDto);
+            List<Employee> allEmployees = employeeRepository.findAll();
+            for (Employee employee : allEmployees) {
                 if (employee.getEmploymentTerms() != null) {
                     employee.resetVacationDays(DEFAULT_ANNUAL_VACATION_DAYS);
-                    employeeRepository.save(EmployeeMapper.toDto(employee));
+                    employeeRepository.save(employee);
                 }
             }
             lastVacationResetYear = currentYear;
@@ -374,7 +373,7 @@ public class ConsolePresentation {
         employee.setFixedDayOff(fixedDayOff);
 
         try {
-            employeeRepository.save(EmployeeMapper.toDto(employee));
+            employeeRepository.save(employee);
             System.out.println("Your fixed day off was set to " + fixedDayOff + ".");
         } catch (RepositoryException e) {
             System.out.println("Failed to save fixed day off: " + e.getMessage());
@@ -411,7 +410,7 @@ public class ConsolePresentation {
         System.out.print("Enter employee ID: ");
         String employeeId = scanner.nextLine();
 
-        Optional<EmployeeDto> employeeOptional;
+        Optional<Employee> employeeOptional;
         try {
             employeeOptional = employeeRepository.findById(employeeId);
         } catch (RepositoryException e) {
@@ -424,8 +423,7 @@ public class ConsolePresentation {
             return;
         }
 
-        EmployeeDto employeeDto = employeeOptional.get();
-        Employee employee = EmployeeMapper.toDomain(employeeDto);
+        Employee employee = employeeOptional.get();
 
         String newName = employee.getName();
         Double newGlobalSalary = employee.getSalary().getGlobalSalary();
@@ -798,9 +796,8 @@ public class ConsolePresentation {
                     shiftPresentation.getRequiredStoreKeeperInput(),
                     activeBranch);
             shift.assignShiftManager(currentUser.get(), manager);
-            ShiftDto shiftDto = ShiftMapper.toDto(shift);
-            shiftController.addShift(shiftDto);
-            shiftRepository.save(shiftDto);
+            shiftController.addShift(shift);
+            shiftRepository.save(shift);
 
             System.out.println("Shift created successfully: " + shift.getDate() + " - " + shift.getShiftType());
         } catch (RepositoryException e) {
@@ -888,12 +885,11 @@ public class ConsolePresentation {
                 return;
             }
 
-            ShiftDto shiftDto = ShiftMapper.toDto(selectedShift);
-            shiftController.assignEmployeeToShift(currentUser.get(), selectedEmployee, shiftDto, selectedRole);
-            shiftRepository.save(shiftDto);
+            shiftController.assignEmployeeToShift(currentUser.get(), selectedEmployee, selectedShift, selectedRole);
+            shiftRepository.save(selectedShift);
 
             System.out.println("Employee " + selectedEmployee.getName() + " has been assigned to shift " +
-                    shiftDto.getDate() + " - " + shiftDto.getShiftType() + " as " + selectedRole);
+                    selectedShift.getDate() + " - " + selectedShift.getShiftType() + " as " + selectedRole);
 
         } catch (RepositoryException e) {
             System.out.println("Failed to save shift assignment: " + e.getMessage());
@@ -939,8 +935,7 @@ public class ConsolePresentation {
             boolean approved = "yes".equals(response);
 
             shiftController.respondToAssignment(employee, selected, approved);
-            ShiftDto shiftDto = ShiftMapper.toDto(selected.getShift());
-            shiftRepository.save(shiftDto);
+            shiftRepository.save(selected.getShift());
 
             if (approved) {
                 System.out.println("Assignment approved. You are confirmed for this shift.");
@@ -1277,7 +1272,7 @@ public class ConsolePresentation {
         }
     }
 
-    private void handleDriverAssignmentRequestsFlow(Scanner scanner) {
+    private void handleDriverAssignmentRequestsFlow(Scanner scanner) throws RepositoryException {
         Optional<User> currentUser = authenticationService.getCurrentUser();
         if (!currentUser.isPresent()) {
             System.out.println("No user is currently logged in.");
@@ -1382,7 +1377,7 @@ public class ConsolePresentation {
         }
     }
 
-    private void manageBranchWorkspaceFlow(Scanner scanner) {
+    private void manageBranchWorkspaceFlow(Scanner scanner) throws RepositoryException {
         while (true) {
             System.out.println("\n=== Branch Management ===");
             System.out.println("1. Create branch");
@@ -1411,26 +1406,26 @@ public class ConsolePresentation {
         }
     }
 
-    private void createBranchFlow(Scanner scanner) {
+    private void createBranchFlow(Scanner scanner) throws RepositoryException {
         try {
             Branch branch = readBranch(scanner);
-            branchManager.addBranch(branch);
+            branchRepository.save(BranchMapper.toDto(branch));
             System.out.println("Branch created successfully: " + branch.getBranchName());
         } catch (IllegalArgumentException e) {
             System.out.println("Failed to create branch: " + e.getMessage());
         }
     }
 
-    private void selectBranchWorkspaceFlow(Scanner scanner) {
-        List<Branch> branches = branchManager.getAllBranches();
+    private void selectBranchWorkspaceFlow(Scanner scanner) throws RepositoryException {
+        List<BranchDto> branches = branchRepository.findAll();
         if (branches.isEmpty()) {
             System.out.println("No branches available. Create one first.");
             return;
         }
 
         for (int i = 0; i < branches.size(); i++) {
-            Branch branch = branches.get(i);
-            System.out.println((i + 1) + ". " + branch.getBranchName() + " (" + branch.getLocation() + ")");
+            BranchDto branch = branches.get(i);
+            System.out.println((i + 1) + ". " + branch.getBranchName() + " (" + branch.getAddress() + ")");
         }
 
         int selection = readInt(scanner, "Select branch number: ");
@@ -1439,7 +1434,7 @@ public class ConsolePresentation {
             return;
         }
 
-        activeBranch = branches.get(selection - 1);
+        activeBranch = BranchMapper.toDomain(branches.get(selection - 1));
         System.out.println("Active branch workspace: " + activeBranch.getBranchName());
     }
 

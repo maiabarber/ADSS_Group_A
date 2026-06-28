@@ -9,7 +9,7 @@ import java.util.List;
 
 import employee.service.EmployeeTransportationService;
 import dataaccess.repository.impl.EmployeeRepositoryImpl;
-import dataaccess.repository.impl.DatabaseShiftRepository;
+import dataaccess.repository.impl.ShiftRepositoryImpl;
 
 public class DeliveryManager {
 
@@ -24,7 +24,7 @@ public class DeliveryManager {
 
     public DeliveryManager() {
         this(new EmployeeTransportationService(
-                new DatabaseShiftRepository(),
+                new ShiftRepositoryImpl(),
                 new EmployeeRepositoryImpl()));
     }
     public DeliveryManager(EmployeeTransportationService employeeTransportationService) {

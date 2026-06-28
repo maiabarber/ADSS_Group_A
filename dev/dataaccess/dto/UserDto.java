@@ -1,25 +1,27 @@
 package dataaccess.dto;
 
-public class UserDto {
-    private final String id;
+public final class UserDto {
+    private final String userId;
     private final String password;
-    private final boolean isHRManager;
+    private final boolean hrManager;
 
-    public UserDto(String id, String password, boolean isHRManager) {
-        this.id = id;
+    public UserDto(String userId, String password, boolean hrManager) {
+        this.userId = userId;
         this.password = password;
-        this.isHRManager = isHRManager;
+        this.hrManager = hrManager;
     }
 
-    public String getId() {
-        return id;
+    public String getUserId() {
+        return userId;
     }
 
     public String getPassword() {
         return password;
     }
 
-    public boolean isHRManager() {
-        return isHRManager;
+    public boolean isHrManager() {
+        return hrManager;
     }
+
+
 }

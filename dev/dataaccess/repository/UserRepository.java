@@ -1,6 +1,6 @@
 package dataaccess.repository;
 
-import dataaccess.dto.UserDto;
+import employee.domain.User;
 
-public interface UserRepository extends Repository<UserDto, String> {
+public interface UserRepository extends Repository<User, String> {
 }

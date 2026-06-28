@@ -17,17 +17,18 @@ import java.util.List;
 import dataaccess.repository.EmployeeRepository;
 import dataaccess.repository.RepositoryException;
 import dataaccess.repository.ShiftRepository;
+import dataaccess.repository.impl.ShiftRepositoryImpl;
 
 public class EmployeeTransportationService {
 
-    private final ShiftRepository shiftRepository;
+    private final ShiftRepositoryImpl shiftRepositoryImpl;
     private final EmployeeRepository employeeRepository;
     private final List<DriverAssignmentRequest> driverAssignmentRequests = new ArrayList<>();
 
     public EmployeeTransportationService(
             ShiftRepository shiftRepository,
             EmployeeRepository employeeRepository) {
-        this.shiftRepository = shiftRepository;
+        this.shiftRepositoryImpl = (ShiftRepositoryImpl) shiftRepository;
         this.employeeRepository = employeeRepository;
     }
 
@@ -57,9 +58,13 @@ public class EmployeeTransportationService {
 
         ShiftType shiftType = getShiftTypeByTime(dateTime);
 
-        return shiftRepository
-                .findByDateAndType(dateTime.toLocalDate(), shiftType)
-                .orElse(null);
+        try {
+            return shiftRepositoryImpl
+                    .findByDateAndType(dateTime.toLocalDate(), shiftType)
+                    .orElse(null);
+        } catch (RepositoryException e) {
+            return null;
+        }
     }
 
     public List<Employee> getAvailableDriversForDelivery(LocalDateTime deliveryDateTime) {

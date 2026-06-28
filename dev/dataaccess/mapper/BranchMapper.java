@@ -1,30 +1,38 @@
 package dataaccess.mapper;
 
-import java.sql.ResultSet;
-
 import dataaccess.dto.BranchDto;
 import employee.domain.Branch;
 
-public class BranchMapper {
+public final class BranchMapper {
+    private BranchMapper() {}
 
     public static BranchDto toDto(Branch branch) {
-    if (branch == null) return null;
-
-    return new BranchDto(
-            branch.getBranchId(),
-            branch.getBranchName(),
-            branch.getLocation(),
-            SiteMapper.toDto(branch.getSite())
-    );
-}
-    public static Branch toDomain(BranchDto dto) {
-        if (dto == null) return null;
-        return new Branch(
-            dto.getBranchId(),
-            dto.getBranchName(),
-            dto.getLocation(),
-            SiteMapper.toDomain(dto.getSite())
+        if (branch == null) {
+            return null;
+        }
+        return new BranchDto(
+                parseBranchId(branch.getBranchId()),
+                branch.getBranchName(),
+                branch.getLocation()
         );
     }
 
+    public static Branch toDomain(BranchDto dto) {
+        if (dto == null) {
+            return null;
+        }
+        return new Branch(
+                String.valueOf(dto.getBranchId()),
+                dto.getBranchName(),
+                dto.getAddress()
+        );
+    }
+
+    private static int parseBranchId(String id) {
+        try {
+            return Integer.parseInt(id);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
 }

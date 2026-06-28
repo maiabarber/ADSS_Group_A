@@ -34,10 +34,10 @@ public class DatabaseSeeder {
                 """);
 
         statement.execute("""
-                INSERT OR IGNORE INTO branches (branch_id, branch_name, address, delivery_stop_site_id)
+                INSERT OR IGNORE INTO branches (branch_id, branch_name, address)
                 VALUES
-                (1, 'Beer Sheva', 'Rager 1, Beer Sheva', NULL),
-                (2, 'Tel Aviv', 'Dizengoff 10, Tel Aviv', NULL)
+                (1, 'Beer Sheva', 'Rager 1, Beer Sheva'),
+                (2, 'Tel Aviv', 'Dizengoff 10, Tel Aviv')
                 """);
 
         statement.execute("""
@@ -65,7 +65,6 @@ public class DatabaseSeeder {
         statement.execute("""
                 INSERT OR IGNORE INTO employee_roles (employee_id, role_name)
                 VALUES
-                ('100000001', 'HR_MANAGER'),
                 ('100000002', 'STOREKEEPER'),
                 ('100000003', 'DRIVER')
                 """);
@@ -107,13 +106,12 @@ public class DatabaseSeeder {
                     contact_name,
                     phone_number,
                     zone_code,
-                    site_type,
-                    branch_id
+                    site_type
                 )
                 VALUES
-                (1, 'Beer Sheva Branch', 'Rager 1, Beer Sheva', 'Avi Cohen', '050-1111111', 'SOUTH', 'BRANCH', 1),
-                (2, 'South Supplier', 'Industrial Area, Beer Sheva', 'Dana Levi', '050-2222222', 'SOUTH', 'REGULAR', NULL),
-                (3, 'Tel Aviv Branch', 'Dizengoff 10, Tel Aviv', 'Noa Israel', '050-3333333', 'CENTER', 'BRANCH', 2)
+                (1, 'Beer Sheva Branch', 'Rager 1, Beer Sheva', 'Avi Cohen', '050-1111111', 'SOUTH', 'BRANCH'),
+                (2, 'South Supplier', 'Industrial Area, Beer Sheva', 'Dana Levi', '050-2222222', 'SOUTH', 'REGULAR'),
+                (3, 'Tel Aviv Branch', 'Dizengoff 10, Tel Aviv', 'Noa Israel', '050-3333333', 'CENTER', 'BRANCH')
                 """);
 
         statement.execute("""
@@ -203,15 +201,17 @@ public class DatabaseSeeder {
 
     private static void seedBranchDeliveryStopSites(Statement statement) throws SQLException {
         statement.execute("""
-                UPDATE branches
-                SET delivery_stop_site_id = 1
-                WHERE branch_id = 1
+                INSERT OR IGNORE INTO branch_sites (branch_id, site_id)
+                VALUES
+                (1, 1),
+                (2, 3)
                 """);
 
         statement.execute("""
-                UPDATE branches
-                SET delivery_stop_site_id = 3
-                WHERE branch_id = 2
+                INSERT OR IGNORE INTO branch_delivery_stop_sites (branch_id, site_id)
+                VALUES
+                (1, 1),
+                (2, 3)
                 """);
     }
 

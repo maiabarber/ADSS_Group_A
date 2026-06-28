@@ -1,18 +1,18 @@
 package dataaccess.repository.impl;
 
 import dataaccess.DatabaseInitializer;
-import dataaccess.dao.SubmissionDeadlineDAO;
 import dataaccess.repository.RepositoryException;
 import dataaccess.repository.SubmissionDeadlineRepository;
+import dataaccess.dao.SubmissionDeadlineDAOImpl;
 
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.Optional;
 
-public class DatabaseSubmissionDeadlineRepository implements SubmissionDeadlineRepository {
-    private final SubmissionDeadlineDAO dao = new SubmissionDeadlineDAO();
+public class SubmissionDeadlineRepositoryImpl implements SubmissionDeadlineRepository {
+    private final SubmissionDeadlineDAOImpl dao = new SubmissionDeadlineDAOImpl();
 
-    public DatabaseSubmissionDeadlineRepository() {
+    public SubmissionDeadlineRepositoryImpl() {
         ensureSchema();
     }
 

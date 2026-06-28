@@ -1,46 +1,44 @@
 package dataaccess.dto;
 
-import transportation.domain.StopType;
-
-import java.time.LocalDateTime;
-
 public final class DeliveryStopDto {
+    private final int stopId;
+    private final int deliveryId;
     private final int stopOrder;
-    private final StopType stopType;
-    private final SiteDto site;
-    private final LocalDateTime plannedArrival;
-    private final DeliveryDocumentDto document;
+    private final String stopType;
+    private final int siteId;
+    private final String plannedArrival;
 
-    public DeliveryStopDto(
-            int stopOrder,
-            StopType stopType,
-            SiteDto site,
-            LocalDateTime plannedArrival,
-            DeliveryDocumentDto document) {
+    public DeliveryStopDto(int stopId, int deliveryId, int stopOrder, String stopType, int siteId, String plannedArrival) {
+        this.stopId = stopId;
+        this.deliveryId = deliveryId;
         this.stopOrder = stopOrder;
         this.stopType = stopType;
-        this.site = site;
+        this.siteId = siteId;
         this.plannedArrival = plannedArrival;
-        this.document = document;
+    }
+
+    public int getStopId() {
+        return stopId;
+    }
+
+    public int getDeliveryId() {
+        return deliveryId;
     }
 
     public int getStopOrder() {
         return stopOrder;
     }
 
-    public StopType getStopType() {
+    public String getStopType() {
         return stopType;
     }
 
-    public SiteDto getSite() {
-        return site;
+    public int getSiteId() {
+        return siteId;
     }
 
-    public LocalDateTime getPlannedArrival() {
+    public String getPlannedArrival() {
         return plannedArrival;
     }
 
-    public DeliveryDocumentDto getDocument() {
-        return document;
-    }
 }

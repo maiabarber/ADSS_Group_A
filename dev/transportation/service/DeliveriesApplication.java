@@ -8,7 +8,7 @@ import java.util.List;
 import dataaccess.DatabaseSeeder;
 import employee.service.EmployeeTransportationService;
 import dataaccess.repository.impl.EmployeeRepositoryImpl;
-import dataaccess.repository.impl.DatabaseShiftRepository;
+import dataaccess.repository.impl.ShiftRepositoryImpl;
 import dataaccess.repository.impl.DatabaseTransportationDataLoader;
 import employee.presentation.ShiftController;
 import transportation.domain.Delivery;
@@ -29,7 +29,7 @@ public class DeliveriesApplication {
 
     public DeliveriesApplication() {
         this(new EmployeeTransportationService(
-                new DatabaseShiftRepository(),
+                new ShiftRepositoryImpl(),
                 new EmployeeRepositoryImpl()));
     }
     public DeliveriesApplication(EmployeeTransportationService employeeTransportationService) {

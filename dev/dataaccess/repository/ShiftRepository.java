@@ -1,6 +1,6 @@
 package dataaccess.repository;
 
-import dataaccess.dto.ShiftDto;
+import employee.domain.Shift;
 
-public interface ShiftRepository extends Repository<ShiftDto, Integer> {
+public interface ShiftRepository extends Repository<Shift, Integer> {
 }

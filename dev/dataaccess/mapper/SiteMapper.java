@@ -1,36 +1,44 @@
 package dataaccess.mapper;
 
 import dataaccess.dto.SiteDto;
+import transportation.domain.ShippingZone;
 import transportation.domain.Site;
+import transportation.domain.SiteType;
 
-public class SiteMapper {
-    private int siteId=0;
+public final class SiteMapper {
+    private SiteMapper() {}
 
     public static SiteDto toDto(Site site) {
-    if (site == null) return null;
-
-    return new SiteDto(
-            null,
-            site.getSiteName(),
-            site.getAddress(),
-            site.getContactName(),
-            site.getPhoneNumber(),
-            ShippingZoneMapper.toDto(site.getShippingZone()),
-            site.getSiteType(),
-            BranchMapper.toDto(site.getBranch())
-    );
-}
-
-    public static Site toDomain(SiteDto siteDto) {
-        return new Site(
-            siteDto.getSiteName(),
-            siteDto.getAddress(),
-            siteDto.getPhoneNumber(),
-            siteDto.getContactName(),
-            ShippingZoneMapper.toDomain(siteDto.getShippingZone()),
-            siteDto.getSiteType(),
-            BranchMapper.toDomain(siteDto.getBranch())
+        if (site == null) {
+            return null;
+        }
+        return new SiteDto(
+                0,
+                site.getSiteName(),
+                site.getAddress(),
+                site.getContactName(),
+                site.getPhoneNumber(),
+                site.getShippingZone().getZoneCode(),
+                site.getSiteType().name()
         );
     }
 
+    public static Site toDomain(SiteDto dto) {
+        if (dto == null) {
+            return null;
+        }
+        ShippingZone zone = new ShippingZone(dto.getZoneCode(), dto.getZoneCode());
+        SiteType type = dto.getSiteType() == null || dto.getSiteType().isBlank()
+                ? SiteType.REGULAR
+                : SiteType.valueOf(dto.getSiteType());
+        return new Site(
+                dto.getSiteName(),
+                dto.getAddress(),
+                dto.getPhoneNumber(),
+                dto.getContactName(),
+                zone,
+                type,
+                null
+        );
+    }
 }
