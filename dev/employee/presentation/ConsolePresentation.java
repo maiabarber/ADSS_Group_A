@@ -76,24 +76,22 @@ public class ConsolePresentation {
 
 
     public ConsolePresentation() throws SQLException {
-        this.authenticationService = new AuthenticationService(new UserRepositoryImpl(new dataaccess.dao.UserDAOImpl(DatabaseConnection.getConnection())));
-        Connection connection = DatabaseConnection.getConnection();
-        EmployeeDAOImpl employeeDAO = new EmployeeDAOImpl(connection);
-        this.employeeRepository = new EmployeeRepositoryImpl(employeeDAO);
+        this.authenticationService = new AuthenticationService(new UserRepositoryImpl());
+        this.employeeRepository = new EmployeeRepositoryImpl();
         this.loginPresentation = new LoginPresentation();
         this.employeePresentation = new EmployeePresentation();
         this.shiftPresentation = new ShiftPresentation();
         this.userController = new UserController(authenticationService, employeeRepository);
         this.shiftController = new ShiftController();
-        this.shiftRepository = new ShiftRepositoryImpl(new ShiftDaoImpl(connection));
+        this.shiftRepository = new ShiftRepositoryImpl();
         this.submissionDeadlineRepository = new SubmissionDeadlineRepositoryImpl();
         this.submissionDeadlineService = new SubmissionDeadlineService();
         this.weeklyAvailabilityService = new WeeklyAvailabilityService(submissionDeadlineRepository,
                 employeeRepository);
         this.employeeTransportationService = new EmployeeTransportationService(shiftRepository, employeeRepository);
-        this.branchRepository = new BranchRepositoryImpl(new dataaccess.dao.BranchDAOImpl(connection));
+        this.branchRepository = new BranchRepositoryImpl();
         this.activeBranch = null;
-        this.userRepository = new UserRepositoryImpl(new dataaccess.dao.UserDAOImpl(connection));
+        this.userRepository = new UserRepositoryImpl();
     }
 
     public void run() throws RepositoryException {

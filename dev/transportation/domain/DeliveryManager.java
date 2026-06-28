@@ -349,12 +349,11 @@ public class DeliveryManager {
         if (!delivery.getDriver().canDrive(newTruck)) {
             throw new IllegalArgumentException("current driver cannot drive the new truck");
         }
+        if (!newTruck.canCarryWeight(delivery.getFinalMeasuredWeightBeforeDeparture())) {
+            throw new IllegalArgumentException("Truck cannot carry current delivery weight");
+        }
 
         delivery.setTruck(newTruck);
-
-        if (!delivery.getTruck().canCarryWeight(delivery.getFinalMeasuredWeightBeforeDeparture())) {
-            delivery.setStatus(DeliveryStatus.PENDING_REPLAN);
-        }
     }
 
     public void replaceDriver(Delivery delivery, Driver newDriver) {

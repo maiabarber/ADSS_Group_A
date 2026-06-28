@@ -36,18 +36,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class DatabaseTransportationDataLoader {
-    private final TruckDAO truckDAO;
-    private final SiteDAOImpl siteDAO;
-    private final DriverDAOImpl driverDAO;
-    private final DeliveryDAOImpl deliveryDAO;
-
     public DatabaseTransportationDataLoader() throws SQLException {
         DatabaseInitializer.initializeDatabase();
-        Connection connection = DatabaseConnection.getConnection();
-        this.truckDAO = new TruckDAO(connection);
-        this.siteDAO = new SiteDAOImpl(connection);
-        this.driverDAO = new DriverDAOImpl(connection);
-        this.deliveryDAO = new DeliveryDAOImpl(connection);
     }
 
     public void loadInto(DeliveryManager deliveryManager) throws SQLException {
@@ -82,7 +72,8 @@ public class DatabaseTransportationDataLoader {
     private Map<Integer, Site> loadSites(DeliveryManager deliveryManager) throws SQLException {
         Map<Integer, Site> sites = new HashMap<>();
 
-        try {
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            SiteDAOImpl siteDAO = new SiteDAOImpl(connection);
             for (SiteDto dto : siteDAO.findAll()) {
                 Site site = SiteMapper.toDomain(dto);
                 deliveryManager.addSite(site);
@@ -98,7 +89,8 @@ public class DatabaseTransportationDataLoader {
     private Map<String, Truck> loadTrucks(DeliveryManager deliveryManager) throws SQLException {
     Map<String, Truck> trucks = new HashMap<>();
 
-    try {
+    try (Connection connection = DatabaseConnection.getConnection()) {
+        TruckDAO truckDAO = new TruckDAO(connection);
         for (TruckDto dto : truckDAO.findAll()) {
             Truck truck = new Truck(
                     dto.getLicenseNumber(),
@@ -121,7 +113,8 @@ public class DatabaseTransportationDataLoader {
     private Map<String, Driver> loadDrivers(DeliveryManager deliveryManager) throws SQLException {
         Map<String, Driver> drivers = new HashMap<>();
 
-        try {
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            DriverDAOImpl driverDAO = new DriverDAOImpl(connection);
             for (DriverDto dto : driverDAO.findAll()) {
                 Driver driver = new Driver(
                         dto.getEmployeeId(),
@@ -146,7 +139,8 @@ public class DatabaseTransportationDataLoader {
             Map<String, ShippingZone> zones
     ) throws SQLException {
 
-        try {
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            DeliveryDAOImpl deliveryDAO = new DeliveryDAOImpl(connection);
             for (DeliveryDto dto : deliveryDAO.findAll()) {
                 Site source = sites.get(dto.getSourceSiteId());
                 Truck truck = trucks.get(dto.getTruckLicenseNumber());
