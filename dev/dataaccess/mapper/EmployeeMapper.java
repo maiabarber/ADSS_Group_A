@@ -49,7 +49,8 @@ public final class EmployeeMapper {
                 terms == null || terms.getStartDate() == null ? null : terms.getStartDate().toString(),
                 employee.isFired(),
                 terms == null ? 0 : terms.getVacationDays(),
-                branchId
+                branchId,
+                employee.canManageShift()
         );
     }
 
@@ -93,7 +94,7 @@ public final class EmployeeMapper {
                 type,
                 terms,
                 roles == null ? new HashSet<>() : roles,
-                false,
+                dto.canManageShift(),
                 dto.isFired(),
                 null,
                 null,

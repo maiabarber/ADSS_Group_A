@@ -14,8 +14,9 @@ public final class EmployeeDto {
     private final boolean fired;
     private final int vacationDays;
     private final Integer branchId;
+    private final boolean canManageShift;
 
-    public EmployeeDto(String employeeId, String name, String bankNumber, String bankBranchNumber, String bankAccountNumber, String employmentType, String employmentScope, double hourlySalary, double globalSalary, String startDate, boolean fired, int vacationDays, Integer branchId) {
+    public EmployeeDto(String employeeId, String name, String bankNumber, String bankBranchNumber, String bankAccountNumber, String employmentType, String employmentScope, double hourlySalary, double globalSalary, String startDate, boolean fired, int vacationDays, Integer branchId, boolean canManageShift) {
         this.employeeId = employeeId;
         this.name = name;
         this.bankNumber = bankNumber;
@@ -29,6 +30,7 @@ public final class EmployeeDto {
         this.fired = fired;
         this.vacationDays = vacationDays;
         this.branchId = branchId;
+        this.canManageShift = canManageShift;
     }
 
     public String getEmployeeId() {
@@ -81,6 +83,10 @@ public final class EmployeeDto {
 
     public Integer getBranchId() {
         return branchId;
+    }
+
+    public boolean canManageShift() {
+        return canManageShift;
     }
 
 }

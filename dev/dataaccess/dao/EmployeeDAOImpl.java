@@ -17,7 +17,7 @@ public class EmployeeDAOImpl implements DaoInterface<EmployeeDto> {
     @Override
     public void createOrUpdate(EmployeeDto dto) throws RepositoryException {
         String sql = """
-                INSERT INTO employees (employee_id, name, bank_number, bank_branch_number, bank_account_number, employment_type, employment_scope, hourly_salary, global_salary, start_date, is_fired, vacation_days, branch_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(employee_id) DO UPDATE SET name = excluded.name, bank_number = excluded.bank_number, bank_branch_number = excluded.bank_branch_number, bank_account_number = excluded.bank_account_number, employment_type = excluded.employment_type, employment_scope = excluded.employment_scope, hourly_salary = excluded.hourly_salary, global_salary = excluded.global_salary, start_date = excluded.start_date, is_fired = excluded.is_fired, vacation_days = excluded.vacation_days, branch_id = excluded.branch_id
+                INSERT INTO employees (employee_id, name, bank_number, bank_branch_number, bank_account_number, employment_type, employment_scope, hourly_salary, global_salary, start_date, is_fired, vacation_days, branch_id, can_manage_shift) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(employee_id) DO UPDATE SET name = excluded.name, bank_number = excluded.bank_number, bank_branch_number = excluded.bank_branch_number, bank_account_number = excluded.bank_account_number, employment_type = excluded.employment_type, employment_scope = excluded.employment_scope, hourly_salary = excluded.hourly_salary, global_salary = excluded.global_salary, start_date = excluded.start_date, is_fired = excluded.is_fired, vacation_days = excluded.vacation_days, branch_id = excluded.branch_id, can_manage_shift = excluded.can_manage_shift
                 """;
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
@@ -34,6 +34,7 @@ public class EmployeeDAOImpl implements DaoInterface<EmployeeDto> {
             stmt.setInt(11, dto.isFired() ? 1 : 0);
             stmt.setInt(12, dto.getVacationDays());
             if (dto.getBranchId() == null) { stmt.setNull(13, Types.INTEGER); } else { stmt.setInt(13, dto.getBranchId()); }
+            stmt.setInt(14, dto.canManageShift() ? 1 : 0);
             stmt.executeUpdate();
         } catch (SQLException e) {
             throw new RepositoryException("Failed to save employees row", e);
@@ -43,7 +44,7 @@ public class EmployeeDAOImpl implements DaoInterface<EmployeeDto> {
     @Override
     public EmployeeDto findbyId(String id) throws RepositoryException {
         String sql = """
-                SELECT employee_id, name, bank_number, bank_branch_number, bank_account_number, employment_type, employment_scope, hourly_salary, global_salary, start_date, is_fired, vacation_days, branch_id
+                SELECT employee_id, name, bank_number, bank_branch_number, bank_account_number, employment_type, employment_scope, hourly_salary, global_salary, start_date, is_fired, vacation_days, branch_id, can_manage_shift
                 FROM employees
                 WHERE employee_id = ?
                 """;
@@ -84,7 +85,7 @@ public class EmployeeDAOImpl implements DaoInterface<EmployeeDto> {
     @Override
     public List<EmployeeDto> findAll() throws RepositoryException {
         String sql = """
-                SELECT employee_id, name, bank_number, bank_branch_number, bank_account_number, employment_type, employment_scope, hourly_salary, global_salary, start_date, is_fired, vacation_days, branch_id
+                SELECT employee_id, name, bank_number, bank_branch_number, bank_account_number, employment_type, employment_scope, hourly_salary, global_salary, start_date, is_fired, vacation_days, branch_id, can_manage_shift
                 FROM employees
                 """;
         List<EmployeeDto> rows = new ArrayList<>();
@@ -114,7 +115,8 @@ public class EmployeeDAOImpl implements DaoInterface<EmployeeDto> {
                 rs.getString("start_date"),
                 rs.getInt("is_fired") == 1,
                 rs.getInt("vacation_days"),
-                getNullableInt(rs, "branch_id")
+                getNullableInt(rs, "branch_id"),
+                rs.getInt("can_manage_shift") == 1
         );
     }
 

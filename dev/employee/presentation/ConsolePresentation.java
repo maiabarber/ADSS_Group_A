@@ -1470,7 +1470,12 @@ public class ConsolePresentation {
     }
 
     private List<Employee> getEmployeesForCurrentScope(boolean includeGlobalDrivers) {
-        List<Employee> employees = userController.getEmployees();
+        List<Employee> employees;
+        try {
+            employees = employeeRepository.findAll();
+        } catch (RepositoryException e) {
+            employees = userController.getEmployees();
+        }
         if (activeBranch == null) {
             return employees;
         }
@@ -1490,7 +1495,12 @@ public class ConsolePresentation {
     }
 
     private List<Shift> getShiftsForCurrentScope() {
-        List<Shift> shifts = shiftController.getShifts();
+        List<Shift> shifts;
+        try {
+            shifts = shiftRepository.findAll();
+        } catch (RepositoryException e) {
+            shifts = shiftController.getShifts();
+        }
         if (activeBranch == null) {
             return shifts;
         }
@@ -1535,7 +1545,12 @@ public class ConsolePresentation {
     }
 
     private List<Shift> getShiftsForEmployeeBranch(Employee employee) {
-        List<Shift> shifts = shiftController.getShifts();
+        List<Shift> shifts;
+        try {
+            shifts = shiftRepository.findAll();
+        } catch (RepositoryException e) {
+            shifts = shiftController.getShifts();
+        }
         if (employee == null || employee.getBranch() == null) {
             return new ArrayList<>();
         }

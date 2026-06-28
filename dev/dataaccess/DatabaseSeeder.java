@@ -54,12 +54,13 @@ public class DatabaseSeeder {
                     start_date,
                     is_fired,
                     vacation_days,
-                    branch_id
+                    branch_id,
+                    can_manage_shift
                 )
                 VALUES
-                ('100000001', 'HR Manager', '11', '111', '111111', 'REGULAR', 'FULL_TIME', 0, 12000, '2026-01-01', 0, 10, 1),
-                ('100000002', 'Store Keeper', '22', '222', '222222', 'REGULAR', 'FULL_TIME', 45, 0, '2026-01-01', 0, 10, 1),
-                ('100000003', 'Driver Employee', '33', '333', '333333', 'REGULAR', 'FULL_TIME', 50, 0, '2026-01-01', 0, 10, NULL)
+                ('100000001', 'HR Manager', '11', '111', '111111', 'REGULAR', 'FULL_TIME', 0, 12000, '2026-01-01', 0, 10, 1, 1),
+                ('100000002', 'Store Keeper', '22', '222', '222222', 'REGULAR', 'FULL_TIME', 45, 0, '2026-01-01', 0, 10, 1, 0),
+                ('100000003', 'Driver Employee', '33', '333', '333333', 'REGULAR', 'FULL_TIME', 50, 0, '2026-01-01', 0, 10, NULL, 0)
                 """);
 
         statement.execute("""

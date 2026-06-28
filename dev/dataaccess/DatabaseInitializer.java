@@ -39,21 +39,22 @@ public class DatabaseInitializer {
 
         statement.execute("""
                 CREATE TABLE IF NOT EXISTS employees (
-                    employee_id TEXT PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    bank_number TEXT,
-                    bank_branch_number TEXT,
-                    bank_account_number TEXT,
-                    employment_type TEXT,
-                    employment_scope TEXT,
-                    hourly_salary REAL,
-                    global_salary REAL,
-                    start_date TEXT,
-                    is_fired INTEGER NOT NULL DEFAULT 0,
-                    vacation_days INTEGER NOT NULL DEFAULT 10,
-                    branch_id INTEGER,
-                    FOREIGN KEY (branch_id) REFERENCES branches(branch_id)
-                )
+                employee_id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                bank_number TEXT,
+                bank_branch_number TEXT,
+                bank_account_number TEXT,
+                employment_type TEXT,
+                employment_scope TEXT,
+                hourly_salary REAL,
+                global_salary REAL,
+                start_date TEXT,
+                is_fired INTEGER NOT NULL DEFAULT 0,
+                vacation_days INTEGER NOT NULL DEFAULT 10,
+                branch_id INTEGER,
+                can_manage_shift INTEGER NOT NULL DEFAULT 0,
+                FOREIGN KEY (branch_id) REFERENCES branches(branch_id)
+            )
                 """);
 
         statement.execute("""
