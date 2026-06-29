@@ -165,6 +165,7 @@ public class DatabaseTransportationDataLoader {
                 }
 
                 Delivery delivery = new Delivery(
+                        dto.getDeliveryId(),
                         deliveryDate,
                         source,
                         stops,

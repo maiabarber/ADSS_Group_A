@@ -13,7 +13,7 @@ public final class SiteMapper {
             return null;
         }
         return new SiteDto(
-                0,
+                site.getSiteId(),
                 site.getSiteName(),
                 site.getAddress(),
                 site.getContactName(),
@@ -27,11 +27,15 @@ public final class SiteMapper {
         if (dto == null) {
             return null;
         }
+
         ShippingZone zone = new ShippingZone(dto.getZoneCode(), dto.getZoneCode());
+
         SiteType type = dto.getSiteType() == null || dto.getSiteType().isBlank()
                 ? SiteType.REGULAR
                 : SiteType.valueOf(dto.getSiteType());
+
         return new Site(
+                dto.getSiteId(),
                 dto.getSiteName(),
                 dto.getAddress(),
                 dto.getPhoneNumber(),

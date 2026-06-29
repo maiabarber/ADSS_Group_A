@@ -75,6 +75,11 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public Optional<User> findById(String id) throws RepositoryException {
+        UserDto dto = findUserDto(id);
+        if (dto != null && dto.isHrManager()) {
+            return Optional.of(new HR_Manager(dto.getUserId(), dto.getPassword()));
+        }
+
         User savedUser = savedUsers.get(id);
         if (savedUser != null) {
             return Optional.of(savedUser);
@@ -85,15 +90,7 @@ public class UserRepositoryImpl implements UserRepository {
             return Optional.of(employee.get());
         }
 
-        if (userDao != null) {
-            return Optional.ofNullable(toDomain(userDao.findbyId(id)));
-        }
-
-        try (Connection connection = DatabaseConnection.getConnection()) {
-            return Optional.ofNullable(toDomain(new UserDAOImpl(connection).findbyId(id)));
-        } catch (SQLException e) {
-            throw new RepositoryException("Failed to find user", e);
-        }
+        return Optional.ofNullable(toDomain(dto));
     }
 
     @Override
@@ -149,5 +146,17 @@ public class UserRepositoryImpl implements UserRepository {
         return dto.isHrManager()
                 ? new HR_Manager(dto.getUserId(), dto.getPassword())
                 : new User(dto.getUserId(), dto.getPassword());
+    }
+
+    private UserDto findUserDto(String id) throws RepositoryException {
+        if (userDao != null) {
+            return userDao.findbyId(id);
+        }
+
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            return new UserDAOImpl(connection).findbyId(id);
+        } catch (SQLException e) {
+            throw new RepositoryException("Failed to find user", e);
+        }
     }
 }

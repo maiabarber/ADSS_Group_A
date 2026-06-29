@@ -1,5 +1,9 @@
 package employee.presentation;
 
+import java.time.LocalDate;
+import java.util.Collections;
+import java.util.Scanner;
+
 import employee.domain.BankAccount;
 import employee.domain.Branch;
 import employee.domain.Employee;
@@ -10,10 +14,6 @@ import employee.domain.Role;
 import employee.domain.Salary;
 import employee.domain.User;
 import employee.domain.WeeklyAvailabilityRequest;
-
-import java.time.LocalDate;
-import java.util.Collections;
-import java.util.Scanner;
 
 /**
  * EmployeePresentation class serves as a presentation layer for handling employee input and creating Employee objects.

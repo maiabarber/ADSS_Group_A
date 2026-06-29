@@ -6,11 +6,26 @@ import java.util.ArrayList;
 import java.util.List;
 
 import dataaccess.DatabaseSeeder;
-import employee.service.EmployeeTransportationService;
+import dataaccess.dto.DeliveryDto;
+import dataaccess.dto.DriverDto;
+import dataaccess.dto.ShippingZoneDto;
+import dataaccess.dto.SiteDto;
+import dataaccess.dto.TruckDto;
+import dataaccess.repository.DeliveryRepository;
+import dataaccess.repository.DriverRepository;
+import dataaccess.repository.RepositoryException;
+import dataaccess.repository.SiteRepository;
+import dataaccess.repository.TruckRepository;
+import dataaccess.repository.impl.DatabaseTransportationDataLoader;
+import dataaccess.repository.impl.DeliveryRepositoryImpl;
+import dataaccess.repository.impl.DriverRepositoryImpl;
 import dataaccess.repository.impl.EmployeeRepositoryImpl;
 import dataaccess.repository.impl.ShiftRepositoryImpl;
-import dataaccess.repository.impl.DatabaseTransportationDataLoader;
+import dataaccess.repository.impl.ShippingZoneRepositoryImpl;
+import dataaccess.repository.impl.SiteRepositoryImpl;
+import dataaccess.repository.impl.TruckRepositoryImpl;
 import employee.presentation.ShiftController;
+import employee.service.EmployeeTransportationService;
 import transportation.domain.Delivery;
 import transportation.domain.DeliveryDocument;
 import transportation.domain.DeliveryItem;
@@ -26,6 +41,11 @@ import transportation.domain.Truck;
 public class DeliveriesApplication {
 
     private DeliveryManager deliveryManager;
+    private final DeliveryRepository deliveryRepository;
+    private final SiteRepository siteRepository;
+    private final TruckRepository truckRepository;
+    private final DriverRepository driverRepository;
+    private final ShippingZoneRepositoryImpl shippingZoneRepository;
 
     public DeliveriesApplication() {
         this(new EmployeeTransportationService(
@@ -33,15 +53,21 @@ public class DeliveriesApplication {
                 new EmployeeRepositoryImpl()));
     }
     public DeliveriesApplication(EmployeeTransportationService employeeTransportationService) {
-        this.deliveryManager = new DeliveryManager(employeeTransportationService);
-        loadPersistedData();
+        this(new DeliveryManager(employeeTransportationService));
+        // loadPersistedData();
     }
 
     public DeliveriesApplication(DeliveryManager deliveryManager) {
         if (deliveryManager == null) {
             throw new IllegalArgumentException("deliveryManager cannot be null");
         }
+
         this.deliveryManager = deliveryManager;
+        this.deliveryRepository = new DeliveryRepositoryImpl();
+        this.siteRepository = new SiteRepositoryImpl();
+        this.truckRepository = new TruckRepositoryImpl();
+        this.driverRepository = new DriverRepositoryImpl();
+        this.shippingZoneRepository = new ShippingZoneRepositoryImpl();
     }
 
     public DeliveryManager getDeliveryManager() {
@@ -154,18 +180,134 @@ public class DeliveriesApplication {
 
     public void addShippingZone(ShippingZone shippingZone) {
         deliveryManager.addShippingZone(shippingZone);
+        saveShippingZone(shippingZone);
     }
 
     public void addSite(Site site) {
-        deliveryManager.addSite(site);
+        Site siteToAdd = site;
+
+        Integer existingSiteId = findExistingSiteIdByName(site.getSiteName());
+
+        if (existingSiteId != null) {
+            siteToAdd = new Site(
+                    existingSiteId,
+                    site.getSiteName(),
+                    site.getAddress(),
+                    site.getPhoneNumber(),
+                    site.getContactName(),
+                    site.getShippingZone(),
+                    site.getSiteType(),
+                    site.getBranch()
+            );
+        } else if (site.getSiteId() <= 0) {
+            int newSiteId = nextSiteId();
+
+            siteToAdd = new Site(
+                    newSiteId,
+                    site.getSiteName(),
+                    site.getAddress(),
+                    site.getPhoneNumber(),
+                    site.getContactName(),
+                    site.getShippingZone(),
+                    site.getSiteType(),
+                    site.getBranch()
+            );
+        }
+
+        deliveryManager.addSite(siteToAdd);
+        saveSite(siteToAdd);
+    }
+
+    private Integer findExistingSiteIdByName(String siteName) {
+        try {
+            for (SiteDto dto : siteRepository.findAll()) {
+                if (dto.getSiteName().equalsIgnoreCase(siteName)) {
+                    return dto.getSiteId();
+                }
+            }
+
+            return null;
+        } catch (RepositoryException e) {
+            throw new IllegalStateException("Failed to check if site already exists", e);
+        }
     }
 
     public void addTruck(Truck truck) {
         deliveryManager.addTruck(truck);
+        saveTruck(truck);
     }
 
     public void addDriver(Driver driver) {
         deliveryManager.addDriver(driver);
+        saveDriver(driver);
+    }
+
+    private void saveShippingZone(ShippingZone shippingZone) {
+        try {
+            shippingZoneRepository.save(new ShippingZoneDto(
+                    shippingZone.getZoneCode(),
+                    shippingZone.getZoneName()
+            ));
+        } catch (RepositoryException e) {
+            throw new IllegalStateException("Shipping zone added in memory but failed to save to database", e);
+        }
+    }
+
+    private void saveSite(Site site) {
+        try {
+            siteRepository.save(new SiteDto(
+                    site.getSiteId(),
+                    site.getSiteName(),
+                    site.getAddress(),
+                    site.getContactName(),
+                    site.getPhoneNumber(),
+                    site.getShippingZone().getZoneCode(),
+                    site.getSiteType().name()
+            ));
+        } catch (RepositoryException e) {
+            throw new IllegalStateException("Site added in memory but failed to save to database", e);
+        }
+    }
+
+    private void saveTruck(Truck truck) {
+        try {
+            truckRepository.save(new TruckDto(
+                    truck.getLicenseNumber(),
+                    truck.getModel(),
+                    truck.getNetWeight(),
+                    truck.getMaxAllowedWeight(),
+                    truck.getRequiredLicenseType().name()
+            ));
+        } catch (RepositoryException e) {
+            throw new IllegalStateException("Truck added in memory but failed to save to database", e);
+        }
+    }
+
+    private void saveDriver(Driver driver) {
+        try {
+            driverRepository.save(new DriverDto(
+                    driver.getEmployeeId(),
+                    driver.getDriverName()
+            ));
+        } catch (RepositoryException e) {
+            throw new IllegalStateException("Driver added in memory but failed to save to database", e);
+        }
+    }
+
+    private int nextSiteId() {
+        try {
+            int maxId = 0;
+
+            for (SiteDto dto : siteRepository.findAll()) {
+                if (dto.getSiteId() > maxId) {
+                    maxId = dto.getSiteId();
+                }
+            }
+
+            return maxId + 1;
+        } catch (RepositoryException e) {
+            throw new IllegalStateException("Failed to generate site id", e);
+        }
     }
 
     // ============================== Business helper methods ==============================
@@ -203,15 +345,15 @@ public class DeliveriesApplication {
     // ============================== Delivery lifecycle ==============================
 
     public Delivery createDelivery(LocalDate deliveryDate,
-                                 Site source,
-                                 List<DeliveryStop> stops,
-                                 LocalTime departureTime,
-                                 double initialWeight,
-                                 Truck truck,
-                                 Driver driver,
-                                 ShippingZone shippingZone) {
+                                Site source,
+                                List<DeliveryStop> stops,
+                                LocalTime departureTime,
+                                double initialWeight,
+                                Truck truck,
+                                Driver driver,
+                                ShippingZone shippingZone) {
 
-        return deliveryManager.createDelivery(
+        Delivery delivery = deliveryManager.createDelivery(
                 deliveryDate,
                 source,
                 stops,
@@ -221,14 +363,63 @@ public class DeliveriesApplication {
                 driver,
                 shippingZone
         );
+
+        saveDeliveryChange(delivery);
+
+        return delivery;
+    }
+
+    // private void saveDeliveryChange(Delivery delivery) {
+    //     try {
+    //         deliveryRepository.save(toDeliveryDto(delivery));
+    //     } catch (RepositoryException e) {
+    //         throw new IllegalStateException(
+    //                 "Delivery changed in memory but failed to save to database",
+    //                 e
+    //         );
+    //     }
+    // }
+
+    private void saveDeliveryChange(Delivery delivery) {
+        try {
+            DeliveryDto dto = toDeliveryDto(delivery);
+
+            System.out.println("DEBUG saving delivery:");
+            System.out.println("id = " + dto.getDeliveryId());
+            System.out.println("status = " + dto.getStatus());
+            System.out.println("sourceSiteId = " + dto.getSourceSiteId());
+
+            deliveryRepository.save(dto);
+        } catch (RepositoryException e) {
+            throw new IllegalStateException(
+                    "Delivery changed in memory but failed to save to database",
+                    e
+            );
+        }
+    }
+
+    private DeliveryDto toDeliveryDto(Delivery delivery) {
+        return new DeliveryDto(
+                delivery.getDeliveryId(),
+                delivery.getDeliveryDate().toString(),
+                delivery.getSource().getSiteId(),
+                delivery.getDepartureTime().toString(),
+                delivery.getFinalMeasuredWeightBeforeDeparture(),
+                delivery.getTruck().getLicenseNumber(),
+                delivery.getDriver().getEmployeeId(),
+                delivery.getShippingZone().getZoneCode(),
+                delivery.getStatus().name()
+        );
     }
 
     public void cancelDelivery(Delivery delivery) {
         deliveryManager.cancelDelivery(delivery);
+        saveDeliveryChange(delivery);
     }
 
     public void recordWeightMeasurement(Delivery delivery, double weight) {
         deliveryManager.recordWeightMeasurement(delivery, weight);
+        saveDeliveryChange(delivery);
     }
 
     public boolean isOverweight(Delivery delivery) {
@@ -237,30 +428,37 @@ public class DeliveriesApplication {
 
     public void markDeliveryForReplan(Delivery delivery) {
         deliveryManager.markDeliveryForReplan(delivery);
+        saveDeliveryChange(delivery);
     }
 
     public void replaceTruck(Delivery delivery, Truck newTruck) {
         deliveryManager.replaceTruck(delivery, newTruck);
+        saveDeliveryChange(delivery);
     }
 
     public void replaceDriver(Delivery delivery, Driver newDriver) {
         deliveryManager.replaceDriver(delivery, newDriver);
+        saveDeliveryChange(delivery);
     }
 
     public void addStopToDelivery(Delivery delivery, DeliveryStop newStop) {
         deliveryManager.addStop(delivery, newStop);
+        saveDeliveryChange(delivery);
     }
 
     public void removeStopFromDeliveryByOrder(Delivery delivery, int stopOrder) {
         deliveryManager.removeStopByOrder(delivery, stopOrder);
+        saveDeliveryChange(delivery);
     }
 
     public void updateStopDocumentItems(Delivery delivery, int stopOrder, List<DeliveryItem> updatedItems) {
         deliveryManager.updateStopDocumentItems(delivery, stopOrder, updatedItems);
+        saveDeliveryChange(delivery);
     }
 
     public void dispatchDelivery(Delivery delivery) {
         deliveryManager.dispatchDelivery(delivery);
+        saveDeliveryChange(delivery);
     }
 
     // ============================== Convenience methods for UI ==============================

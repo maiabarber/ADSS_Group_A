@@ -7,6 +7,7 @@ public class Site {
     private static final ShippingZone DEFAULT_SHIPPING_ZONE =
             new ShippingZone("UNASSIGNED", "Unassigned Zone");
 
+    private int siteId;
     private String siteName;
     private String address;
     private String phoneNumber;
@@ -14,6 +15,11 @@ public class Site {
     private ShippingZone shippingZone;
     private SiteType siteType;
     private Branch branch;
+
+    public Site(int siteId, String siteName, String address, String phoneNumber, String contactName, ShippingZone shippingZone, SiteType siteType, Branch branch) {
+        this(siteName, address, phoneNumber, contactName, shippingZone, siteType, branch);
+        this.siteId = siteId;
+    }
 
     public Site(String siteName, String address, String phoneNumber, String contactName) {
         this(siteName, address, phoneNumber, contactName, DEFAULT_SHIPPING_ZONE, SiteType.REGULAR, null);
@@ -42,6 +48,10 @@ public class Site {
         this.shippingZone = shippingZone;
         this.siteType = branch != null ? SiteType.BRANCH : siteType;
         this.branch = branch;
+    }
+
+    public int getSiteId() {
+        return siteId;
     }
 
     public String getSiteName() {
