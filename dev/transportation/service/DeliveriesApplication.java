@@ -7,8 +7,14 @@ import java.util.List;
 
 import dataaccess.DatabaseConnection;
 import dataaccess.DatabaseSeeder;
+import dataaccess.dao.DeliveryDocumentDaoImpl;
+import dataaccess.dao.DeliveryFormMeasurementDaoImpl;
+import dataaccess.dao.DeliveryItemDaoImpl;
 import dataaccess.dao.DeliveryStopDaoImpl;
 import dataaccess.dto.DeliveryDto;
+import dataaccess.dto.DeliveryDocumentDto;
+import dataaccess.dto.DeliveryFormMeasurementDto;
+import dataaccess.dto.DeliveryItemDto;
 import dataaccess.dto.DeliveryStopDto;
 import dataaccess.dto.DriverDto;
 import dataaccess.dto.ShippingZoneDto;
@@ -393,7 +399,7 @@ public class DeliveriesApplication {
             // System.out.println("sourceSiteId = " + dto.getSourceSiteId());
 
             deliveryRepository.save(dto);
-            saveDeliveryStops(delivery);
+            saveDeliveryChildRows(delivery);
         } catch (RepositoryException e) {
             throw new IllegalStateException(
                     "Delivery changed in memory but failed to save to database",
@@ -416,26 +422,127 @@ public class DeliveriesApplication {
         );
     }
 
-    private void saveDeliveryStops(Delivery delivery) {
+    private void saveDeliveryChildRows(Delivery delivery) {
         try (java.sql.Connection connection = DatabaseConnection.getConnection()) {
+            connection.setAutoCommit(false);
+
             DeliveryStopDaoImpl stopDao = new DeliveryStopDaoImpl(connection);
+            DeliveryDocumentDaoImpl documentDao = new DeliveryDocumentDaoImpl(connection);
+            DeliveryItemDaoImpl itemDao = new DeliveryItemDaoImpl(connection);
+            DeliveryFormMeasurementDaoImpl measurementDao = new DeliveryFormMeasurementDaoImpl(connection);
+
+            deletePersistedChildRowsForDelivery(connection, delivery.getDeliveryId());
+            int nextStopId = nextId(connection, "delivery_stops", "stop_id");
+            int nextMeasurementId = nextId(
+                    connection,
+                    "delivery_form_measurements",
+                    "measurement_id");
+
             for (DeliveryStop stop : delivery.getStops()) {
                 stopDao.createOrUpdate(new DeliveryStopDto(
-                        generateStopId(delivery.getDeliveryId(), stop.getStopOrder()),
+                        nextStopId,
                         delivery.getDeliveryId(),
                         stop.getStopOrder(),
                         stop.getStopType().name(),
                         stop.getSite().getSiteId(),
                         stop.getPlannedArrivalDateTime().toString()
                 ));
+
+                saveStopDocumentAndItems(documentDao, itemDao, nextStopId, stop);
+                nextStopId++;
             }
+
+            for (Double measurement : delivery.getDeliveryForm().getWeightMeasurements()) {
+                measurementDao.createOrUpdate(new DeliveryFormMeasurementDto(
+                        nextMeasurementId,
+                        delivery.getDeliveryId(),
+                        measurement
+                ));
+                nextMeasurementId++;
+            }
+
+            connection.commit();
         } catch (Exception e) {
-            throw new IllegalStateException("Delivery saved but failed to save delivery stops", e);
+            throw new IllegalStateException(
+                    "Delivery saved but failed to save delivery stops, documents, items and measurements",
+                    e);
         }
     }
 
-    private int generateStopId(int deliveryId, int stopOrder) {
-        return deliveryId * 1000 + stopOrder + 1;
+    private void saveStopDocumentAndItems(
+            DeliveryDocumentDaoImpl documentDao,
+            DeliveryItemDaoImpl itemDao,
+            int stopId,
+            DeliveryStop stop) throws Exception {
+
+        if (!stop.hasDocument()) {
+            return;
+        }
+
+        DeliveryDocument document = stop.getDocument();
+        documentDao.createOrUpdate(new DeliveryDocumentDto(
+                document.getDocumentNumber(),
+                stopId
+        ));
+
+        for (DeliveryItem item : document.getItems()) {
+            itemDao.createOrUpdate(new DeliveryItemDto(
+                    item.getItemId(),
+                    document.getDocumentNumber(),
+                    item.getItemName(),
+                    item.getQuantity()
+            ));
+        }
+    }
+
+    private void deletePersistedChildRowsForDelivery(java.sql.Connection connection, int deliveryId)
+            throws java.sql.SQLException {
+        try (java.sql.PreparedStatement deleteItems = connection.prepareStatement("""
+                DELETE FROM delivery_items
+                WHERE document_number IN (
+                    SELECT document_number
+                    FROM delivery_documents
+                    WHERE stop_id IN (
+                        SELECT stop_id
+                        FROM delivery_stops
+                        WHERE delivery_id = ?
+                    )
+                )
+                """);
+             java.sql.PreparedStatement deleteDocuments = connection.prepareStatement(
+                     """
+                             DELETE FROM delivery_documents
+                             WHERE stop_id IN (
+                                 SELECT stop_id
+                                 FROM delivery_stops
+                                 WHERE delivery_id = ?
+                             )
+                             """);
+             java.sql.PreparedStatement deleteStops = connection.prepareStatement(
+                     "DELETE FROM delivery_stops WHERE delivery_id = ?");
+             java.sql.PreparedStatement deleteMeasurements = connection.prepareStatement(
+                     "DELETE FROM delivery_form_measurements WHERE delivery_id = ?")) {
+            deleteItems.setInt(1, deliveryId);
+            deleteItems.executeUpdate();
+
+            deleteDocuments.setInt(1, deliveryId);
+            deleteDocuments.executeUpdate();
+
+            deleteStops.setInt(1, deliveryId);
+            deleteStops.executeUpdate();
+
+            deleteMeasurements.setInt(1, deliveryId);
+            deleteMeasurements.executeUpdate();
+        }
+    }
+
+    private int nextId(java.sql.Connection connection, String tableName, String columnName)
+            throws java.sql.SQLException {
+        String sql = "SELECT COALESCE(MAX(" + columnName + "), 0) + 1 FROM " + tableName;
+        try (java.sql.Statement statement = connection.createStatement();
+             java.sql.ResultSet resultSet = statement.executeQuery(sql)) {
+            return resultSet.next() ? resultSet.getInt(1) : 1;
+        }
     }
 
     public void cancelDelivery(Delivery delivery) {

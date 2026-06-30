@@ -101,6 +101,9 @@ public class UserController {
         if (!(requestedBy instanceof HR_Manager) || !((HR_Manager) requestedBy).isHRManager()) {
             throw new IllegalArgumentException("Only HR manager can fire employees");
         }
+        if (requestedBy.getId().equals(employeeId)) {
+            throw new IllegalArgumentException("HR manager cannot fire himself");
+        }
 
         Optional<Employee> employeeOptional = employeeRepository.findById(employeeId);
         if (!employeeOptional.isPresent()) {

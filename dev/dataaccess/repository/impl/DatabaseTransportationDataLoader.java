@@ -18,7 +18,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 import transportation.domain.Delivery;
+import transportation.domain.DeliveryDocument;
 import transportation.domain.DeliveryForm;
+import transportation.domain.DeliveryItem;
 import transportation.domain.DeliveryManager;
 import transportation.domain.DeliveryStatus;
 import transportation.domain.DeliveryStop;
@@ -46,6 +48,7 @@ public class DatabaseTransportationDataLoader {
         Map<String, Truck> trucks = loadTrucks(deliveryManager);
         Map<String, Driver> drivers = loadDrivers(deliveryManager);
         loadDeliveries(deliveryManager, sites, trucks, drivers, zones);
+        deliveryManager.synchronizeNextDocumentNumber(loadNextDocumentNumber());
     }
 
     private Map<String, ShippingZone> loadShippingZones(DeliveryManager deliveryManager) throws SQLException {
@@ -175,7 +178,7 @@ public class DatabaseTransportationDataLoader {
                         driver,
                         zone,
                         DeliveryStatus.valueOf(dto.getStatus()),
-                        new DeliveryForm()
+                        new DeliveryForm(loadMeasurements(dto.getDeliveryId()))
                 );
 
                 deliveryManager.addDelivery(delivery);
@@ -194,7 +197,7 @@ public class DatabaseTransportationDataLoader {
         List<DeliveryStop> stops = new ArrayList<>();
 
         String sql = """
-                SELECT stop_order, stop_type, site_id, planned_arrival
+                SELECT stop_id, stop_order, stop_type, site_id, planned_arrival
                 FROM delivery_stops
                 WHERE delivery_id = ?
                 ORDER BY stop_order
@@ -219,17 +222,101 @@ public class DatabaseTransportationDataLoader {
                             ? fallbackArrival
                             : LocalDateTime.parse(rawArrival);
 
-                    stops.add(new DeliveryStop(
-                            rs.getInt("stop_order"),
-                            StopType.valueOf(rs.getString("stop_type")),
-                            site,
-                            arrival
-                    ));
+                    DeliveryDocument document = loadDocument(rs.getInt("stop_id"));
+
+                    if (document == null) {
+                        stops.add(new DeliveryStop(
+                                rs.getInt("stop_order"),
+                                StopType.valueOf(rs.getString("stop_type")),
+                                site,
+                                arrival
+                        ));
+                    } else {
+                        stops.add(new DeliveryStop(
+                                rs.getInt("stop_order"),
+                                StopType.valueOf(rs.getString("stop_type")),
+                                site,
+                                document,
+                                arrival
+                        ));
+                    }
                 }
             }
         }
 
         return stops;
+    }
+
+    private DeliveryDocument loadDocument(int stopId) throws SQLException {
+        String sql = """
+                SELECT document_number
+                FROM delivery_documents
+                WHERE stop_id = ?
+                """;
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, stopId);
+
+            try (ResultSet rs = statement.executeQuery()) {
+                if (!rs.next()) {
+                    return null;
+                }
+
+                int documentNumber = rs.getInt("document_number");
+                return new DeliveryDocument(documentNumber, loadItems(documentNumber));
+            }
+        }
+    }
+
+    private List<DeliveryItem> loadItems(int documentNumber) throws SQLException {
+        List<DeliveryItem> items = new ArrayList<>();
+        String sql = """
+                SELECT item_id, item_name, quantity
+                FROM delivery_items
+                WHERE document_number = ?
+                ORDER BY item_id
+                """;
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, documentNumber);
+
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    items.add(new DeliveryItem(
+                            rs.getString("item_id"),
+                            rs.getString("item_name"),
+                            rs.getInt("quantity")
+                    ));
+                }
+            }
+        }
+
+        return items;
+    }
+
+    private List<Double> loadMeasurements(int deliveryId) throws SQLException {
+        List<Double> measurements = new ArrayList<>();
+        String sql = """
+                SELECT measured_weight
+                FROM delivery_form_measurements
+                WHERE delivery_id = ?
+                ORDER BY measurement_id
+                """;
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, deliveryId);
+
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    measurements.add(rs.getDouble("measured_weight"));
+                }
+            }
+        }
+
+        return measurements;
     }
 
     private Set<LicenseType> loadLicenseTypes(String employeeId) throws SQLException {
@@ -254,5 +341,15 @@ public class DatabaseTransportationDataLoader {
         }
 
         return licenseTypes;
+    }
+
+    private int loadNextDocumentNumber() throws SQLException {
+        String sql = "SELECT COALESCE(MAX(document_number), 0) + 1 FROM delivery_documents";
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet rs = statement.executeQuery(sql)) {
+            return rs.next() ? rs.getInt(1) : 1;
+        }
     }
 }
