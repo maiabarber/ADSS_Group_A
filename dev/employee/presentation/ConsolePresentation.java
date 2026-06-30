@@ -1563,7 +1563,8 @@ public class ConsolePresentation {
                     || employee.isFired()
                     || !employee.getAuthorizedRoles().contains(Role.STOREKEEPER)
                     || !employeeBelongsToBranch(employee, branchId)
-                    || isAssignedToShift(shift, employee.getId())) {
+                    || isAssignedToShift(shift, employee.getId())
+                    || assignmentWouldRequireApproval(employee, shift)) {
                 continue;
             }
 
@@ -1581,6 +1582,27 @@ public class ConsolePresentation {
             }
         }
         return null;
+    }
+
+    private boolean assignmentWouldRequireApproval(Employee employee, Shift shift) {
+        WeeklyAvailabilityRequest availability = employee.getWeeklyAvailabilityRequest();
+        return hasConstraintForShift(availability, shift)
+                || (employee.getFixedDayOff() != null
+                        && employee.getFixedDayOff() == shift.getDate().getDayOfWeek());
+    }
+
+    private boolean hasConstraintForShift(WeeklyAvailabilityRequest availability, Shift shift) {
+        if (availability == null) {
+            return false;
+        }
+
+        for (Constraint constraint : availability.getConstraints()) {
+            if (constraint.getDay() == shift.getDate().getDayOfWeek()
+                    && constraint.getShiftType() == shift.getShiftType()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean hasApprovedAssignment(Shift shift, String employeeId, Role role) {
