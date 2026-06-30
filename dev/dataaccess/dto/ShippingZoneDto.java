@@ -16,4 +16,5 @@ public final class ShippingZoneDto {
     public String getZoneName() {
         return zoneName;
     }
+
 }

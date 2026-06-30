@@ -1,13 +1,17 @@
 package employee.presentation;
 
-import employee.domain.Branch;
 import employee.domain.Employee;
-import employee.domain.BranchManager;
 import employee.service.HRManagerBranchService;
-import employee.repository.EmployeeRepository;
-import employee.repository.ShiftRepository;
+import dataaccess.dto.BranchDto;
+import dataaccess.mapper.BranchMapper;
+import dataaccess.repository.EmployeeRepository;
+import dataaccess.repository.RepositoryException;
+
 import java.util.List;
 import java.util.Scanner;
+
+import dataaccess.repository.ShiftRepository;
+import dataaccess.repository.impl.BranchRepositoryImpl;
 
 /**
  * HRManagerPresentation handles HR Manager operations for managing their branch.
@@ -21,11 +25,12 @@ public class HRManagerPresentation {
 
     /**
      * HR Manager selects their branch and gets a service to manage it
+     * @throws RepositoryException 
      */
-    public HRManagerBranchService selectManagedBranch(Scanner scanner, BranchManager branchManager,
+    public HRManagerBranchService selectManagedBranch(Scanner scanner, BranchRepositoryImpl branchRepository,
                                                        EmployeeRepository employeeRepository,
-                                                       ShiftRepository shiftRepository) {
-        List<Branch> allBranches = branchManager.getAllBranches();
+                                                       ShiftRepository shiftRepository) throws RepositoryException {
+        List<BranchDto> allBranches = branchRepository.findAll();
         
         if (allBranches.isEmpty()) {
             System.out.println("No branches available in the system.");
@@ -34,16 +39,16 @@ public class HRManagerPresentation {
         
         System.out.println("\nAvailable Branches:");
         for (int i = 0; i < allBranches.size(); i++) {
-            Branch branch = allBranches.get(i);
-            System.out.println((i + 1) + ". " + branch.getBranchName() + " (" + branch.getLocation() + ")");
+            BranchDto branch = allBranches.get(i);
+            System.out.println((i + 1) + ". " + branch.getBranchName() + " (" + branch.getAddress() + ")");
         }
         
         int selection = readBranchSelection(scanner, allBranches.size());
-        Branch selectedBranch = allBranches.get(selection - 1);
+        BranchDto selectedBranch = allBranches.get(selection - 1);
         
         System.out.println("You are now managing branch: " + selectedBranch.getBranchName());
         
-        return new HRManagerBranchService(selectedBranch, employeeRepository, shiftRepository);
+        return new HRManagerBranchService(BranchMapper.toDomain(selectedBranch), employeeRepository, shiftRepository);
     }
 
     /**

@@ -11,25 +11,25 @@ public class Branch {
     private String branchId;
     private String branchName;
     private String location;
-    private Site deliveryStop;
+    private Site Site;
 
     public Branch(String branchId, String branchName, String location) {
         this(branchId, branchName, location, null);
     }
 
-    public Branch(String branchId, String branchName, String location, Site deliveryStop) {
+    public Branch(String branchId, String branchName, String location, Site Site) {
         validateBranchId(branchId);
         validateBranchName(branchName);
         validateLocation(location);
-        if (deliveryStop != null && deliveryStop.getSiteType() != transportation.domain.SiteType.BRANCH) {
+        if (Site != null && Site.getSiteType() != transportation.domain.SiteType.BRANCH) {
             throw new IllegalArgumentException("Branch delivery stop must be a branch site");
         }
         this.branchId = branchId;
         this.branchName = branchName;
         this.location = location;
-        this.deliveryStop = deliveryStop;
-        if (this.deliveryStop != null) {
-            this.deliveryStop.setBranch(this);
+        this.Site = Site;
+        if (this.Site != null) {
+            this.Site.setBranch(this);
         }
     }
 
@@ -76,17 +76,17 @@ public class Branch {
         this.location = location;
     }
 
-    public Site getDeliveryStop() {
-        return deliveryStop;
+    public Site getSite() {
+        return Site;
     }
 
-    public void setDeliveryStop(Site deliveryStop) {
-        if (deliveryStop != null && deliveryStop.getSiteType() != transportation.domain.SiteType.BRANCH) {
+    public void setSite(Site Site) {
+        if (Site != null && Site.getSiteType() != transportation.domain.SiteType.BRANCH) {
             throw new IllegalArgumentException("Branch delivery stop must be a branch site");
         }
-        this.deliveryStop = deliveryStop;
-        if (this.deliveryStop != null) {
-            this.deliveryStop.setBranch(this);
+        this.Site = Site;
+        if (this.Site != null) {
+            this.Site.setBranch(this);
         }
     }
 

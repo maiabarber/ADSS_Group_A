@@ -4,12 +4,9 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-// This class creates the database tables if they do not already exist.
 public class DatabaseInitializer {
 
-    private DatabaseInitializer() {
-        // Utility class, no objects needed.
-    }
+    private DatabaseInitializer() {}
 
     public static void initializeDatabase() throws SQLException {
         try (Connection connection = DatabaseConnection.getConnection();
@@ -18,7 +15,9 @@ public class DatabaseInitializer {
             statement.execute("PRAGMA foreign_keys = ON");
 
             createEmployeeTables(statement);
+            migrateEmployeeTables(statement);
             createTransportationTables(statement);
+            createJoinTables(statement);
         }
     }
 
@@ -41,19 +40,22 @@ public class DatabaseInitializer {
 
         statement.execute("""
                 CREATE TABLE IF NOT EXISTS employees (
-                    employee_id TEXT PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    bank_account TEXT,
-                    employment_type TEXT,
-                    employment_scope TEXT,
-                    hourly_salary REAL,
-                    global_salary REAL,
-                    start_date TEXT,
-                    is_fired INTEGER NOT NULL DEFAULT 0,
-                    vacation_days INTEGER NOT NULL DEFAULT 10,
-                    branch_id INTEGER,
-                    FOREIGN KEY (branch_id) REFERENCES branches(branch_id)
-                )
+                employee_id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                bank_number TEXT,
+                bank_branch_number TEXT,
+                bank_account_number TEXT,
+                employment_type TEXT,
+                employment_scope TEXT,
+                hourly_salary REAL,
+                global_salary REAL,
+                start_date TEXT,
+                is_fired INTEGER NOT NULL DEFAULT 0,
+                vacation_days INTEGER NOT NULL DEFAULT 10,
+                branch_id INTEGER,
+                can_manage_shift INTEGER NOT NULL DEFAULT 0,
+                FOREIGN KEY (branch_id) REFERENCES branches(branch_id)
+            )
                 """);
 
         statement.execute("""
@@ -83,22 +85,45 @@ public class DatabaseInitializer {
                     role_name TEXT NOT NULL,
                     status TEXT NOT NULL,
                     FOREIGN KEY (shift_id) REFERENCES shifts(shift_id),
-                    FOREIGN KEY (employee_id) REFERENCES employees(employee_id)
+                    FOREIGN KEY (employee_id) REFERENCES employees(employee_id),
+                    FOREIGN KEY (employee_id, role_name)
+                        REFERENCES employee_roles(employee_id, role_name)
                 )
                 """);
 
         statement.execute("""
-            CREATE TABLE IF NOT EXISTS submissiondeadlines (
-                deadline_date TEXT NOT NULL
-            )
-            """);
+                CREATE TABLE IF NOT EXISTS submissiondeadlines (
+                    deadline_date TEXT NOT NULL
+                )
+                """);
 
         statement.execute("""
                 CREATE TABLE IF NOT EXISTS weeklyavailabilityrequests (
                     request_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     employee_id TEXT NOT NULL,
                     week_start_date TEXT NOT NULL,
-                    submission_deadline TEXT NOT NULL
+                    submission_deadline TEXT NOT NULL,
+                    FOREIGN KEY (employee_id) REFERENCES employees(employee_id)
+                )
+                """);
+
+        statement.execute("""
+                CREATE TABLE IF NOT EXISTS weekly_availability_constraints (
+                    request_id INTEGER NOT NULL,
+                    day_of_week TEXT NOT NULL,
+                    shift_type TEXT NOT NULL,
+                    PRIMARY KEY (request_id, day_of_week, shift_type),
+                    FOREIGN KEY (request_id) REFERENCES weeklyavailabilityrequests(request_id)
+                )
+                """);
+
+        statement.execute("""
+                CREATE TABLE IF NOT EXISTS weekly_availability_preferences (
+                    request_id INTEGER NOT NULL,
+                    day_of_week TEXT NOT NULL,
+                    shift_type TEXT NOT NULL,
+                    PRIMARY KEY (request_id, day_of_week, shift_type),
+                    FOREIGN KEY (request_id) REFERENCES weeklyavailabilityrequests(request_id)
                 )
                 """);
 
@@ -113,6 +138,49 @@ public class DatabaseInitializer {
                     status_message TEXT NOT NULL
                 )
                 """);
+    }
+
+    private static void migrateEmployeeTables(Statement statement) throws SQLException {
+        addColumnIfMissing(statement, "employees", "fixed_day_off", "TEXT");
+        addColumnIfMissing(statement, "employees", "weekly_week_start_date", "TEXT");
+        addColumnIfMissing(statement, "employees", "weekly_submission_deadline", "TEXT");
+        addColumnIfMissing(statement, "employees", "weekly_constraints", "TEXT");
+        addColumnIfMissing(statement, "employees", "weekly_preferences", "TEXT");
+        statement.execute("""
+                UPDATE employees
+                SET can_manage_shift = 0
+                WHERE employee_id IN (
+                    SELECT user_id
+                    FROM users
+                    WHERE is_hr_manager = 1
+                )
+                """);
+        statement.execute("""
+                UPDATE employees
+                SET can_manage_shift = 1
+                WHERE employee_id = '100000002'
+                  AND employee_id NOT IN (
+                      SELECT user_id
+                      FROM users
+                      WHERE is_hr_manager = 1
+                  )
+                """);
+    }
+
+    private static void addColumnIfMissing(
+            Statement statement,
+            String tableName,
+            String columnName,
+            String columnDefinition) throws SQLException {
+        try (java.sql.ResultSet columns = statement.getConnection()
+                .getMetaData()
+                .getColumns(null, null, tableName, columnName)) {
+            if (columns.next()) {
+                return;
+            }
+        }
+
+        statement.execute("ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnDefinition);
     }
 
     private static void createTransportationTables(Statement statement) throws SQLException {
@@ -149,7 +217,8 @@ public class DatabaseInitializer {
         statement.execute("""
                 CREATE TABLE IF NOT EXISTS drivers (
                     employee_id TEXT PRIMARY KEY,
-                    driver_name TEXT NOT NULL
+                    driver_name TEXT NOT NULL,
+                    FOREIGN KEY (employee_id) REFERENCES employees(employee_id)
                 )
                 """);
 
@@ -218,6 +287,28 @@ public class DatabaseInitializer {
                     delivery_id INTEGER NOT NULL,
                     measured_weight REAL NOT NULL,
                     FOREIGN KEY (delivery_id) REFERENCES deliveries(delivery_id)
+                )
+                """);
+    }
+
+    private static void createJoinTables(Statement statement) throws SQLException {
+        statement.execute("""
+                CREATE TABLE IF NOT EXISTS branch_sites (
+                    branch_id INTEGER NOT NULL,
+                    site_id INTEGER NOT NULL,
+                    PRIMARY KEY (branch_id, site_id),
+                    FOREIGN KEY (branch_id) REFERENCES branches(branch_id),
+                    FOREIGN KEY (site_id) REFERENCES sites(site_id)
+                )
+                """);
+
+        statement.execute("""
+                CREATE TABLE IF NOT EXISTS branch_delivery_stop_sites (
+                    branch_id INTEGER NOT NULL,
+                    site_id INTEGER NOT NULL,
+                    PRIMARY KEY (branch_id, site_id),
+                    FOREIGN KEY (branch_id) REFERENCES branches(branch_id),
+                    FOREIGN KEY (site_id) REFERENCES sites(site_id)
                 )
                 """);
     }

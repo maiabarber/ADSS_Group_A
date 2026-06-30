@@ -19,7 +19,8 @@ public class DatabaseSeeder {
 
             seedEmployees(statement);
             seedTransportation(statement);
-        //     seedRequests(statement);
+            seedBranchDeliveryStopSites(statement);
+            seedRequests(statement);
         }
     }
 
@@ -43,7 +44,9 @@ public class DatabaseSeeder {
                 INSERT OR IGNORE INTO employees (
                     employee_id,
                     name,
-                    bank_account,
+                    bank_number,
+                    bank_branch_number,
+                    bank_account_number,
                     employment_type,
                     employment_scope,
                     hourly_salary,
@@ -51,12 +54,13 @@ public class DatabaseSeeder {
                     start_date,
                     is_fired,
                     vacation_days,
-                    branch_id
+                    branch_id,
+                    can_manage_shift
                 )
                 VALUES
-                ('100000001', 'HR Manager', '111-111-111111', 'REGULAR', 'FULL_TIME', 0, 12000, '2026-01-01', 0, 10, 1),
-                ('100000002', 'Store Keeper', '222-222-222222', 'REGULAR', 'FULL_TIME', 45, 0, '2026-01-01', 0, 10, 1),
-                ('100000003', 'Driver Employee', '333-333-333333', 'REGULAR', 'FULL_TIME', 50, 0, '2026-01-01', 0, 10, NULL)
+                ('100000001', 'HR Manager', '11', '111', '111111', 'REGULAR', 'FULL_TIME', 0, 12000, '2026-01-01', 0, 10, 1, 1),
+                ('100000002', 'Store Keeper', '22', '222', '222222', 'REGULAR', 'FULL_TIME', 45, 0, '2026-01-01', 0, 10, 1, 1),
+                ('100000003', 'Driver Employee', '33', '333', '333333', 'REGULAR', 'FULL_TIME', 50, 0, '2026-01-01', 0, 10, NULL, 0)
                 """);
 
         statement.execute("""
@@ -74,7 +78,13 @@ public class DatabaseSeeder {
                 """);
 
         statement.execute("""
-                INSERT OR IGNORE INTO shift_assignments (assignment_id, shift_id, employee_id, role_name, status)
+                INSERT OR IGNORE INTO shift_assignments (
+                    assignment_id,
+                    shift_id,
+                    employee_id,
+                    role_name,
+                    status
+                )
                 VALUES
                 (1, 1, '100000002', 'STOREKEEPER', 'APPROVED'),
                 (2, 1, '100000003', 'DRIVER', 'APPROVED')
@@ -168,34 +178,57 @@ public class DatabaseSeeder {
                 """);
 
         statement.execute("""
-                INSERT OR IGNORE INTO delivery_items (item_id, document_number, item_name, quantity)
+                INSERT OR IGNORE INTO delivery_items (
+                    item_id,
+                    document_number,
+                    item_name,
+                    quantity
+                )
                 VALUES
                 ('ITEM-1', 1, 'Milk Boxes', 40),
                 ('ITEM-2', 1, 'Bread Crates', 25)
                 """);
 
         statement.execute("""
-                INSERT OR IGNORE INTO delivery_form_measurements (measurement_id, delivery_id, measured_weight)
+                INSERT OR IGNORE INTO delivery_form_measurements (
+                    measurement_id,
+                    delivery_id,
+                    measured_weight
+                )
                 VALUES
                 (1, 1, 9000)
                 """);
     }
-    
+
+    private static void seedBranchDeliveryStopSites(Statement statement) throws SQLException {
+        statement.execute("""
+                INSERT OR IGNORE INTO branch_sites (branch_id, site_id)
+                VALUES
+                (1, 1),
+                (2, 3)
+                """);
+
+        statement.execute("""
+                INSERT OR IGNORE INTO branch_delivery_stop_sites (branch_id, site_id)
+                VALUES
+                (1, 1),
+                (2, 3)
+                """);
+    }
+
     private static void seedRequests(Statement statement) throws SQLException {
         statement.execute("""
-                INSERT OR IGNORE INTO submissiondeadlines (
-                        deadline_date
-                )
+                INSERT OR IGNORE INTO submissiondeadlines (deadline_date)
                 VALUES
                 ('2026-07-03')
                 """);
 
         statement.execute("""
                 INSERT OR IGNORE INTO weeklyavailabilityrequests (
-                        request_id,
-                        employee_id,
-                        week_start_date,
-                        submission_deadline
+                    request_id,
+                    employee_id,
+                    week_start_date,
+                    submission_deadline
                 )
                 VALUES
                 (1, '100000002', '2026-07-06', '2026-07-03'),
@@ -204,16 +237,16 @@ public class DatabaseSeeder {
 
         statement.execute("""
                 INSERT OR IGNORE INTO driverassignmentrequests (
-                        request_id,
-                        driver_id,
-                        delivery_id,
-                        delivery_date_time,
-                        shift_type,
-                        handled,
-                        status_message
+                    request_id,
+                    driver_id,
+                    delivery_id,
+                    delivery_date_time,
+                    shift_type,
+                    handled,
+                    status_message
                 )
                 VALUES
                 (1, '100000003', 1, '2026-07-01T08:00', 'MORNING', 0, 'PENDING')
                 """);
-        }
+    }
 }

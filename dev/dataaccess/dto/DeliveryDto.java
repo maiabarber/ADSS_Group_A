@@ -1,92 +1,62 @@
 package dataaccess.dto;
 
-import transportation.domain.DeliveryStatus;
-
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 public final class DeliveryDto {
     private final int deliveryId;
-    private final LocalDate deliveryDate;
-    private final SiteDto source;
-    private final List<DeliveryStopDto> stops;
-    private final LocalTime departureTime;
-    private final double finalMeasuredWeightBeforeDeparture;
-    private final TruckDto truck;
-    private final DriverDto driver;
-    private final ShippingZoneDto shippingZone;
-    private final DeliveryStatus status;
-    private final DeliveryFormDto deliveryForm;
+    private final String deliveryDate;
+    private final int sourceSiteId;
+    private final String departureTime;
+    private final double finalMeasuredWeight;
+    private final String truckLicenseNumber;
+    private final String driverEmployeeId;
+    private final String zoneCode;
+    private final String status;
 
-    public DeliveryDto(
-            int deliveryId,
-            LocalDate deliveryDate,
-            SiteDto source,
-            List<DeliveryStopDto> stops,
-            LocalTime departureTime,
-            double finalMeasuredWeightBeforeDeparture,
-            TruckDto truck,
-            DriverDto driver,
-            ShippingZoneDto shippingZone,
-            DeliveryStatus status,
-            DeliveryFormDto deliveryForm) {
+    public DeliveryDto(int deliveryId, String deliveryDate, int sourceSiteId, String departureTime, double finalMeasuredWeight, String truckLicenseNumber, String driverEmployeeId, String zoneCode, String status) {
         this.deliveryId = deliveryId;
         this.deliveryDate = deliveryDate;
-        this.source = source;
-        this.stops = stops == null ? new ArrayList<>() : new ArrayList<>(stops);
+        this.sourceSiteId = sourceSiteId;
         this.departureTime = departureTime;
-        this.finalMeasuredWeightBeforeDeparture = finalMeasuredWeightBeforeDeparture;
-        this.truck = truck;
-        this.driver = driver;
-        this.shippingZone = shippingZone;
+        this.finalMeasuredWeight = finalMeasuredWeight;
+        this.truckLicenseNumber = truckLicenseNumber;
+        this.driverEmployeeId = driverEmployeeId;
+        this.zoneCode = zoneCode;
         this.status = status;
-        this.deliveryForm = deliveryForm;
     }
 
     public int getDeliveryId() {
         return deliveryId;
     }
 
-    public LocalDate getDeliveryDate() {
+    public String getDeliveryDate() {
         return deliveryDate;
     }
 
-    public SiteDto getSource() {
-        return source;
+    public int getSourceSiteId() {
+        return sourceSiteId;
     }
 
-    public List<DeliveryStopDto> getStops() {
-        return Collections.unmodifiableList(stops);
-    }
-
-    public LocalTime getDepartureTime() {
+    public String getDepartureTime() {
         return departureTime;
     }
 
-    public double getFinalMeasuredWeightBeforeDeparture() {
-        return finalMeasuredWeightBeforeDeparture;
+    public double getFinalMeasuredWeight() {
+        return finalMeasuredWeight;
     }
 
-    public TruckDto getTruck() {
-        return truck;
+    public String getTruckLicenseNumber() {
+        return truckLicenseNumber;
     }
 
-    public DriverDto getDriver() {
-        return driver;
+    public String getDriverEmployeeId() {
+        return driverEmployeeId;
     }
 
-    public ShippingZoneDto getShippingZone() {
-        return shippingZone;
+    public String getZoneCode() {
+        return zoneCode;
     }
 
-    public DeliveryStatus getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public DeliveryFormDto getDeliveryForm() {
-        return deliveryForm;
-    }
 }

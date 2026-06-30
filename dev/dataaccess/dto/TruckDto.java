@@ -1,20 +1,13 @@
 package dataaccess.dto;
 
-import transportation.domain.LicenseType;
-
-public class TruckDto {
+public final class TruckDto {
     private final String licenseNumber;
     private final String model;
     private final double netWeight;
     private final double maxAllowedWeight;
-    private final LicenseType requiredLicenseType;
+    private final String requiredLicenseType;
 
-    public TruckDto(
-            String licenseNumber,
-            String model,
-            double netWeight,
-            double maxAllowedWeight,
-            LicenseType requiredLicenseType) {
+    public TruckDto(String licenseNumber, String model, double netWeight, double maxAllowedWeight, String requiredLicenseType) {
         this.licenseNumber = licenseNumber;
         this.model = model;
         this.netWeight = netWeight;
@@ -38,7 +31,8 @@ public class TruckDto {
         return maxAllowedWeight;
     }
 
-    public LicenseType getRequiredLicenseType() {
+    public String getRequiredLicenseType() {
         return requiredLicenseType;
     }
+
 }

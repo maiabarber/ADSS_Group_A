@@ -1,10 +1,11 @@
 package transportation.test;
 
 import dataaccess.DatabaseInitializer;
+import dataaccess.DatabaseConnection;
 import employee.domain.*;
-import employee.repository.RepositoryException;
-import dataaccess.repository.impl.DatabaseEmployeeRepository;
-import dataaccess.repository.impl.DatabaseShiftRepository;
+import dataaccess.repository.RepositoryException;
+import dataaccess.repository.impl.EmployeeRepositoryImpl;
+import dataaccess.repository.impl.ShiftRepositoryImpl;
 import employee.service.EmployeeTransportationService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,6 +15,8 @@ import transportation.service.DeliveriesApplication;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.Statement;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -39,8 +42,8 @@ public class TransportationEmployeeIntegrationTest {
     // Employee IDs must be exactly 9 digits per User.validateId()
     private static final String DRIVER_ID = "100000001";
 
-    private DatabaseShiftRepository shiftRepository;
-    private DatabaseEmployeeRepository employeeRepository;
+    private ShiftRepositoryImpl shiftRepository;
+    private EmployeeRepositoryImpl employeeRepository;
     private EmployeeTransportationService employeeTransportationService;
     private DeliveriesApplication app;
 
@@ -50,9 +53,10 @@ public class TransportationEmployeeIntegrationTest {
         System.setProperty("adss.db.path", testDatabasePath.toString());
         Files.deleteIfExists(testDatabasePath);
         DatabaseInitializer.initializeDatabase();
+        seedBranchForStorekeeperTests();
 
-        shiftRepository = new DatabaseShiftRepository();
-        employeeRepository = new DatabaseEmployeeRepository();
+        shiftRepository = new ShiftRepositoryImpl();
+        employeeRepository = new EmployeeRepositoryImpl();
         employeeTransportationService = new EmployeeTransportationService(shiftRepository, employeeRepository);
         app = new DeliveriesApplication(employeeTransportationService);
 
@@ -742,5 +746,516 @@ public class TransportationEmployeeIntegrationTest {
                 DELIVERY_DATE, MORNING_TIME, app.getTruckByIndex(0));
 
         assertTrue(available.isEmpty());
+    }
+
+    // 29. Saved driver/storekeeper assignments survive repository reload and support
+    // delivery dispatch.
+    @Test
+    void persistedAssignments_afterReload_driverAvailableAndDispatchSucceeds()
+            throws RepositoryException {
+        Employee driverEmployee = buildDriverEmployee(DRIVER_ID, false);
+        Employee storekeeper = buildStorekeeperEmployee("100000002");
+        employeeRepository.save(driverEmployee);
+        employeeRepository.save(storekeeper);
+
+        Shift shift = buildAndSaveShift(DELIVERY_DATE);
+        assignDriverToShift(shift, driverEmployee, true);
+        assignStorekeeperToShift(shift, storekeeper, true);
+
+        DeliveriesApplication reloadedApp = buildReloadedApplication();
+        Driver driver = buildTransportDriver(DRIVER_ID, "Moshe Cohen", LicenseType.C);
+        reloadedApp.addDriver(driver);
+
+        List<Driver> available = reloadedApp.getAvailableDriversForDelivery(
+                DELIVERY_DATE, MORNING_TIME, reloadedApp.getTruckByIndex(0));
+        assertEquals(1, available.size());
+
+        Delivery delivery = reloadedApp.planDelivery(
+                DELIVERY_DATE,
+                reloadedApp.findSiteByName("Warehouse"),
+                futureStops(reloadedApp),
+                MORNING_TIME,
+                6000,
+                reloadedApp.getTruckByIndex(0),
+                available.get(0),
+                reloadedApp.getShippingZoneByIndex(0));
+
+        assertDoesNotThrow(() -> reloadedApp.dispatchDelivery(delivery));
+    }
+
+    // 30. Driver availability alone is not enough: dispatch fails without an
+    // approved storekeeper on the delivery arrival shift.
+    @Test
+    void dispatchDelivery_driverApprovedButNoStorekeeper_fails()
+            throws RepositoryException {
+        Employee driverEmployee = buildDriverEmployee(DRIVER_ID, false);
+        employeeRepository.save(driverEmployee);
+
+        Shift shift = buildAndSaveShift(DELIVERY_DATE);
+        assignDriverToShift(shift, driverEmployee, true);
+
+        Driver driver = buildTransportDriver(DRIVER_ID, "Moshe Cohen", LicenseType.C);
+        app.addDriver(driver);
+
+        Delivery delivery = app.planDelivery(
+                DELIVERY_DATE,
+                app.findSiteByName("Warehouse"),
+                futureStops(app),
+                MORNING_TIME,
+                6000,
+                app.getTruckByIndex(0),
+                driver,
+                app.getShippingZoneByIndex(0));
+
+        IllegalStateException error = assertThrows(IllegalStateException.class,
+                () -> app.dispatchDelivery(delivery));
+        assertTrue(error.getMessage().contains("No storekeeper"));
+    }
+
+    // 31. Unapproved driver assignments must not become available after reload.
+    @Test
+    void persistedUnapprovedDriverAssignment_afterReload_driverNotAvailable()
+            throws RepositoryException {
+        Employee driverEmployee = buildDriverEmployee(DRIVER_ID, false);
+        Employee storekeeper = buildStorekeeperEmployee("100000002");
+        employeeRepository.save(driverEmployee);
+        employeeRepository.save(storekeeper);
+
+        Shift shift = buildAndSaveShift(DELIVERY_DATE);
+        assignDriverToShift(shift, driverEmployee, false);
+        assignStorekeeperToShift(shift, storekeeper, true);
+
+        DeliveriesApplication reloadedApp = buildReloadedApplication();
+        reloadedApp.addDriver(buildTransportDriver(DRIVER_ID, "Moshe Cohen", LicenseType.C));
+
+        List<Driver> available = reloadedApp.getAvailableDriversForDelivery(
+                DELIVERY_DATE, MORNING_TIME, reloadedApp.getTruckByIndex(0));
+
+        assertTrue(available.isEmpty());
+    }
+
+    // 32. Storekeeper exists, but is not approved: dispatch must still fail.
+    @Test
+    void dispatchDelivery_storekeeperAssignedButNotApproved_fails()
+            throws RepositoryException {
+        Employee driverEmployee = buildDriverEmployee(DRIVER_ID, false);
+        Employee storekeeper = buildStorekeeperEmployee("100000002");
+        employeeRepository.save(driverEmployee);
+        employeeRepository.save(storekeeper);
+
+        Shift shift = buildAndSaveShift(DELIVERY_DATE);
+        assignDriverToShift(shift, driverEmployee, true);
+        assignStorekeeperToShift(shift, storekeeper, false);
+
+        Driver driver = buildTransportDriver(DRIVER_ID, "Moshe Cohen", LicenseType.C);
+        app.addDriver(driver);
+
+        Delivery delivery = app.planDelivery(
+                DELIVERY_DATE,
+                app.findSiteByName("Warehouse"),
+                futureStops(app),
+                MORNING_TIME,
+                6000,
+                app.getTruckByIndex(0),
+                driver,
+                app.getShippingZoneByIndex(0));
+
+        IllegalStateException error = assertThrows(IllegalStateException.class,
+                () -> app.dispatchDelivery(delivery));
+        assertTrue(error.getMessage().contains("No storekeeper"));
+    }
+
+    // 33. Storekeeper on a different date does not satisfy the delivery arrival
+    // shift.
+    @Test
+    void dispatchDelivery_storekeeperOnDifferentDate_fails()
+            throws RepositoryException {
+        Employee driverEmployee = buildDriverEmployee(DRIVER_ID, false);
+        Employee storekeeper = buildStorekeeperEmployee("100000002");
+        employeeRepository.save(driverEmployee);
+        employeeRepository.save(storekeeper);
+
+        Shift deliveryShift = buildAndSaveShift(DELIVERY_DATE);
+        assignDriverToShift(deliveryShift, driverEmployee, true);
+
+        Shift wrongDateShift = new Shift(
+                DELIVERY_DATE.plusDays(1),
+                ShiftType.MORNING,
+                buildShiftManagerEmployee("200000001"),
+                1,
+                1);
+        shiftRepository.save(wrongDateShift);
+        assignStorekeeperToShift(wrongDateShift, storekeeper, true);
+
+        Driver driver = buildTransportDriver(DRIVER_ID, "Moshe Cohen", LicenseType.C);
+        app.addDriver(driver);
+
+        Delivery delivery = app.planDelivery(
+                DELIVERY_DATE,
+                app.findSiteByName("Warehouse"),
+                futureStops(app),
+                MORNING_TIME,
+                6000,
+                app.getTruckByIndex(0),
+                driver,
+                app.getShippingZoneByIndex(0));
+
+        IllegalStateException error = assertThrows(IllegalStateException.class,
+                () -> app.dispatchDelivery(delivery));
+        assertTrue(error.getMessage().contains("No storekeeper"));
+    }
+
+    // 34. Storekeeper on the evening shift does not satisfy a morning delivery.
+    @Test
+    void dispatchDelivery_storekeeperOnWrongShiftType_fails()
+            throws RepositoryException {
+        Employee driverEmployee = buildDriverEmployee(DRIVER_ID, false);
+        Employee storekeeper = buildStorekeeperEmployee("100000002");
+        employeeRepository.save(driverEmployee);
+        employeeRepository.save(storekeeper);
+
+        Shift morningShift = buildAndSaveShift(DELIVERY_DATE);
+        assignDriverToShift(morningShift, driverEmployee, true);
+
+        Shift eveningShift = new Shift(
+                DELIVERY_DATE,
+                ShiftType.EVENING,
+                buildShiftManagerEmployee("200000001"),
+                1,
+                1);
+        shiftRepository.save(eveningShift);
+        assignStorekeeperToShift(eveningShift, storekeeper, true);
+
+        Driver driver = buildTransportDriver(DRIVER_ID, "Moshe Cohen", LicenseType.C);
+        app.addDriver(driver);
+
+        Delivery delivery = app.planDelivery(
+                DELIVERY_DATE,
+                app.findSiteByName("Warehouse"),
+                futureStops(app),
+                MORNING_TIME,
+                6000,
+                app.getTruckByIndex(0),
+                driver,
+                app.getShippingZoneByIndex(0));
+
+        IllegalStateException error = assertThrows(IllegalStateException.class,
+                () -> app.dispatchDelivery(delivery));
+        assertTrue(error.getMessage().contains("No storekeeper"));
+    }
+
+    // 35. Fired storekeepers do not count even if their assignment is approved.
+    @Test
+    void dispatchDelivery_firedStorekeeperAssignedAndApproved_fails()
+            throws RepositoryException {
+        Employee driverEmployee = buildDriverEmployee(DRIVER_ID, false);
+        Employee storekeeper = buildStorekeeperEmployee("100000002", true);
+        employeeRepository.save(driverEmployee);
+        employeeRepository.save(storekeeper);
+
+        Shift shift = buildAndSaveShift(DELIVERY_DATE);
+        assignDriverToShift(shift, driverEmployee, true);
+        assignStorekeeperToShift(shift, storekeeper, true);
+
+        Driver driver = buildTransportDriver(DRIVER_ID, "Moshe Cohen", LicenseType.C);
+        app.addDriver(driver);
+
+        Delivery delivery = app.planDelivery(
+                DELIVERY_DATE,
+                app.findSiteByName("Warehouse"),
+                futureStops(app),
+                MORNING_TIME,
+                6000,
+                app.getTruckByIndex(0),
+                driver,
+                app.getShippingZoneByIndex(0));
+
+        IllegalStateException error = assertThrows(IllegalStateException.class,
+                () -> app.dispatchDelivery(delivery));
+        assertTrue(error.getMessage().contains("No storekeeper"));
+    }
+
+    // 36. Once dispatched, a delivery must not be modified.
+    @Test
+    void dispatchedDelivery_recordWeightMeasurement_fails()
+            throws RepositoryException {
+        Employee driverEmployee = buildDriverEmployee(DRIVER_ID, false);
+        Employee storekeeper = buildStorekeeperEmployee("100000002");
+        employeeRepository.save(driverEmployee);
+        employeeRepository.save(storekeeper);
+
+        Shift shift = buildAndSaveShift(DELIVERY_DATE);
+        assignDriverToShift(shift, driverEmployee, true);
+        assignStorekeeperToShift(shift, storekeeper, true);
+
+        Driver driver = buildTransportDriver(DRIVER_ID, "Moshe Cohen", LicenseType.C);
+        app.addDriver(driver);
+
+        Delivery delivery = app.planDelivery(
+                DELIVERY_DATE,
+                app.findSiteByName("Warehouse"),
+                futureStops(app),
+                MORNING_TIME,
+                6000,
+                app.getTruckByIndex(0),
+                driver,
+                app.getShippingZoneByIndex(0));
+
+        app.dispatchDelivery(delivery);
+
+        assertThrows(IllegalStateException.class,
+                () -> app.recordWeightMeasurement(delivery, 7000));
+    }
+
+    // 37. Fired drivers are not available after a reload, even with an approved
+    // shift assignment.
+    @Test
+    void persistedFiredDriverAssignment_afterReload_driverNotAvailable()
+            throws RepositoryException {
+        Employee firedDriver = buildDriverEmployee(DRIVER_ID, true);
+        Employee storekeeper = buildStorekeeperEmployee("100000002");
+        employeeRepository.save(firedDriver);
+        employeeRepository.save(storekeeper);
+
+        Shift shift = buildAndSaveShift(DELIVERY_DATE);
+        assignDriverToShift(shift, firedDriver, true);
+        assignStorekeeperToShift(shift, storekeeper, true);
+
+        DeliveriesApplication reloadedApp = buildReloadedApplication();
+        reloadedApp.addDriver(buildTransportDriver(DRIVER_ID, "Moshe Cohen", LicenseType.C));
+
+        List<Driver> available = reloadedApp.getAvailableDriversForDelivery(
+                DELIVERY_DATE, MORNING_TIME, reloadedApp.getTruckByIndex(0));
+
+        assertTrue(available.isEmpty());
+    }
+
+    // 38. A saved and approved driver assignment still does not help if the
+    // transport driver lacks the truck license.
+    @Test
+    void persistedApprovedDriverAssignment_wrongTruckLicense_driverNotAvailable()
+            throws RepositoryException {
+        Employee driverEmployee = buildDriverEmployee(DRIVER_ID, false);
+        Employee storekeeper = buildStorekeeperEmployee("100000002");
+        employeeRepository.save(driverEmployee);
+        employeeRepository.save(storekeeper);
+
+        Shift shift = buildAndSaveShift(DELIVERY_DATE);
+        assignDriverToShift(shift, driverEmployee, true);
+        assignStorekeeperToShift(shift, storekeeper, true);
+
+        DeliveriesApplication reloadedApp = buildReloadedApplication();
+        reloadedApp.addDriver(buildTransportDriver(DRIVER_ID, "Moshe Cohen", LicenseType.B));
+
+        List<Driver> available = reloadedApp.getAvailableDriversForDelivery(
+                DELIVERY_DATE, MORNING_TIME, reloadedApp.getTruckByIndex(0));
+
+        assertTrue(available.isEmpty());
+    }
+
+    // 39. A delivery stop outside the selected shipping zone is rejected.
+    @Test
+    void planDelivery_stopOutsideSelectedZone_throws()
+            throws RepositoryException {
+        Employee driverEmployee = buildDriverEmployee(DRIVER_ID, false);
+        employeeRepository.save(driverEmployee);
+        Driver driver = buildTransportDriver(DRIVER_ID, "Moshe Cohen", LicenseType.C);
+        app.addDriver(driver);
+
+        ShippingZone southZone = new ShippingZone("SOUTH", "Southern Zone");
+        Site southStore = new Site("South Store", "5 South St", "03-3333333", "South Contact", southZone);
+        app.addShippingZone(southZone);
+        app.addSite(southStore);
+
+        List<DeliveryStop> stops = new ArrayList<>();
+        stops.add(new DeliveryStop(
+                0,
+                StopType.PICKUP,
+                app.findSiteByName("Warehouse"),
+                DELIVERY_DATE.atTime(MORNING_TIME).plusMinutes(30)));
+        stops.add(new DeliveryStop(
+                1,
+                StopType.DROPOFF,
+                southStore,
+                DELIVERY_DATE.atTime(MORNING_TIME).plusHours(2)));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> app.planDelivery(
+                        DELIVERY_DATE,
+                        app.findSiteByName("Warehouse"),
+                        stops,
+                        MORNING_TIME,
+                        6000,
+                        app.getTruckByIndex(0),
+                        driver,
+                        app.getShippingZoneByIndex(0)));
+    }
+
+    // 40. Initial measured weight cannot be lower than the truck net weight.
+    @Test
+    void planDelivery_weightBelowTruckNetWeight_throws()
+            throws RepositoryException {
+        Employee driverEmployee = buildDriverEmployee(DRIVER_ID, false);
+        employeeRepository.save(driverEmployee);
+        Driver driver = buildTransportDriver(DRIVER_ID, "Moshe Cohen", LicenseType.C);
+        app.addDriver(driver);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> app.planDelivery(
+                        DELIVERY_DATE,
+                        app.findSiteByName("Warehouse"),
+                        futureStops(app),
+                        MORNING_TIME,
+                        4999,
+                        app.getTruckByIndex(0),
+                        driver,
+                        app.getShippingZoneByIndex(0)));
+    }
+
+    // 41. A storekeeper in the departure shift does not satisfy a stop that
+    // arrives during the evening shift.
+    @Test
+    void dispatchDelivery_stopArrivesInShiftWithoutStorekeeper_fails()
+            throws RepositoryException {
+        Employee driverEmployee = buildDriverEmployee(DRIVER_ID, false);
+        Employee storekeeper = buildStorekeeperEmployee("100000002");
+        employeeRepository.save(driverEmployee);
+        employeeRepository.save(storekeeper);
+
+        Shift morningShift = buildAndSaveShift(DELIVERY_DATE);
+        assignDriverToShift(morningShift, driverEmployee, true);
+        assignStorekeeperToShift(morningShift, storekeeper, true);
+
+        Driver driver = buildTransportDriver(DRIVER_ID, "Moshe Cohen", LicenseType.C);
+        app.addDriver(driver);
+
+        List<DeliveryStop> stops = new ArrayList<>();
+        stops.add(new DeliveryStop(
+                0,
+                StopType.PICKUP,
+                app.findSiteByName("Warehouse"),
+                DELIVERY_DATE.atTime(MORNING_TIME).plusMinutes(30)));
+        stops.add(new DeliveryStop(
+                1,
+                StopType.DROPOFF,
+                app.findSiteByName("Store"),
+                DELIVERY_DATE.atTime(EVENING_TIME).plusMinutes(30)));
+
+        Delivery delivery = app.planDelivery(
+                DELIVERY_DATE,
+                app.findSiteByName("Warehouse"),
+                stops,
+                MORNING_TIME,
+                6000,
+                app.getTruckByIndex(0),
+                driver,
+                app.getShippingZoneByIndex(0));
+
+        IllegalStateException error = assertThrows(IllegalStateException.class,
+                () -> app.dispatchDelivery(delivery));
+        assertTrue(error.getMessage().contains("No storekeeper"));
+    }
+
+    // 42. Replacing a driver creates a second driver assignment request.
+    @Test
+    void replaceDriver_manualFlow_twoOpenAssignmentRequests()
+            throws RepositoryException {
+        String replacementId = "100000002";
+        Employee original = buildDriverEmployee(DRIVER_ID, false);
+        Employee replacement = buildDriverEmployee(replacementId, false);
+        employeeRepository.save(original);
+        employeeRepository.save(replacement);
+
+        Driver originalDriver = buildTransportDriver(DRIVER_ID, "Original Driver", LicenseType.C);
+        Driver replacementDriver = buildTransportDriver(replacementId, "Replacement Driver", LicenseType.C);
+        app.addDriver(originalDriver);
+        app.addDriver(replacementDriver);
+
+        Delivery delivery = app.planDelivery(
+                DELIVERY_DATE,
+                app.findSiteByName("Warehouse"),
+                futureStops(app),
+                MORNING_TIME,
+                6000,
+                app.getTruckByIndex(0),
+                originalDriver,
+                app.getShippingZoneByIndex(0));
+
+        app.replaceDriver(delivery, replacementDriver);
+
+        assertEquals(2, employeeTransportationService.getOpenDriverAssignmentRequests().size());
+        assertEquals(replacementId,
+                employeeTransportationService.getOpenDriverAssignmentRequests().get(1).getDriverId());
+    }
+
+    private Employee buildStorekeeperEmployee(String id) {
+        return buildStorekeeperEmployee(id, false);
+    }
+
+    private Employee buildStorekeeperEmployee(String id, boolean isFired) {
+        return new Employee(
+                id,
+                "password123",
+                new BankAccount("10", "100", "100000002"),
+                "Store Keeper",
+                new Salary(8000, 40, 180),
+                EmploymentType.REGULAR,
+                new EmploymentTerms(
+                        LocalDate.of(2026, 7, 1),
+                        EmploymentScope.FULL_TIME,
+                        8000, 40, 14),
+                Set.of(Role.STOREKEEPER),
+                false,
+                isFired,
+                null,
+                null,
+                new Branch("1", "North Branch", "Haifa"));
+    }
+
+    private void seedBranchForStorekeeperTests() throws Exception {
+        try (Connection connection = DatabaseConnection.getConnection();
+             Statement statement = connection.createStatement()) {
+            statement.execute("""
+                    INSERT OR IGNORE INTO branches (branch_id, branch_name, address)
+                    VALUES (1, 'North Branch', 'Haifa')
+                    """);
+        }
+    }
+
+    private void assignStorekeeperToShift(Shift shift, Employee employee, boolean approved)
+            throws RepositoryException {
+        ShiftAssignment assignment = new ShiftAssignment(employee, shift, Role.STOREKEEPER);
+        assignment.setApproved(approved);
+        shift.addAssignment(assignment);
+        shiftRepository.save(shift);
+    }
+
+    private DeliveriesApplication buildReloadedApplication() {
+        EmployeeTransportationService reloadedService = new EmployeeTransportationService(
+                new ShiftRepositoryImpl(),
+                new EmployeeRepositoryImpl());
+
+        DeliveriesApplication reloadedApp = new DeliveriesApplication(reloadedService);
+        ShippingZone northZone = new ShippingZone("NORTH", "Northern Zone");
+        reloadedApp.addShippingZone(northZone);
+        reloadedApp.addSite(new Site("Warehouse", "10 Main St", "03-1111111", "Warehouse Manager", northZone));
+        reloadedApp.addSite(new Site("Store", "20 Side St", "03-2222222", "Store Contact", northZone));
+        reloadedApp.addTruck(new Truck("123-45-678", "Volvo", 5000, 10000, LicenseType.C));
+        return reloadedApp;
+    }
+
+    private List<DeliveryStop> futureStops(DeliveriesApplication deliveriesApp) {
+        List<DeliveryStop> stops = new ArrayList<>();
+        stops.add(new DeliveryStop(
+                0,
+                StopType.PICKUP,
+                deliveriesApp.findSiteByName("Warehouse"),
+                DELIVERY_DATE.atTime(MORNING_TIME).plusMinutes(30)));
+        stops.add(new DeliveryStop(
+                1,
+                StopType.DROPOFF,
+                deliveriesApp.findSiteByName("Store"),
+                DELIVERY_DATE.atTime(MORNING_TIME).plusHours(2)));
+        return stops;
     }
 }

@@ -1,38 +1,48 @@
 package employee.presentation;
 
-import employee.domain.BankAccount;
 import employee.domain.Constraint;
 import employee.domain.Employee;
-import employee.domain.EmploymentScope;
-import employee.domain.EmploymentTerms;
-import employee.domain.EmploymentType;
 import employee.domain.HR_Manager;
 import employee.domain.Preference;
 import employee.domain.Role;
-import employee.domain.Salary;
 import employee.domain.Shift;
 import employee.domain.ShiftAssignment;
 import employee.domain.ShiftType;
 import employee.domain.DriverAssignmentRequest;
 import employee.domain.Branch;
-import employee.domain.BranchManager;
 import employee.domain.User;
 import employee.domain.WeeklyAvailabilityRequest;
-import employee.repository.EmployeeRepository;
-import employee.repository.RepositoryException;
-import employee.repository.ShiftRepository;
-import employee.repository.SubmissionDeadlineRepository;
-import dataaccess.repository.impl.DatabaseEmployeeRepository;
-import dataaccess.repository.impl.DatabaseShiftRepository;
-import dataaccess.repository.impl.DatabaseSubmissionDeadlineRepository;
-import dataaccess.repository.impl.DatabaseUserRepository;
+import dataaccess.DatabaseConnection;
+import dataaccess.dao.BranchDeliveryStopSiteDaoImpl;
+import dataaccess.dao.DriverDAOImpl;
+import dataaccess.dao.DriverLicenseTypeDaoImpl;
+import dataaccess.dao.EmployeeDAOImpl;
+import dataaccess.dao.DeliveryStopDaoImpl;
+import dataaccess.dao.ShiftDaoImpl;
+import dataaccess.dto.BranchDto;
+import dataaccess.dto.BranchDeliveryStopSiteDto;
+import dataaccess.dto.DriverDto;
+import dataaccess.dto.DriverLicenseTypeDto;
+import dataaccess.dto.DeliveryStopDto;
+import dataaccess.repository.EmployeeRepository;
+import dataaccess.repository.RepositoryException;
+import dataaccess.repository.ShiftRepository;
+import dataaccess.repository.SubmissionDeadlineRepository;
+import dataaccess.repository.impl.EmployeeRepositoryImpl;
+import dataaccess.repository.impl.ShiftRepositoryImpl;
+import dataaccess.repository.impl.SubmissionDeadlineRepositoryImpl;
+import dataaccess.repository.impl.BranchRepositoryImpl;
+import dataaccess.repository.impl.UserRepositoryImpl;
 import employee.service.AuthenticationService;
 import employee.service.SubmissionDeadlineService;
 import employee.service.WeeklyAvailabilityService;
 import employee.service.EmployeeTransportationService;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Year;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
@@ -43,6 +53,8 @@ import java.util.Scanner;
 import transportation.domain.Site;
 import transportation.domain.SiteType;
 import transportation.domain.ShippingZone;
+import transportation.domain.LicenseType;
+import dataaccess.mapper.BranchMapper;
 
 /**
  * ConsolePresentation class provides a console-based user interface for the
@@ -66,29 +78,33 @@ public class ConsolePresentation {
     private final SubmissionDeadlineService submissionDeadlineService;
     private final WeeklyAvailabilityService weeklyAvailabilityService;
     private final EmployeeTransportationService employeeTransportationService;
-    private final BranchManager branchManager;
     private Branch activeBranch;
     private int lastVacationResetYear = -1;
+    private BranchRepositoryImpl branchRepository;
+    private UserRepositoryImpl userRepository;
+    
 
-    public ConsolePresentation() {
-        this.authenticationService = new AuthenticationService(new DatabaseUserRepository());
-        this.employeeRepository = new DatabaseEmployeeRepository();
+
+    public ConsolePresentation() throws SQLException {
+        this.authenticationService = new AuthenticationService(new UserRepositoryImpl());
+        this.employeeRepository = new EmployeeRepositoryImpl();
         this.loginPresentation = new LoginPresentation();
         this.employeePresentation = new EmployeePresentation();
         this.shiftPresentation = new ShiftPresentation();
         this.userController = new UserController(authenticationService, employeeRepository);
         this.shiftController = new ShiftController();
-        this.shiftRepository = new DatabaseShiftRepository();
-        this.submissionDeadlineRepository = new DatabaseSubmissionDeadlineRepository();
+        this.shiftRepository = new ShiftRepositoryImpl();
+        this.submissionDeadlineRepository = new SubmissionDeadlineRepositoryImpl();
         this.submissionDeadlineService = new SubmissionDeadlineService();
         this.weeklyAvailabilityService = new WeeklyAvailabilityService(submissionDeadlineRepository,
                 employeeRepository);
         this.employeeTransportationService = new EmployeeTransportationService(shiftRepository, employeeRepository);
-        this.branchManager = new BranchManager();
+        this.branchRepository = new BranchRepositoryImpl();
         this.activeBranch = null;
+        this.userRepository = new UserRepositoryImpl();
     }
 
-    public void run() {
+    public void run() throws RepositoryException {
         try (Scanner scanner = new Scanner(System.in)) {
             boolean appRunning = true;
             while (appRunning) {
@@ -247,8 +263,8 @@ public class ConsolePresentation {
         }
     }
 
-    private boolean isHrManager(User user) {
-        return user instanceof HR_Manager && ((HR_Manager) user).isHRManager();
+    private boolean isHrManager(User user) throws RepositoryException {
+            return user != null && userRepository.isHrManager(user);
     }
 
     private void addNewEmployeeFlow(Scanner scanner) {
@@ -271,11 +287,34 @@ public class ConsolePresentation {
             }
             ensureWeeklyAvailabilityCurrent(employee);
             userController.addEmployee(currentUser.get(), employee);
+            saveTransportationDriverIfNeeded(employee);
             System.out.println("Employee added successfully.");
         } catch (RepositoryException e) {
             System.out.println("Error: Failed to add employee: " + e.getMessage());
         } catch (IllegalArgumentException e) {
             System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    private void saveTransportationDriverIfNeeded(Employee employee) throws RepositoryException {
+        if (employee == null || !employee.getAuthorizedRoles().contains(Role.DRIVER)) {
+            return;
+        }
+
+        LicenseType licenseType = employeePresentation.getDriverLicenseTypeInput();
+        if (licenseType == null) {
+            throw new RepositoryException("Driver license type is required");
+        }
+
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            new DriverDAOImpl(connection).createOrUpdate(new DriverDto(
+                    employee.getId(),
+                    employee.getName()));
+            new DriverLicenseTypeDaoImpl(connection).createOrUpdate(new DriverLicenseTypeDto(
+                    employee.getId(),
+                    licenseType.name()));
+        } catch (SQLException e) {
+            throw new RepositoryException("Failed to save driver license type", e);
         }
     }
 
@@ -769,14 +808,14 @@ public class ConsolePresentation {
             Employee manager = null;
             String managerId = shiftPresentation.getSelectManagerIdInput();
             for (Employee employee : employees) {
-                if (employee.getId().equals(managerId)) {
+                if (employee.getId().equals(managerId) && !isHrManager(employee)) {
                     manager = employee;
                     break;
                 }
             }
 
             if (manager == null) {
-                System.out.println("Shift manager id not found.");
+                System.out.println("Shift manager id not found. Shift was not created.");
                 return;
             }
 
@@ -1264,7 +1303,7 @@ public class ConsolePresentation {
         }
     }
 
-    private void handleDriverAssignmentRequestsFlow(Scanner scanner) {
+    private void handleDriverAssignmentRequestsFlow(Scanner scanner) throws RepositoryException {
         Optional<User> currentUser = authenticationService.getCurrentUser();
         if (!currentUser.isPresent()) {
             System.out.println("No user is currently logged in.");
@@ -1347,11 +1386,18 @@ public class ConsolePresentation {
 
             Employee driver = driverOptional.get();
 
-            shiftController.assignEmployeeToShift(
+            if (!hasApprovedAssignment(shift, driver.getId(), Role.DRIVER)) {
+                shiftController.assignEmployeeToShift(
+                        currentUser.get(),
+                        driver,
+                        shift,
+                        Role.DRIVER);
+            }
+
+            List<String> storekeeperUpdates = ensureStorekeepersForDeliveryStops(
                     currentUser.get(),
-                    driver,
-                    shift,
-                    Role.DRIVER);
+                    selectedRequest.getDeliveryId(),
+                    shift);
 
             shiftRepository.save(shift);
             employeeTransportationService.markDriverAssignmentRequestHandled(selectedRequest);
@@ -1361,6 +1407,10 @@ public class ConsolePresentation {
                     + shift.getDate() + " - " + shift.getShiftType()
                     + " for delivery " + selectedRequest.getDeliveryId() + ".");
 
+            for (String update : storekeeperUpdates) {
+                System.out.println(update);
+            }
+
             System.out.println("Transportation manager update: driver assignment request was completed.");
         } catch (RepositoryException e) {
             System.out.println("Failed to save driver assignment: " + e.getMessage());
@@ -1369,7 +1419,229 @@ public class ConsolePresentation {
         }
     }
 
-    private void manageBranchWorkspaceFlow(Scanner scanner) {
+    private List<String> ensureStorekeepersForDeliveryStops(User currentUser, int deliveryId, Shift driverShift)
+            throws RepositoryException {
+        List<DeliveryStopDto> stops = loadDeliveryStops(deliveryId);
+        if (stops.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Delivery stops were not found. Cannot verify storekeeper coverage.");
+        }
+
+        List<String> updates = new ArrayList<>();
+        for (DeliveryStopDto stop : stops) {
+            Integer branchId = findBranchIdForStopSite(stop.getSiteId());
+            if (branchId == null) {
+                continue;
+            }
+
+            LocalDateTime arrivalDateTime = LocalDateTime.parse(stop.getPlannedArrival());
+            Shift arrivalShift = findShiftForBranchAt(arrivalDateTime, branchId, driverShift);
+            if (arrivalShift == null) {
+                throw new IllegalArgumentException(
+                        "No matching shift exists for branch " + branchId
+                                + " at stop #" + stop.getStopOrder()
+                                + " arrival time " + arrivalDateTime + ".");
+            }
+
+            if (hasApprovedStorekeeperForBranch(arrivalShift, branchId)) {
+                updates.add("Storekeeper already assigned for branch " + branchId
+                        + " at stop #" + stop.getStopOrder() + ".");
+                continue;
+            }
+
+            Employee storekeeper = assignFirstAvailableStorekeeper(currentUser, arrivalShift, branchId);
+            if (storekeeper == null) {
+                throw new IllegalArgumentException(
+                        "No available storekeeper could be approved for branch " + branchId
+                                + " at stop #" + stop.getStopOrder()
+                                + " arrival time " + arrivalDateTime + ".");
+            }
+
+            shiftRepository.save(arrivalShift);
+            updates.add("Storekeeper " + storekeeper.getName()
+                    + " was assigned to branch " + branchId
+                    + " shift " + arrivalShift.getDate()
+                    + " - " + arrivalShift.getShiftType()
+                    + " for stop #" + stop.getStopOrder() + ".");
+        }
+
+        return updates;
+    }
+
+    private List<DeliveryStopDto> loadDeliveryStops(int deliveryId) throws RepositoryException {
+        List<DeliveryStopDto> deliveryStops = new ArrayList<>();
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            for (DeliveryStopDto stop : new DeliveryStopDaoImpl(connection).findAll()) {
+                if (stop.getDeliveryId() == deliveryId) {
+                    deliveryStops.add(stop);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RepositoryException("Failed to load delivery stops", e);
+        }
+
+        deliveryStops.sort((left, right) -> Integer.compare(left.getStopOrder(), right.getStopOrder()));
+        return deliveryStops;
+    }
+
+    private Integer findBranchIdForStopSite(int siteId) throws RepositoryException {
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            for (BranchDeliveryStopSiteDto mapping : new BranchDeliveryStopSiteDaoImpl(connection).findAll()) {
+                if (mapping.getSiteId() == siteId) {
+                    return mapping.getBranchId();
+                }
+            }
+            return null;
+        } catch (SQLException e) {
+            throw new RepositoryException("Failed to load branch delivery stop sites", e);
+        }
+    }
+
+    private Shift findShiftForBranchAt(LocalDateTime dateTime, int branchId, Shift preferredShift)
+            throws RepositoryException {
+        for (ShiftType shiftType : getCandidateShiftTypesByTime(dateTime)) {
+            if (preferredShift != null
+                    && preferredShift.getDate().equals(dateTime.toLocalDate())
+                    && preferredShift.getShiftType() == shiftType
+                    && shiftBelongsToBranch(preferredShift, branchId)) {
+                return preferredShift;
+            }
+
+            for (Shift candidate : shiftRepository.findAll()) {
+                if (candidate.getDate().equals(dateTime.toLocalDate())
+                        && candidate.getShiftType() == shiftType
+                        && shiftBelongsToBranch(candidate, branchId)) {
+                    return candidate;
+                }
+            }
+        }
+        return null;
+    }
+
+    private List<ShiftType> getCandidateShiftTypesByTime(LocalDateTime dateTime) {
+        int hour = dateTime.getHour();
+        List<ShiftType> candidates = new ArrayList<>();
+
+        if (hour >= 6 && hour < 14) {
+            candidates.add(ShiftType.MORNING_OVERTIME);
+            candidates.add(ShiftType.MORNING);
+            return candidates;
+        }
+
+        if (hour >= 14 && hour < 16) {
+            candidates.add(ShiftType.MORNING_OVERTIME);
+            return candidates;
+        }
+
+        if (hour >= 16 && hour < 22) {
+            candidates.add(ShiftType.EVENING);
+            return candidates;
+        }
+
+        throw new IllegalArgumentException("No active shift for this time: " + dateTime.toLocalTime());
+    }
+
+    private boolean hasApprovedStorekeeperForBranch(Shift shift, int branchId) {
+        for (ShiftAssignment assignment : shift.getAssignments()) {
+            Employee employee = assignment.getEmployee();
+            if (assignment.getRole() == Role.STOREKEEPER
+                    && assignment.isApproved()
+                    && !assignment.isCancellationRequested()
+                    && employee != null
+                    && !employee.isFired()
+                    && employeeBelongsToBranch(employee, branchId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Employee assignFirstAvailableStorekeeper(User currentUser, Shift shift, int branchId)
+            throws RepositoryException {
+        for (Employee employee : employeeRepository.findAll()) {
+            if (employee == null
+                    || employee.isFired()
+                    || !employee.getAuthorizedRoles().contains(Role.STOREKEEPER)
+                    || !employeeBelongsToBranch(employee, branchId)
+                    || isAssignedToShift(shift, employee.getId())
+                    || assignmentWouldRequireApproval(employee, shift)) {
+                continue;
+            }
+
+            try {
+                shiftController.assignEmployeeToShift(currentUser, employee, shift, Role.STOREKEEPER);
+                ShiftAssignment assignment = findAssignment(shift, employee.getId(), Role.STOREKEEPER);
+                if (assignment != null && assignment.isApproved()) {
+                    return employee;
+                }
+                if (assignment != null) {
+                    shift.removeAssignment(assignment);
+                }
+            } catch (IllegalArgumentException e) {
+                // Try the next storekeeper.
+            }
+        }
+        return null;
+    }
+
+    private boolean assignmentWouldRequireApproval(Employee employee, Shift shift) {
+        WeeklyAvailabilityRequest availability = employee.getWeeklyAvailabilityRequest();
+        return hasConstraintForShift(availability, shift)
+                || (employee.getFixedDayOff() != null
+                        && employee.getFixedDayOff() == shift.getDate().getDayOfWeek());
+    }
+
+    private boolean hasConstraintForShift(WeeklyAvailabilityRequest availability, Shift shift) {
+        if (availability == null) {
+            return false;
+        }
+
+        for (Constraint constraint : availability.getConstraints()) {
+            if (constraint.getDay() == shift.getDate().getDayOfWeek()
+                    && constraint.getShiftType() == shift.getShiftType()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasApprovedAssignment(Shift shift, String employeeId, Role role) {
+        ShiftAssignment assignment = findAssignment(shift, employeeId, role);
+        return assignment != null && assignment.isApproved() && !assignment.isCancellationRequested();
+    }
+
+    private boolean isAssignedToShift(Shift shift, String employeeId) {
+        for (ShiftAssignment assignment : shift.getAssignments()) {
+            if (assignment.getEmployee() != null
+                    && employeeId.equals(assignment.getEmployee().getId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private ShiftAssignment findAssignment(Shift shift, String employeeId, Role role) {
+        for (ShiftAssignment assignment : shift.getAssignments()) {
+            if (assignment.getEmployee() != null
+                    && employeeId.equals(assignment.getEmployee().getId())
+                    && assignment.getRole() == role) {
+                return assignment;
+            }
+        }
+        return null;
+    }
+
+    private boolean shiftBelongsToBranch(Shift shift, int branchId) {
+        return shift.getBranch() != null
+                && String.valueOf(branchId).equals(shift.getBranch().getBranchId());
+    }
+
+    private boolean employeeBelongsToBranch(Employee employee, int branchId) {
+        return employee.getBranch() != null
+                && String.valueOf(branchId).equals(employee.getBranch().getBranchId());
+    }
+
+    private void manageBranchWorkspaceFlow(Scanner scanner) throws RepositoryException {
         while (true) {
             System.out.println("\n=== Branch Management ===");
             System.out.println("1. Create branch");
@@ -1398,26 +1670,26 @@ public class ConsolePresentation {
         }
     }
 
-    private void createBranchFlow(Scanner scanner) {
+    private void createBranchFlow(Scanner scanner) throws RepositoryException {
         try {
             Branch branch = readBranch(scanner);
-            branchManager.addBranch(branch);
+            branchRepository.save(BranchMapper.toDto(branch));
             System.out.println("Branch created successfully: " + branch.getBranchName());
         } catch (IllegalArgumentException e) {
             System.out.println("Failed to create branch: " + e.getMessage());
         }
     }
 
-    private void selectBranchWorkspaceFlow(Scanner scanner) {
-        List<Branch> branches = branchManager.getAllBranches();
+    private void selectBranchWorkspaceFlow(Scanner scanner) throws RepositoryException {
+        List<BranchDto> branches = branchRepository.findAll();
         if (branches.isEmpty()) {
             System.out.println("No branches available. Create one first.");
             return;
         }
 
         for (int i = 0; i < branches.size(); i++) {
-            Branch branch = branches.get(i);
-            System.out.println((i + 1) + ". " + branch.getBranchName() + " (" + branch.getLocation() + ")");
+            BranchDto branch = branches.get(i);
+            System.out.println((i + 1) + ". " + branch.getBranchName() + " (" + branch.getAddress() + ")");
         }
 
         int selection = readInt(scanner, "Select branch number: ");
@@ -1426,7 +1698,7 @@ public class ConsolePresentation {
             return;
         }
 
-        activeBranch = branches.get(selection - 1);
+        activeBranch = BranchMapper.toDomain(branches.get(selection - 1));
         System.out.println("Active branch workspace: " + activeBranch.getBranchName());
     }
 
@@ -1462,7 +1734,12 @@ public class ConsolePresentation {
     }
 
     private List<Employee> getEmployeesForCurrentScope(boolean includeGlobalDrivers) {
-        List<Employee> employees = userController.getEmployees();
+        List<Employee> employees;
+        try {
+            employees = employeeRepository.findAll();
+        } catch (RepositoryException e) {
+            employees = userController.getEmployees();
+        }
         if (activeBranch == null) {
             return employees;
         }
@@ -1482,7 +1759,12 @@ public class ConsolePresentation {
     }
 
     private List<Shift> getShiftsForCurrentScope() {
-        List<Shift> shifts = shiftController.getShifts();
+        List<Shift> shifts;
+        try {
+            shifts = shiftRepository.findAll();
+        } catch (RepositoryException e) {
+            shifts = shiftController.getShifts();
+        }
         if (activeBranch == null) {
             return shifts;
         }
@@ -1527,7 +1809,12 @@ public class ConsolePresentation {
     }
 
     private List<Shift> getShiftsForEmployeeBranch(Employee employee) {
-        List<Shift> shifts = shiftController.getShifts();
+        List<Shift> shifts;
+        try {
+            shifts = shiftRepository.findAll();
+        } catch (RepositoryException e) {
+            shifts = shiftController.getShifts();
+        }
         if (employee == null || employee.getBranch() == null) {
             return new ArrayList<>();
         }

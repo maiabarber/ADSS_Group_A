@@ -4,13 +4,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 
+import dataaccess.repository.impl.EmployeeRepositoryImpl;
+import dataaccess.repository.impl.ShiftRepositoryImpl;
 import employee.service.EmployeeTransportationService;
-import dataaccess.repository.impl.DatabaseEmployeeRepository;
-import dataaccess.repository.impl.DatabaseShiftRepository;
 
 public class DeliveryManager {
 
@@ -25,8 +23,8 @@ public class DeliveryManager {
 
     public DeliveryManager() {
         this(new EmployeeTransportationService(
-                new DatabaseShiftRepository(),
-                new DatabaseEmployeeRepository()));
+                new ShiftRepositoryImpl(),
+                new EmployeeRepositoryImpl()));
     }
     public DeliveryManager(EmployeeTransportationService employeeTransportationService) {
         if (employeeTransportationService == null) {
@@ -82,7 +80,7 @@ public class DeliveryManager {
 
         for (Driver driver : drivers) {
             if (driver.canDrive(truck)
-                    && employeeTransportationService.isDriverAssignedToShift(
+                    && employeeTransportationService.canRequestDriverForDeliveryShift(
                             driver.getEmployeeId(),
                             departureDateTime)) {
                 availableDrivers.add(driver);
@@ -299,10 +297,11 @@ public class DeliveryManager {
             deliveryForm
         );
 
+        LocalDateTime deliveryDateTime = LocalDateTime.of(delivery.getDeliveryDate(), delivery.getDepartureTime());
         employeeTransportationService.createDriverAssignmentRequest(
             driver.getEmployeeId(),
             delivery.getDeliveryId(),
-            LocalDateTime.of(delivery.getDeliveryDate(), delivery.getDepartureTime())
+            deliveryDateTime
         );
 
         if (delivery.isOverweight()) {
@@ -350,12 +349,11 @@ public class DeliveryManager {
         if (!delivery.getDriver().canDrive(newTruck)) {
             throw new IllegalArgumentException("current driver cannot drive the new truck");
         }
+        if (!newTruck.canCarryWeight(delivery.getFinalMeasuredWeightBeforeDeparture())) {
+            throw new IllegalArgumentException("Truck cannot carry current delivery weight");
+        }
 
         delivery.setTruck(newTruck);
-
-        if (!delivery.getTruck().canCarryWeight(delivery.getFinalMeasuredWeightBeforeDeparture())) {
-            delivery.setStatus(DeliveryStatus.PENDING_REPLAN);
-        }
     }
 
     public void replaceDriver(Delivery delivery, Driver newDriver) {

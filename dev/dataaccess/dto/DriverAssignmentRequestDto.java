@@ -1,30 +1,26 @@
 package dataaccess.dto;
 
-import employee.domain.ShiftType;
-
-import java.time.LocalDateTime;
-
-public class DriverAssignmentRequestDto {
+public final class DriverAssignmentRequestDto {
+    private final int requestId;
     private final String driverId;
     private final int deliveryId;
-    private final LocalDateTime deliveryDateTime;
-    private final ShiftType shiftType;
+    private final String deliveryDateTime;
+    private final String shiftType;
     private final boolean handled;
     private final String statusMessage;
 
-    public DriverAssignmentRequestDto(
-            String driverId,
-            int deliveryId,
-            LocalDateTime deliveryDateTime,
-            ShiftType shiftType,
-            boolean handled,
-            String statusMessage) {
+    public DriverAssignmentRequestDto(int requestId, String driverId, int deliveryId, String deliveryDateTime, String shiftType, boolean handled, String statusMessage) {
+        this.requestId = requestId;
         this.driverId = driverId;
         this.deliveryId = deliveryId;
         this.deliveryDateTime = deliveryDateTime;
         this.shiftType = shiftType;
         this.handled = handled;
         this.statusMessage = statusMessage;
+    }
+
+    public int getRequestId() {
+        return requestId;
     }
 
     public String getDriverId() {
@@ -35,11 +31,11 @@ public class DriverAssignmentRequestDto {
         return deliveryId;
     }
 
-    public LocalDateTime getDeliveryDateTime() {
+    public String getDeliveryDateTime() {
         return deliveryDateTime;
     }
 
-    public ShiftType getShiftType() {
+    public String getShiftType() {
         return shiftType;
     }
 
@@ -50,4 +46,5 @@ public class DriverAssignmentRequestDto {
     public String getStatusMessage() {
         return statusMessage;
     }
+
 }

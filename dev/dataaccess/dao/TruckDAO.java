@@ -1,108 +1,104 @@
 package dataaccess.dao;
 
-import dataaccess.DatabaseConnection;
 import dataaccess.dto.TruckDto;
+import dataaccess.repository.RepositoryException;
 
-import transportation.domain.LicenseType;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
-import java.util.Optional;
 import java.util.List;
 
-public class TruckDAO {
-	public List<TruckDto> listTrucks() throws SQLException {
-		String sql = """
-				SELECT license_number, model, net_weight, max_allowed_weight, required_license_type
-				FROM trucks
-				ORDER BY license_number
-				""";
+public class TruckDAO implements DaoInterface<TruckDto> {
+    private final Connection connection;
 
-		List<TruckDto> trucks = new ArrayList<>();
+    public TruckDAO(Connection connection) {
+        this.connection = connection;
+    }
 
-		try (Connection connection = DatabaseConnection.getConnection();
-			 Statement statement = connection.createStatement();
-			 ResultSet resultSet = statement.executeQuery(sql)) {
+    @Override
+    public void createOrUpdate(TruckDto dto) throws RepositoryException {
+        String sql = """
+                INSERT INTO trucks (license_number, model, net_weight, max_allowed_weight, required_license_type) VALUES (?, ?, ?, ?, ?) ON CONFLICT(license_number) DO UPDATE SET model = excluded.model, net_weight = excluded.net_weight, max_allowed_weight = excluded.max_allowed_weight, required_license_type = excluded.required_license_type
+                """;
 
-			while (resultSet.next()) {
-				trucks.add(new TruckDto(
-						resultSet.getString("license_number"),
-						resultSet.getString("model"),
-						resultSet.getDouble("net_weight"),
-						resultSet.getDouble("max_allowed_weight"),
-						LicenseType.valueOf(resultSet.getString("required_license_type"))
-				));
-			}
-		}
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, dto.getLicenseNumber());
+            stmt.setString(2, dto.getModel());
+            stmt.setDouble(3, dto.getNetWeight());
+            stmt.setDouble(4, dto.getMaxAllowedWeight());
+            stmt.setString(5, dto.getRequiredLicenseType());
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RepositoryException("Failed to save trucks row", e);
+        }
+    }
 
-		return trucks;
-	}
+    @Override
+    public TruckDto findbyId(String id) throws RepositoryException {
+        String sql = """
+                SELECT license_number, model, net_weight, max_allowed_weight, required_license_type
+                FROM trucks
+                WHERE license_number = ?
+                """;
 
-	public Optional<TruckDto> findTruckByLicenseNumber(String licenseNumber) throws SQLException {
-		String sql = """
-				SELECT license_number, model, net_weight, max_allowed_weight, required_license_type
-				FROM trucks
-				WHERE license_number = ?
-				""";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            String[] parts = new String[] { id };
+            stmt.setString(1, parts[0]);
 
-		try (Connection connection = DatabaseConnection.getConnection();
-			 PreparedStatement statement = connection.prepareStatement(sql)) {
-			statement.setString(1, licenseNumber);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (!rs.next()) {
+                    return null;
+                }
+                return mapRow(rs);
+            }
+        } catch (SQLException e) {
+            throw new RepositoryException("Failed to find trucks row", e);
+        }
+    }
 
-			try (ResultSet resultSet = statement.executeQuery()) {
-				if (resultSet.next()) {
-					return Optional.of(new TruckDto(
-						resultSet.getString("license_number"),
-						resultSet.getString("model"),
-						resultSet.getDouble("net_weight"),
-						resultSet.getDouble("max_allowed_weight"),
-						LicenseType.valueOf(resultSet.getString("required_license_type"))
-					));
-				}
-			}
-		}
+    @Override
+    public void update(TruckDto dto) throws RepositoryException {
+        createOrUpdate(dto);
+    }
 
-		return Optional.empty();
-	}
+    @Override
+    public void delete(String id) throws RepositoryException {
+        String sql = "DELETE FROM trucks WHERE license_number = ?";
 
-	public void insertTruck(String licenseNumber,
-	                        String model,
-	                        double netWeight,
-	                        double maxAllowedWeight,
-	                        String requiredLicenseType) throws SQLException {
-		String sql = """
-				INSERT OR IGNORE INTO trucks (
-				    license_number,
-				    model,
-				    net_weight,
-				    max_allowed_weight,
-				    required_license_type
-				)
-				VALUES (?, ?, ?, ?, ?)
-				""";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            String[] parts = new String[] { id };
+            stmt.setString(1, parts[0]);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RepositoryException("Failed to delete trucks row", e);
+        }
+    }
 
-		try (Connection connection = DatabaseConnection.getConnection();
-			 PreparedStatement statement = connection.prepareStatement(sql)) {
-			statement.setString(1, licenseNumber);
-			statement.setString(2, model);
-			statement.setDouble(3, netWeight);
-			statement.setDouble(4, maxAllowedWeight);
-			statement.setString(5, requiredLicenseType);
-			statement.executeUpdate();
-		}
-	}
+    @Override
+    public List<TruckDto> findAll() throws RepositoryException {
+        String sql = """
+                SELECT license_number, model, net_weight, max_allowed_weight, required_license_type
+                FROM trucks
+                """;
+        List<TruckDto> rows = new ArrayList<>();
 
-	public void deleteTruckByLicenseNumber(String licenseNumber) throws SQLException {
-		String sql = "DELETE FROM trucks WHERE license_number = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                rows.add(mapRow(rs));
+            }
+            return rows;
+        } catch (SQLException e) {
+            throw new RepositoryException("Failed to load trucks rows", e);
+        }
+    }
 
-		try (Connection connection = DatabaseConnection.getConnection();
-			 PreparedStatement statement = connection.prepareStatement(sql)) {
-			statement.setString(1, licenseNumber);
-			statement.executeUpdate();
-		}
-	}
+    private TruckDto mapRow(ResultSet rs) throws SQLException {
+        return new TruckDto(
+                rs.getString("license_number"),
+                rs.getString("model"),
+                rs.getDouble("net_weight"),
+                rs.getDouble("max_allowed_weight"),
+                rs.getString("required_license_type")
+        );
+    }
 }

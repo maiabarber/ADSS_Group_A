@@ -1,18 +1,23 @@
 package transportation.presentation;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
 import transportation.domain.Delivery;
+import transportation.domain.DeliveryDocument;
 import transportation.domain.DeliveryItem;
 import transportation.domain.DeliveryStatus;
 import transportation.domain.DeliveryStop;
 import transportation.domain.Driver;
+import transportation.domain.LicenseType;
 import transportation.domain.ShippingZone;
 import transportation.domain.Site;
+import transportation.domain.SiteType;
+import transportation.domain.StopType;
 import transportation.domain.Truck;
 import transportation.service.DeliveriesApplication;
 
@@ -44,37 +49,49 @@ public class DeliveriesUI {
 
             try {
                 switch (choice) {
+                    // case 1:
+                    //     handleInitializeEmpty();
+                        // break;
                     case 1:
-                        handleInitializeEmpty();
-                        break;
-                    case 2:
                         handleLoadSampleData();
                         break;
-                    case 3:
+                    case 2:
                         handleShowDeliveries();
                         break;
-                    case 4:
+                    case 3:
                         handleShowSites();
                         break;
-                    case 5:
+                    case 4:
                         handleShowTrucks();
                         break;
-                    case 6:
+                    case 5:
                         handleShowDrivers();
                         break;
-                    case 7:
+                    case 6:
                         handleShowShippingZones();
                         break;
-                    case 8:
+                    case 7:
                         handleCreateDelivery();
                         break;
-                    case 9:
+                    case 8:
                         handleRecordWeightMeasurement();
                         break;
-                    case 10:
+                    case 9:
                         handleReplanDelivery();
                         break;
+                    case 10:
+                        handleCancelDelivery();
+                        break;
                     case 11:
+                        handleAddTruck();
+                        break;
+                    case 12:
+                        handleAddSite();
+                        break;
+                    case 13:
+                        handleAddShippingZone();
+                        break;
+                    case 14:
                         handleDispatchDelivery();
                         break;
                     case 0:
@@ -94,25 +111,29 @@ public class DeliveriesUI {
 
     private void printMainMenu() {
         System.out.println("--------------- MAIN MENU ---------------");
-        System.out.println("1. Initialize empty system");
-        System.out.println("2. Load sample data");
-        System.out.println("3. Show all deliveries");
-        System.out.println("4. Show all sites");
-        System.out.println("5. Show all trucks");
-        System.out.println("6. Show all drivers");
-        System.out.println("7. Show all shipping zones");
-        System.out.println("8. Create new delivery");
-        System.out.println("9. Record weight measurement");
-        System.out.println("10. Replan delivery");
-        System.out.println("11. Dispatch delivery");
+        // System.out.println("1. Initialize empty system");
+        System.out.println("1. Load sample data");
+        System.out.println("2. Show all deliveries");
+        System.out.println("3. Show all sites");
+        System.out.println("4. Show all trucks");
+        System.out.println("5. Show all drivers");
+        System.out.println("6. Show all shipping zones");
+        System.out.println("7. Create new delivery");
+        System.out.println("8. Record weight measurement");
+        System.out.println("9. Replan delivery");
+        System.out.println("10. Cancel Delivery");
+        System.out.println("11. Add Truck");
+        System.out.println("12. Add Site");
+        System.out.println("13. Add Shipping Zone");
+        System.out.println("14. Dispatch delivery");
         System.out.println("0. Exit");
         System.out.println("-----------------------------------------");
     }
 
-    private void handleInitializeEmpty() {
-        deliveriesApplication.initializeEmpty();
-        System.out.println("System initialized with empty data.");
-    }
+    // private void handleInitializeEmpty() {
+    //     deliveriesApplication.initializeEmpty();
+    //     System.out.println("System initialized with empty data.");
+    // }
 
     private void handleLoadSampleData() {
         deliveriesApplication.initializeWithSampleData();
@@ -229,7 +250,7 @@ public class DeliveriesUI {
         List<DeliveryStop> stops = new ArrayList<>();
         for (int i = 0; i < stopCount; i++) {
             System.out.println("Creating stop #" + i);
-            DeliveryStop stop = buildStop(i, shippingZone);
+            DeliveryStop stop = buildStop(i, shippingZone, deliveryDate, departureTime);
             stops.add(stop);
         }
 
@@ -252,6 +273,7 @@ public class DeliveriesUI {
         );
 
         System.out.println("Delivery created successfully.");
+        System.out.println("Driver assignment request was sent to HR manager.");
         System.out.println(deliveriesApplication.getDeliverySummary(delivery));
 
         if (delivery.getStatus() == DeliveryStatus.PENDING_REPLAN) {
@@ -305,7 +327,9 @@ public class DeliveriesUI {
                     case 4:
                         DeliveryStop newStop = buildStop(
                                 delivery.getStops().size(),
-                                delivery.getShippingZone()
+                                delivery.getShippingZone(),
+                                delivery.getDeliveryDate(),
+                                delivery.getDepartureTime()
                         );
                         deliveriesApplication.addStopToDelivery(delivery, newStop);
                         System.out.println("Stop added successfully.");
@@ -339,6 +363,106 @@ public class DeliveriesUI {
         System.out.println("Delivery dispatched successfully.");
         System.out.println("Current status: " + deliveriesApplication.getDeliveryStatus(delivery));
     }
+
+    private void handleCancelDelivery() {
+        Delivery delivery = chooseDelivery("Choose delivery to cancel:");
+
+        deliveriesApplication.cancelDelivery(delivery);
+
+        System.out.println("Delivery cancelled successfully.");
+        System.out.println("Current status: " + deliveriesApplication.getDeliveryStatus(delivery));
+    }
+
+    private void handleAddTruck() {
+        String licensePlate = readNonEmptyString("Enter truck license plate: ");
+        String model = readNonEmptyString("Enter truck model: ");
+
+        double netWeight = readDouble("Enter truck net weight: ");
+        while (netWeight < 0) {
+            System.out.println("Net weight cannot be negative.");
+            netWeight = readDouble("Enter truck net weight: ");
+        }
+
+        double maxWeight = readDouble("Enter truck maximum allowed weight: ");
+        while (maxWeight < netWeight) {
+            System.out.println("Maximum weight cannot be smaller than net weight.");
+            maxWeight = readDouble("Enter truck maximum allowed weight: ");
+        }
+
+        LicenseType requiredLicenseType = chooseLicenseType();
+
+        Truck truck = new Truck(
+                licensePlate,
+                model,
+                netWeight,
+                maxWeight,
+                requiredLicenseType
+        );
+
+        deliveriesApplication.addTruck(truck);
+
+        System.out.println("Truck added successfully.");
+        System.out.println(truck);
+    }
+
+    private void handleAddSite() {
+        if (deliveriesApplication.getAllShippingZones().isEmpty()) {
+            System.out.println("No shipping zones found. Add a shipping zone first.");
+            return;
+        }
+
+        String name = readNonEmptyString("Enter site name: ");
+        String address = readNonEmptyString("Enter site address: ");
+        String phone = readNonEmptyString("Enter site phone number: ");
+        String contactName = readNonEmptyString("Enter contact name: ");
+
+        ShippingZone zone = chooseShippingZone();
+
+        Site site = new Site(
+                name,
+                address,
+                phone,
+                contactName,
+                zone,
+                SiteType.REGULAR,
+                null
+        );
+
+        deliveriesApplication.addSite(site);
+
+        System.out.println("Site added successfully.");
+        System.out.println(site);
+    }
+
+    private void handleAddShippingZone() {
+        String zoneCode = readNonEmptyString("Enter shipping zone code: ");
+        String zoneName = readNonEmptyString("Enter shipping zone name: ");
+
+        ShippingZone zone = new ShippingZone(zoneCode, zoneName);
+
+        deliveriesApplication.addShippingZone(zone);
+
+        System.out.println("Shipping zone added successfully.");
+        System.out.println(zone);
+    }
+
+    private LicenseType chooseLicenseType() {
+        LicenseType[] licenseTypes = LicenseType.values();
+
+        System.out.println("Available license types:");
+        for (int i = 0; i < licenseTypes.length; i++) {
+            System.out.println("[" + i + "] " + licenseTypes[i]);
+        }
+
+        int index = readInt("Choose license type index: ");
+        while (index < 0 || index >= licenseTypes.length) {
+            System.out.println("Invalid index.");
+            index = readInt("Choose license type index: ");
+        }
+
+        return licenseTypes[index];
+    }
+
 
     private void printReplanMenu() {
         System.out.println("------------- REPLAN MENU -------------");
@@ -429,7 +553,20 @@ public class DeliveriesUI {
                 deliveriesApplication.getAvailableDriversForDelivery(deliveryDate, departureTime, truck);
 
         if (availableDrivers.isEmpty()) {
-            throw new IllegalStateException("No available drivers found for the selected date, time and truck.");
+            int compatibleDriverCount = countCompatibleDrivers(truck);
+            if (compatibleDriverCount == 0) {
+                throw new IllegalStateException(
+                        "No available drivers found for the selected date, time and truck. "
+                                + "No registered driver has the required " + truck.getRequiredLicenseType()
+                                + " license for truck " + truck.getLicenseNumber() + ".");
+            }
+
+            throw new IllegalStateException(
+                    "No available drivers found for the selected date, time and truck. "
+                            + compatibleDriverCount + " registered driver(s) have the required "
+                            + truck.getRequiredLicenseType()
+                            + " license, but none are assigned and approved for the "
+                            + deliveryDate + " " + departureTime + " shift.");
         }
 
         System.out.println("Available drivers:");
@@ -448,6 +585,16 @@ public class DeliveriesUI {
         }
 
         return availableDrivers.get(index);
+    }
+
+    private int countCompatibleDrivers(Truck truck) {
+        int count = 0;
+        for (Driver driver : deliveriesApplication.getAllDrivers()) {
+            if (driver.canDrive(truck)) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private Driver chooseCompatibleDriver(Truck truck) {
@@ -505,7 +652,11 @@ public class DeliveriesUI {
         return deliveriesApplication.getDeliveryByIndex(index);
     }
 
-    private DeliveryStop buildStop(int stopOrder, ShippingZone shippingZone) {
+    private DeliveryStop buildStop(
+            int stopOrder,
+            ShippingZone shippingZone,
+            LocalDate deliveryDate,
+            LocalTime departureTime) {
         List<Site> sitesInZone = getSitesByZone(shippingZone);
 
         if (sitesInZone.isEmpty()) {
@@ -525,17 +676,39 @@ public class DeliveriesUI {
         Site site = chooseSiteFromList("Choose stop site:", sitesInZone);
         List<DeliveryItem> items = readItemsFromUser();
 
-        if (stopTypeChoice == 1) {
-            if (items.isEmpty()) {
-                return deliveriesApplication.createPickupStop(stopOrder, site);
-            }
-            return deliveriesApplication.createPickupStop(stopOrder, site, items);
-        } else {
-            if (items.isEmpty()) {
-                return deliveriesApplication.createDropoffStop(stopOrder, site);
-            }
-            return deliveriesApplication.createDropoffStop(stopOrder, site, items);
+        LocalTime arrivalTime = readTime("Enter planned arrival time for this stop (HH:MM): ");
+        LocalDateTime plannedArrival = LocalDateTime.of(deliveryDate, arrivalTime);
+
+        LocalDateTime departureDateTime = LocalDateTime.of(deliveryDate, departureTime);
+        while (plannedArrival.isBefore(departureDateTime)) {
+            System.out.println("Stop arrival time cannot be before delivery departure time.");
+            arrivalTime = readTime("Enter planned arrival time for this stop (HH:MM): ");
+            plannedArrival = LocalDateTime.of(deliveryDate, arrivalTime);
         }
+
+        DeliveryDocument document = deliveriesApplication.createDocument(items);
+
+        if (stopTypeChoice == 1) {
+            return new DeliveryStop(
+                    stopOrder,
+                    StopType.PICKUP,
+                    site,
+                    document,
+                    plannedArrival
+            );
+        }
+
+        return new DeliveryStop(
+                stopOrder,
+                StopType.DROPOFF,
+                site,
+                document,
+                plannedArrival
+        );
+    }
+
+    private void addTruck(Truck truck){
+        deliveriesApplication.addTruck(truck);
     }
 
     private List<DeliveryItem> readItemsFromUser() {

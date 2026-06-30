@@ -27,6 +27,21 @@ public class Salary {
         recalculateFinalSalary();
     }
 
+    public Salary(double globalSalary2, double hourlySalary2, double workedHours2, double overtimeHours2,
+            double finalSalary2, EmploymentScope employmentScope2) {
+        validateNonNegative(globalSalary2, "Global salary");
+        validateNonNegative(hourlySalary2, "Hourly salary");
+        validateNonNegative(workedHours2, "Worked hours");
+        validateNonNegative(overtimeHours2, "Overtime hours");
+        validateNonNegative(finalSalary2, "Final salary");
+        this.globalSalary = globalSalary2;
+        this.hourlySalary = hourlySalary2;
+        this.workedHours = workedHours2;
+        this.overtimeHours = overtimeHours2;
+        this.finalSalary = finalSalary2;
+        this.employmentScope = employmentScope2;
+    }
+
     private void validateNonNegative(double value, String fieldName) {
         if (value < 0) {
             throw new IllegalArgumentException(fieldName + " cannot be negative");

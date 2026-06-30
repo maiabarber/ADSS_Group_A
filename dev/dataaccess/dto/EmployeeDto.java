@@ -1,52 +1,52 @@
 package dataaccess.dto;
 
-import employee.domain.EmploymentType;
-import employee.domain.Role;
-
-import java.time.DayOfWeek;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
-public class EmployeeDto {
+public final class EmployeeDto {
     private final String employeeId;
     private final String name;
-    private final BankAccountDto bankAccount;
-    private final SalaryDto salary;
-    private final EmploymentType employmentType;
-    private final EmploymentTermsDto employmentTerms;
-    private final Set<Role> roles;
-    private final boolean canManageShift;
+    private final String bankNumber;
+    private final String bankBranchNumber;
+    private final String bankAccountNumber;
+    private final String employmentType;
+    private final String employmentScope;
+    private final double hourlySalary;
+    private final double globalSalary;
+    private final String startDate;
     private final boolean fired;
-    private final DayOfWeek fixedDayOff;
-    private final WeeklyAvailabilityRequestDto weeklyAvailabilityRequest;
-    private final BranchDto branch;
+    private final int vacationDays;
+    private final Integer branchId;
+    private final boolean canManageShift;
+    private final String fixedDayOff;
+    private final String weeklyWeekStartDate;
+    private final String weeklySubmissionDeadline;
+    private final String weeklyConstraints;
+    private final String weeklyPreferences;
 
-    public EmployeeDto(
-            String employeeId,
-            String name,
-            BankAccountDto bankAccount,
-            SalaryDto salary,
-            EmploymentType employmentType,
-            EmploymentTermsDto employmentTerms,
-            Set<Role> roles,
-            boolean canManageShift,
-            boolean fired,
-            DayOfWeek fixedDayOff,
-            WeeklyAvailabilityRequestDto weeklyAvailabilityRequest,
-            BranchDto branch) {
+    public EmployeeDto(String employeeId, String name, String bankNumber, String bankBranchNumber, String bankAccountNumber, String employmentType, String employmentScope, double hourlySalary, double globalSalary, String startDate, boolean fired, int vacationDays, Integer branchId, boolean canManageShift) {
+        this(employeeId, name, bankNumber, bankBranchNumber, bankAccountNumber, employmentType, employmentScope,
+                hourlySalary, globalSalary, startDate, fired, vacationDays, branchId, canManageShift,
+                null, null, null, null, null);
+    }
+
+    public EmployeeDto(String employeeId, String name, String bankNumber, String bankBranchNumber, String bankAccountNumber, String employmentType, String employmentScope, double hourlySalary, double globalSalary, String startDate, boolean fired, int vacationDays, Integer branchId, boolean canManageShift, String fixedDayOff, String weeklyWeekStartDate, String weeklySubmissionDeadline, String weeklyConstraints, String weeklyPreferences) {
         this.employeeId = employeeId;
         this.name = name;
-        this.bankAccount = bankAccount;
-        this.salary = salary;
+        this.bankNumber = bankNumber;
+        this.bankBranchNumber = bankBranchNumber;
+        this.bankAccountNumber = bankAccountNumber;
         this.employmentType = employmentType;
-        this.employmentTerms = employmentTerms;
-        this.roles = roles == null ? new HashSet<>() : new HashSet<>(roles);
-        this.canManageShift = canManageShift;
+        this.employmentScope = employmentScope;
+        this.hourlySalary = hourlySalary;
+        this.globalSalary = globalSalary;
+        this.startDate = startDate;
         this.fired = fired;
+        this.vacationDays = vacationDays;
+        this.branchId = branchId;
+        this.canManageShift = canManageShift;
         this.fixedDayOff = fixedDayOff;
-        this.weeklyAvailabilityRequest = weeklyAvailabilityRequest;
-        this.branch = branch;
+        this.weeklyWeekStartDate = weeklyWeekStartDate;
+        this.weeklySubmissionDeadline = weeklySubmissionDeadline;
+        this.weeklyConstraints = weeklyConstraints;
+        this.weeklyPreferences = weeklyPreferences;
     }
 
     public String getEmployeeId() {
@@ -57,43 +57,72 @@ public class EmployeeDto {
         return name;
     }
 
-    public BankAccountDto getBankAccount() {
-        return bankAccount;
+    public String getBankNumber() {
+        return bankNumber;
     }
 
-    public SalaryDto getSalary() {
-        return salary;
+    public String getBankBranchNumber() {
+        return bankBranchNumber;
     }
 
-    public EmploymentType getEmploymentType() {
+    public String getBankAccountNumber() {
+        return bankAccountNumber;
+    }
+
+    public String getEmploymentType() {
         return employmentType;
     }
 
-    public EmploymentTermsDto getEmploymentTerms() {
-        return employmentTerms;
+    public String getEmploymentScope() {
+        return employmentScope;
     }
 
-    public Set<Role> getRoles() {
-        return Collections.unmodifiableSet(roles);
+    public double getHourlySalary() {
+        return hourlySalary;
     }
 
-    public boolean isCanManageShift() {
-        return canManageShift;
+    public double getGlobalSalary() {
+        return globalSalary;
+    }
+
+    public String getStartDate() {
+        return startDate;
     }
 
     public boolean isFired() {
         return fired;
     }
 
-    public DayOfWeek getFixedDayOff() {
+    public int getVacationDays() {
+        return vacationDays;
+    }
+
+    public Integer getBranchId() {
+        return branchId;
+    }
+
+    public boolean canManageShift() {
+        return canManageShift;
+    }
+
+    public String getFixedDayOff() {
         return fixedDayOff;
     }
 
-    public WeeklyAvailabilityRequestDto getWeeklyAvailabilityRequest() {
-        return weeklyAvailabilityRequest;
+    public String getWeeklyWeekStartDate() {
+        return weeklyWeekStartDate;
     }
 
-    public BranchDto getBranch() {
-        return branch;
+    public String getWeeklySubmissionDeadline() {
+        return weeklySubmissionDeadline;
     }
+
+    public String getWeeklyConstraints() {
+        return weeklyConstraints;
+    }
+
+    public String getWeeklyPreferences() {
+        return weeklyPreferences;
+    }
+
 }

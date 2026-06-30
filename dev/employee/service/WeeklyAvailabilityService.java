@@ -5,13 +5,14 @@ import employee.domain.Employee;
 import employee.domain.Preference;
 import employee.domain.SubmissionDeadlinePolicy;
 import employee.domain.WeeklyAvailabilityRules;
-import employee.repository.EmployeeRepository;
-import employee.repository.RepositoryException;
-import employee.repository.SubmissionDeadlineRepository;
+import dataaccess.repository.EmployeeRepository;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
+
+import dataaccess.repository.RepositoryException;
+import dataaccess.repository.SubmissionDeadlineRepository;
 
 /**
  * WeeklyAvailabilityService coordinates repositories with domain rules for weekly submission.

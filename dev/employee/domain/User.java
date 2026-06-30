@@ -9,12 +9,14 @@ import java.util.Objects;
 public class User {
     private String id;
     private String password;
+    private boolean hrManager;
 
     public User(String id, String password) {
         validateId(id);
         validatePassword(password);
         this.id = id;
         this.password = password;
+        this.hrManager = false;
     }
 
     public String getId() {
@@ -58,6 +60,14 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public boolean isHRManager() {
+        return hrManager;
+    }
+
+    public void setHRManager(boolean hrManager) {
+        this.hrManager = hrManager;
     }
 
     public boolean matchesCredentials(String id, String password) {

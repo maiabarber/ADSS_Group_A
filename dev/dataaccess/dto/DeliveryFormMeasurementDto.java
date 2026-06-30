@@ -22,4 +22,5 @@ public final class DeliveryFormMeasurementDto {
     public double getMeasuredWeight() {
         return measuredWeight;
     }
+
 }

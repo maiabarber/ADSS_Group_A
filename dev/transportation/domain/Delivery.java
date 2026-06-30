@@ -190,6 +190,9 @@ public class Delivery {
             throw new IllegalArgumentException("truck cannot be null");
         }
         validateMeasuredWeightForTruck(finalMeasuredWeightBeforeDeparture, truck);
+        if (!truck.canCarryWeight(finalMeasuredWeightBeforeDeparture)) {
+            throw new IllegalArgumentException("Truck cannot carry current delivery weight");
+        }
         this.truck = truck;
     }
 
@@ -291,7 +294,7 @@ public class Delivery {
     }
 
     public boolean canStillBeModified() {
-        return status != DeliveryStatus.DISPATCHED;
+        return status != DeliveryStatus.DISPATCHED && status != DeliveryStatus.CANCELLED;
     }
 
     public boolean allStopsBelongToShippingZone() {
@@ -379,7 +382,7 @@ public class Delivery {
 
     private void ensureCanStillBeModified() {
         if (!canStillBeModified()) {
-            throw new IllegalStateException("dispatched delivery cannot be modified");
+            throw new IllegalStateException("Cannot modify dispatched or cancelled delivery");
         }
     }
 

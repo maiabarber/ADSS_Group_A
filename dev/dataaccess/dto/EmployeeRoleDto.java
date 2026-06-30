@@ -1,21 +1,20 @@
 package dataaccess.dto;
 
-import employee.domain.Role;
-
 public final class EmployeeRoleDto {
     private final String employeeId;
-    private final Role role;
+    private final String roleName;
 
-    public EmployeeRoleDto(String employeeId, Role role) {
+    public EmployeeRoleDto(String employeeId, String roleName) {
         this.employeeId = employeeId;
-        this.role = role;
+        this.roleName = roleName;
     }
 
     public String getEmployeeId() {
         return employeeId;
     }
 
-    public Role getRole() {
-        return role;
+    public String getRoleName() {
+        return roleName;
     }
+
 }

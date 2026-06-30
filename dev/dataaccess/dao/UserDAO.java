@@ -16,7 +16,7 @@ import java.util.ArrayList;
 public class UserDAO {
 	public List<UserDto> listUsers() throws SQLException {
 		String sql = """
-				SELECT user_id, password
+				SELECT user_id, password, is_hr_manager
 				FROM users
 				ORDER BY user_id
 				""";
@@ -30,7 +30,8 @@ public class UserDAO {
 			while (resultSet.next()) {
 				users.add(new UserDto(
 						resultSet.getString("user_id"),
-						resultSet.getString("password")
+						resultSet.getString("password"),
+						resultSet.getInt("is_hr_manager")  == 1
 				));
 			}
 		}
@@ -40,7 +41,7 @@ public class UserDAO {
 
 	public Optional<UserDto> findUserById(String userId) throws SQLException {
 		String sql = """
-				SELECT user_id, password
+				SELECT user_id, password, is_hr_manager
 				FROM users
 				WHERE user_id = ?
 				""";
@@ -53,7 +54,8 @@ public class UserDAO {
 				if (resultSet.next()) {
 					return Optional.of(new UserDto(
 						resultSet.getString("user_id"),
-						resultSet.getString("password")
+						resultSet.getString("password"),
+						resultSet.getInt("is_hr_manager") == 1
 					));
 				}
 			}

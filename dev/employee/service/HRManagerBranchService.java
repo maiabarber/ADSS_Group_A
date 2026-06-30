@@ -4,11 +4,13 @@ import employee.domain.Branch;
 import employee.domain.Employee;
 import employee.domain.Role;
 import employee.domain.Shift;
-import employee.repository.EmployeeRepository;
-import employee.repository.ShiftRepository;
+import dataaccess.repository.EmployeeRepository;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import dataaccess.repository.ShiftRepository;
 
 /**
  * HRManagerBranchService manages HR operations within a specific branch.
