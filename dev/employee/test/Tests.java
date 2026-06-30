@@ -864,6 +864,25 @@ public class Tests {
 	}
 
 	@Test
+	public void hard_userController_hrManager_cannotFireHimself() {
+		AuthenticationService authenticationService = new AuthenticationService(new UserRepositoryImpl());
+		EmployeeRepositoryImpl employeeRepository = new EmployeeRepositoryImpl();
+		UserController controller = new UserController(authenticationService, employeeRepository);
+		HR_Manager hr = new HR_Manager("100000183", "pass");
+
+		boolean fireRejected = false;
+		try {
+			controller.fireEmployee(hr, hr.getId());
+		} catch (IllegalArgumentException e) {
+			fireRejected = true;
+		} catch (RepositoryException e) {
+			throw new RuntimeException(e);
+		}
+
+		assertTrue(fireRejected, "HR manager should not be allowed to fire himself");
+	}
+
+	@Test
 	public void easy_updateEmployee_name() {
 		Employee employee = buildEmployee("100000064", false, 10);
 
