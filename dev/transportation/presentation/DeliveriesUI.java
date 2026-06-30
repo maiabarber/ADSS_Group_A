@@ -553,7 +553,20 @@ public class DeliveriesUI {
                 deliveriesApplication.getAvailableDriversForDelivery(deliveryDate, departureTime, truck);
 
         if (availableDrivers.isEmpty()) {
-            throw new IllegalStateException("No available drivers found for the selected date, time and truck.");
+            int compatibleDriverCount = countCompatibleDrivers(truck);
+            if (compatibleDriverCount == 0) {
+                throw new IllegalStateException(
+                        "No available drivers found for the selected date, time and truck. "
+                                + "No registered driver has the required " + truck.getRequiredLicenseType()
+                                + " license for truck " + truck.getLicenseNumber() + ".");
+            }
+
+            throw new IllegalStateException(
+                    "No available drivers found for the selected date, time and truck. "
+                            + compatibleDriverCount + " registered driver(s) have the required "
+                            + truck.getRequiredLicenseType()
+                            + " license, but none are assigned and approved for the "
+                            + deliveryDate + " " + departureTime + " shift.");
         }
 
         System.out.println("Available drivers:");
@@ -572,6 +585,16 @@ public class DeliveriesUI {
         }
 
         return availableDrivers.get(index);
+    }
+
+    private int countCompatibleDrivers(Truck truck) {
+        int count = 0;
+        for (Driver driver : deliveriesApplication.getAllDrivers()) {
+            if (driver.canDrive(truck)) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private Driver chooseCompatibleDriver(Truck truck) {

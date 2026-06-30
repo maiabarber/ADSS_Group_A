@@ -3,6 +3,7 @@ package employee.domain;
 import java.time.LocalDateTime;
 
 public class DriverAssignmentRequest {
+    private final int requestId;
     private final String driverId;
     private final int deliveryId;
     private final LocalDateTime deliveryDateTime;
@@ -15,12 +16,29 @@ public class DriverAssignmentRequest {
             int deliveryId,
             LocalDateTime deliveryDateTime,
             ShiftType shiftType) {
+        this(0, driverId, deliveryId, deliveryDateTime, shiftType, false,
+                "Waiting for HR manager to assign driver to shift");
+    }
+
+    public DriverAssignmentRequest(
+            int requestId,
+            String driverId,
+            int deliveryId,
+            LocalDateTime deliveryDateTime,
+            ShiftType shiftType,
+            boolean handled,
+            String statusMessage) {
+        this.requestId = requestId;
         this.driverId = driverId;
         this.deliveryId = deliveryId;
         this.deliveryDateTime = deliveryDateTime;
         this.shiftType = shiftType;
-        this.handled = false;
-        this.statusMessage = "Waiting for HR manager to assign driver to shift";
+        this.handled = handled;
+        this.statusMessage = statusMessage;
+    }
+
+    public int getRequestId() {
+        return requestId;
     }
 
     public String getDriverId() {

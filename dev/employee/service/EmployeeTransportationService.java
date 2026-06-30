@@ -9,11 +9,17 @@ import employee.domain.Shift;
 import employee.domain.ShiftAssignment;
 import employee.domain.ShiftType;
 import employee.domain.WeeklyAvailabilityRequest;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Collections;
 import java.util.List;
 
+import dataaccess.DatabaseConnection;
+import dataaccess.dao.DriverAssignmentRequestDaoImpl;
+import dataaccess.dto.DriverAssignmentRequestDto;
 import dataaccess.repository.EmployeeRepository;
 import dataaccess.repository.RepositoryException;
 import dataaccess.repository.ShiftRepository;
@@ -30,6 +36,7 @@ public class EmployeeTransportationService {
             EmployeeRepository employeeRepository) {
         this.shiftRepositoryImpl = (ShiftRepositoryImpl) shiftRepository;
         this.employeeRepository = employeeRepository;
+        loadPersistedDriverAssignmentRequests();
     }
 
     private ShiftType getShiftTypeByTime(LocalDateTime dateTime) {
@@ -171,15 +178,20 @@ public class EmployeeTransportationService {
         ShiftType shiftType = shift == null ? getShiftTypeByTime(deliveryDateTime) : shift.getShiftType();
 
         DriverAssignmentRequest request = new DriverAssignmentRequest(
+                nextDriverAssignmentRequestId(),
                 driverId,
                 deliveryId,
                 deliveryDateTime,
-                shiftType);
+                shiftType,
+                false,
+                "Waiting for HR manager to assign driver to shift");
 
         driverAssignmentRequests.add(request);
+        saveDriverAssignmentRequest(request);
     }
 
     public List<DriverAssignmentRequest> getOpenDriverAssignmentRequests() {
+        loadPersistedDriverAssignmentRequests();
         List<DriverAssignmentRequest> openRequests = new ArrayList<>();
 
         for (DriverAssignmentRequest request : driverAssignmentRequests) {
@@ -192,13 +204,71 @@ public class EmployeeTransportationService {
     }
 
     public List<DriverAssignmentRequest> getAllDriverAssignmentRequests() {
+        loadPersistedDriverAssignmentRequests();
         return Collections.unmodifiableList(driverAssignmentRequests);
     }
 
     public void markDriverAssignmentRequestHandled(DriverAssignmentRequest request) {
         if (request != null) {
             request.markHandled();
+            saveDriverAssignmentRequest(request);
         }
+    }
+
+    private void loadPersistedDriverAssignmentRequests() {
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            List<DriverAssignmentRequestDto> rows =
+                    new DriverAssignmentRequestDaoImpl(connection).findAll();
+            rows.sort(Comparator.comparingInt(DriverAssignmentRequestDto::getRequestId));
+
+            driverAssignmentRequests.clear();
+            for (DriverAssignmentRequestDto row : rows) {
+                driverAssignmentRequests.add(toDomain(row));
+            }
+        } catch (SQLException | RepositoryException e) {
+            throw new IllegalStateException("Failed to load driver assignment requests", e);
+        }
+    }
+
+    private void saveDriverAssignmentRequest(DriverAssignmentRequest request) {
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            new DriverAssignmentRequestDaoImpl(connection).createOrUpdate(toDto(request));
+        } catch (SQLException | RepositoryException e) {
+            throw new IllegalStateException("Failed to save driver assignment request", e);
+        }
+    }
+
+    private int nextDriverAssignmentRequestId() {
+        loadPersistedDriverAssignmentRequests();
+        int maxId = 0;
+        for (DriverAssignmentRequest request : driverAssignmentRequests) {
+            if (request.getRequestId() > maxId) {
+                maxId = request.getRequestId();
+            }
+        }
+        return maxId + 1;
+    }
+
+    private DriverAssignmentRequest toDomain(DriverAssignmentRequestDto dto) {
+        return new DriverAssignmentRequest(
+                dto.getRequestId(),
+                dto.getDriverId(),
+                dto.getDeliveryId(),
+                LocalDateTime.parse(dto.getDeliveryDateTime()),
+                ShiftType.valueOf(dto.getShiftType()),
+                dto.isHandled(),
+                dto.getStatusMessage());
+    }
+
+    private DriverAssignmentRequestDto toDto(DriverAssignmentRequest request) {
+        return new DriverAssignmentRequestDto(
+                request.getRequestId(),
+                request.getDriverId(),
+                request.getDeliveryId(),
+                request.getDeliveryDateTime().toString(),
+                request.getShiftType().name(),
+                request.isHandled(),
+                request.getStatusMessage());
     }
 
     public boolean isDriverAssignedToShift(String driverId, LocalDateTime deliveryDateTime) {
