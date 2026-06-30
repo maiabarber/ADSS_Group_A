@@ -5,8 +5,11 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import dataaccess.DatabaseConnection;
 import dataaccess.DatabaseSeeder;
+import dataaccess.dao.DeliveryStopDaoImpl;
 import dataaccess.dto.DeliveryDto;
+import dataaccess.dto.DeliveryStopDto;
 import dataaccess.dto.DriverDto;
 import dataaccess.dto.ShippingZoneDto;
 import dataaccess.dto.SiteDto;
@@ -390,6 +393,7 @@ public class DeliveriesApplication {
             // System.out.println("sourceSiteId = " + dto.getSourceSiteId());
 
             deliveryRepository.save(dto);
+            saveDeliveryStops(delivery);
         } catch (RepositoryException e) {
             throw new IllegalStateException(
                     "Delivery changed in memory but failed to save to database",
@@ -410,6 +414,28 @@ public class DeliveriesApplication {
                 delivery.getShippingZone().getZoneCode(),
                 delivery.getStatus().name()
         );
+    }
+
+    private void saveDeliveryStops(Delivery delivery) {
+        try (java.sql.Connection connection = DatabaseConnection.getConnection()) {
+            DeliveryStopDaoImpl stopDao = new DeliveryStopDaoImpl(connection);
+            for (DeliveryStop stop : delivery.getStops()) {
+                stopDao.createOrUpdate(new DeliveryStopDto(
+                        generateStopId(delivery.getDeliveryId(), stop.getStopOrder()),
+                        delivery.getDeliveryId(),
+                        stop.getStopOrder(),
+                        stop.getStopType().name(),
+                        stop.getSite().getSiteId(),
+                        stop.getPlannedArrivalDateTime().toString()
+                ));
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Delivery saved but failed to save delivery stops", e);
+        }
+    }
+
+    private int generateStopId(int deliveryId, int stopOrder) {
+        return deliveryId * 1000 + stopOrder + 1;
     }
 
     public void cancelDelivery(Delivery delivery) {

@@ -13,13 +13,17 @@ import employee.domain.Branch;
 import employee.domain.User;
 import employee.domain.WeeklyAvailabilityRequest;
 import dataaccess.DatabaseConnection;
+import dataaccess.dao.BranchDeliveryStopSiteDaoImpl;
 import dataaccess.dao.DriverDAOImpl;
 import dataaccess.dao.DriverLicenseTypeDaoImpl;
 import dataaccess.dao.EmployeeDAOImpl;
+import dataaccess.dao.DeliveryStopDaoImpl;
 import dataaccess.dao.ShiftDaoImpl;
 import dataaccess.dto.BranchDto;
+import dataaccess.dto.BranchDeliveryStopSiteDto;
 import dataaccess.dto.DriverDto;
 import dataaccess.dto.DriverLicenseTypeDto;
+import dataaccess.dto.DeliveryStopDto;
 import dataaccess.repository.EmployeeRepository;
 import dataaccess.repository.RepositoryException;
 import dataaccess.repository.ShiftRepository;
@@ -38,6 +42,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Year;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
@@ -1381,11 +1386,18 @@ public class ConsolePresentation {
 
             Employee driver = driverOptional.get();
 
-            shiftController.assignEmployeeToShift(
+            if (!hasApprovedAssignment(shift, driver.getId(), Role.DRIVER)) {
+                shiftController.assignEmployeeToShift(
+                        currentUser.get(),
+                        driver,
+                        shift,
+                        Role.DRIVER);
+            }
+
+            List<String> storekeeperUpdates = ensureStorekeepersForDeliveryStops(
                     currentUser.get(),
-                    driver,
-                    shift,
-                    Role.DRIVER);
+                    selectedRequest.getDeliveryId(),
+                    shift);
 
             shiftRepository.save(shift);
             employeeTransportationService.markDriverAssignmentRequestHandled(selectedRequest);
@@ -1395,12 +1407,216 @@ public class ConsolePresentation {
                     + shift.getDate() + " - " + shift.getShiftType()
                     + " for delivery " + selectedRequest.getDeliveryId() + ".");
 
+            for (String update : storekeeperUpdates) {
+                System.out.println(update);
+            }
+
             System.out.println("Transportation manager update: driver assignment request was completed.");
         } catch (RepositoryException e) {
             System.out.println("Failed to save driver assignment: " + e.getMessage());
         } catch (IllegalArgumentException e) {
             System.out.println("Driver assignment failed: " + e.getMessage());
         }
+    }
+
+    private List<String> ensureStorekeepersForDeliveryStops(User currentUser, int deliveryId, Shift driverShift)
+            throws RepositoryException {
+        List<DeliveryStopDto> stops = loadDeliveryStops(deliveryId);
+        if (stops.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Delivery stops were not found. Cannot verify storekeeper coverage.");
+        }
+
+        List<String> updates = new ArrayList<>();
+        for (DeliveryStopDto stop : stops) {
+            Integer branchId = findBranchIdForStopSite(stop.getSiteId());
+            if (branchId == null) {
+                continue;
+            }
+
+            LocalDateTime arrivalDateTime = LocalDateTime.parse(stop.getPlannedArrival());
+            Shift arrivalShift = findShiftForBranchAt(arrivalDateTime, branchId, driverShift);
+            if (arrivalShift == null) {
+                throw new IllegalArgumentException(
+                        "No matching shift exists for branch " + branchId
+                                + " at stop #" + stop.getStopOrder()
+                                + " arrival time " + arrivalDateTime + ".");
+            }
+
+            if (hasApprovedStorekeeperForBranch(arrivalShift, branchId)) {
+                updates.add("Storekeeper already assigned for branch " + branchId
+                        + " at stop #" + stop.getStopOrder() + ".");
+                continue;
+            }
+
+            Employee storekeeper = assignFirstAvailableStorekeeper(currentUser, arrivalShift, branchId);
+            if (storekeeper == null) {
+                throw new IllegalArgumentException(
+                        "No available storekeeper could be approved for branch " + branchId
+                                + " at stop #" + stop.getStopOrder()
+                                + " arrival time " + arrivalDateTime + ".");
+            }
+
+            shiftRepository.save(arrivalShift);
+            updates.add("Storekeeper " + storekeeper.getName()
+                    + " was assigned to branch " + branchId
+                    + " shift " + arrivalShift.getDate()
+                    + " - " + arrivalShift.getShiftType()
+                    + " for stop #" + stop.getStopOrder() + ".");
+        }
+
+        return updates;
+    }
+
+    private List<DeliveryStopDto> loadDeliveryStops(int deliveryId) throws RepositoryException {
+        List<DeliveryStopDto> deliveryStops = new ArrayList<>();
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            for (DeliveryStopDto stop : new DeliveryStopDaoImpl(connection).findAll()) {
+                if (stop.getDeliveryId() == deliveryId) {
+                    deliveryStops.add(stop);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RepositoryException("Failed to load delivery stops", e);
+        }
+
+        deliveryStops.sort((left, right) -> Integer.compare(left.getStopOrder(), right.getStopOrder()));
+        return deliveryStops;
+    }
+
+    private Integer findBranchIdForStopSite(int siteId) throws RepositoryException {
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            for (BranchDeliveryStopSiteDto mapping : new BranchDeliveryStopSiteDaoImpl(connection).findAll()) {
+                if (mapping.getSiteId() == siteId) {
+                    return mapping.getBranchId();
+                }
+            }
+            return null;
+        } catch (SQLException e) {
+            throw new RepositoryException("Failed to load branch delivery stop sites", e);
+        }
+    }
+
+    private Shift findShiftForBranchAt(LocalDateTime dateTime, int branchId, Shift preferredShift)
+            throws RepositoryException {
+        for (ShiftType shiftType : getCandidateShiftTypesByTime(dateTime)) {
+            if (preferredShift != null
+                    && preferredShift.getDate().equals(dateTime.toLocalDate())
+                    && preferredShift.getShiftType() == shiftType
+                    && shiftBelongsToBranch(preferredShift, branchId)) {
+                return preferredShift;
+            }
+
+            for (Shift candidate : shiftRepository.findAll()) {
+                if (candidate.getDate().equals(dateTime.toLocalDate())
+                        && candidate.getShiftType() == shiftType
+                        && shiftBelongsToBranch(candidate, branchId)) {
+                    return candidate;
+                }
+            }
+        }
+        return null;
+    }
+
+    private List<ShiftType> getCandidateShiftTypesByTime(LocalDateTime dateTime) {
+        int hour = dateTime.getHour();
+        List<ShiftType> candidates = new ArrayList<>();
+
+        if (hour >= 6 && hour < 14) {
+            candidates.add(ShiftType.MORNING_OVERTIME);
+            candidates.add(ShiftType.MORNING);
+            return candidates;
+        }
+
+        if (hour >= 14 && hour < 16) {
+            candidates.add(ShiftType.MORNING_OVERTIME);
+            return candidates;
+        }
+
+        if (hour >= 16 && hour < 22) {
+            candidates.add(ShiftType.EVENING);
+            return candidates;
+        }
+
+        throw new IllegalArgumentException("No active shift for this time: " + dateTime.toLocalTime());
+    }
+
+    private boolean hasApprovedStorekeeperForBranch(Shift shift, int branchId) {
+        for (ShiftAssignment assignment : shift.getAssignments()) {
+            Employee employee = assignment.getEmployee();
+            if (assignment.getRole() == Role.STOREKEEPER
+                    && assignment.isApproved()
+                    && !assignment.isCancellationRequested()
+                    && employee != null
+                    && !employee.isFired()
+                    && employeeBelongsToBranch(employee, branchId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Employee assignFirstAvailableStorekeeper(User currentUser, Shift shift, int branchId)
+            throws RepositoryException {
+        for (Employee employee : employeeRepository.findAll()) {
+            if (employee == null
+                    || employee.isFired()
+                    || !employee.getAuthorizedRoles().contains(Role.STOREKEEPER)
+                    || !employeeBelongsToBranch(employee, branchId)
+                    || isAssignedToShift(shift, employee.getId())) {
+                continue;
+            }
+
+            try {
+                shiftController.assignEmployeeToShift(currentUser, employee, shift, Role.STOREKEEPER);
+                ShiftAssignment assignment = findAssignment(shift, employee.getId(), Role.STOREKEEPER);
+                if (assignment != null && assignment.isApproved()) {
+                    return employee;
+                }
+                if (assignment != null) {
+                    shift.removeAssignment(assignment);
+                }
+            } catch (IllegalArgumentException e) {
+                // Try the next storekeeper.
+            }
+        }
+        return null;
+    }
+
+    private boolean hasApprovedAssignment(Shift shift, String employeeId, Role role) {
+        ShiftAssignment assignment = findAssignment(shift, employeeId, role);
+        return assignment != null && assignment.isApproved() && !assignment.isCancellationRequested();
+    }
+
+    private boolean isAssignedToShift(Shift shift, String employeeId) {
+        for (ShiftAssignment assignment : shift.getAssignments()) {
+            if (assignment.getEmployee() != null
+                    && employeeId.equals(assignment.getEmployee().getId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private ShiftAssignment findAssignment(Shift shift, String employeeId, Role role) {
+        for (ShiftAssignment assignment : shift.getAssignments()) {
+            if (assignment.getEmployee() != null
+                    && employeeId.equals(assignment.getEmployee().getId())
+                    && assignment.getRole() == role) {
+                return assignment;
+            }
+        }
+        return null;
+    }
+
+    private boolean shiftBelongsToBranch(Shift shift, int branchId) {
+        return shift.getBranch() != null
+                && String.valueOf(branchId).equals(shift.getBranch().getBranchId());
+    }
+
+    private boolean employeeBelongsToBranch(Employee employee, int branchId) {
+        return employee.getBranch() != null
+                && String.valueOf(branchId).equals(employee.getBranch().getBranchId());
     }
 
     private void manageBranchWorkspaceFlow(Scanner scanner) throws RepositoryException {
