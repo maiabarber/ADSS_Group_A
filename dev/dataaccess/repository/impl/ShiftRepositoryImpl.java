@@ -2,6 +2,7 @@ package dataaccess.repository.impl;
 
 import dataaccess.DatabaseConnection;
 import dataaccess.DatabaseInitializer;
+import dataaccess.dao.EmployeeDAOImpl;
 import dataaccess.dao.ShiftDaoImpl;
 import dataaccess.dto.ShiftDto;
 import dataaccess.mapper.ShiftMapper;
@@ -284,7 +285,7 @@ public class ShiftRepositoryImpl implements ShiftRepository {
     private List<ShiftAssignment> loadAssignments(Connection connection, int shiftId, Shift shift)
             throws SQLException, RepositoryException {
         List<ShiftAssignment> assignments = new ArrayList<>();
-        EmployeeRepositoryImpl employeeRepository = new EmployeeRepositoryImpl();
+        EmployeeRepositoryImpl employeeRepository = new EmployeeRepositoryImpl(new EmployeeDAOImpl(connection));
 
         try (PreparedStatement statement = connection.prepareStatement("""
                 SELECT employee_id, role_name, status

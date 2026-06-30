@@ -384,10 +384,10 @@ public class DeliveriesApplication {
         try {
             DeliveryDto dto = toDeliveryDto(delivery);
 
-            System.out.println("DEBUG saving delivery:");
-            System.out.println("id = " + dto.getDeliveryId());
-            System.out.println("status = " + dto.getStatus());
-            System.out.println("sourceSiteId = " + dto.getSourceSiteId());
+            // System.out.println("DEBUG saving delivery:");
+            // System.out.println("id = " + dto.getDeliveryId());
+            // System.out.println("status = " + dto.getStatus());
+            // System.out.println("sourceSiteId = " + dto.getSourceSiteId());
 
             deliveryRepository.save(dto);
         } catch (RepositoryException e) {

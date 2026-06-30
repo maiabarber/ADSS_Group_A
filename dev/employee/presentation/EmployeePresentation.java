@@ -14,6 +14,7 @@ import employee.domain.Role;
 import employee.domain.Salary;
 import employee.domain.User;
 import employee.domain.WeeklyAvailabilityRequest;
+import transportation.domain.LicenseType;
 
 /**
  * EmployeePresentation class serves as a presentation layer for handling employee input and creating Employee objects.
@@ -37,6 +38,7 @@ public class EmployeePresentation {
     private double workedHoursInput;
     private EmploymentScope employmentScopeInput;
     private Branch branchInput;
+    private LicenseType driverLicenseTypeInput;
 
     public Employee readEmployeeInput(Scanner scanner) {
         return readEmployeeInput(scanner, null);
@@ -52,7 +54,9 @@ public class EmployeePresentation {
 
             employeeTypeInput = readEmploymentType(scanner);
             jobRoleInput = readJobRole(scanner);
-            canManageShiftInput = readYesNo(scanner, "Can manage shift? (y/n): ");
+            canManageShiftInput = jobRoleInput != Role.DRIVER
+                    && readYesNo(scanner, "Can manage shift? (y/n): ");
+            driverLicenseTypeInput = jobRoleInput == Role.DRIVER ? readLicenseType(scanner) : null;
 
             bankNumberInput = readPositiveNumber(scanner, "Bank number: ");
             branchNumberInput = readPositiveNumber(scanner, "Branch number: ");
@@ -224,6 +228,33 @@ public class EmployeePresentation {
                 System.out.println("Error: " + e.getMessage());
             }
         }
+    }
+
+    private LicenseType readLicenseType(Scanner scanner) {
+        LicenseType[] licenseTypes = LicenseType.values();
+        while (true) {
+            System.out.println("Driver license type:");
+            for (int i = 0; i < licenseTypes.length; i++) {
+                System.out.println((i + 1) + ". " + licenseTypes[i]);
+            }
+            System.out.print("Selection: ");
+            String value = scanner.nextLine().trim();
+
+            try {
+                int selectedIndex = Integer.parseInt(value) - 1;
+                if (selectedIndex < 0 || selectedIndex >= licenseTypes.length) {
+                    System.out.println("Error: License type selection must be 1-" + licenseTypes.length + ".");
+                    continue;
+                }
+                return licenseTypes[selectedIndex];
+            } catch (NumberFormatException e) {
+                System.out.println("Error: License type selection must be a number.");
+            }
+        }
+    }
+
+    public LicenseType getDriverLicenseTypeInput() {
+        return driverLicenseTypeInput;
     }
 
     private boolean readYesNo(Scanner scanner, String prompt) {

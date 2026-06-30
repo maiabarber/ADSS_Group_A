@@ -15,6 +15,7 @@ public class DatabaseInitializer {
             statement.execute("PRAGMA foreign_keys = ON");
 
             createEmployeeTables(statement);
+            migrateEmployeeTables(statement);
             createTransportationTables(statement);
             createJoinTables(statement);
         }
@@ -137,6 +138,49 @@ public class DatabaseInitializer {
                     status_message TEXT NOT NULL
                 )
                 """);
+    }
+
+    private static void migrateEmployeeTables(Statement statement) throws SQLException {
+        addColumnIfMissing(statement, "employees", "fixed_day_off", "TEXT");
+        addColumnIfMissing(statement, "employees", "weekly_week_start_date", "TEXT");
+        addColumnIfMissing(statement, "employees", "weekly_submission_deadline", "TEXT");
+        addColumnIfMissing(statement, "employees", "weekly_constraints", "TEXT");
+        addColumnIfMissing(statement, "employees", "weekly_preferences", "TEXT");
+        statement.execute("""
+                UPDATE employees
+                SET can_manage_shift = 0
+                WHERE employee_id IN (
+                    SELECT user_id
+                    FROM users
+                    WHERE is_hr_manager = 1
+                )
+                """);
+        statement.execute("""
+                UPDATE employees
+                SET can_manage_shift = 1
+                WHERE employee_id = '100000002'
+                  AND employee_id NOT IN (
+                      SELECT user_id
+                      FROM users
+                      WHERE is_hr_manager = 1
+                  )
+                """);
+    }
+
+    private static void addColumnIfMissing(
+            Statement statement,
+            String tableName,
+            String columnName,
+            String columnDefinition) throws SQLException {
+        try (java.sql.ResultSet columns = statement.getConnection()
+                .getMetaData()
+                .getColumns(null, null, tableName, columnName)) {
+            if (columns.next()) {
+                return;
+            }
+        }
+
+        statement.execute("ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnDefinition);
     }
 
     private static void createTransportationTables(Statement statement) throws SQLException {

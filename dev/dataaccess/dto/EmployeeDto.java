@@ -15,8 +15,19 @@ public final class EmployeeDto {
     private final int vacationDays;
     private final Integer branchId;
     private final boolean canManageShift;
+    private final String fixedDayOff;
+    private final String weeklyWeekStartDate;
+    private final String weeklySubmissionDeadline;
+    private final String weeklyConstraints;
+    private final String weeklyPreferences;
 
     public EmployeeDto(String employeeId, String name, String bankNumber, String bankBranchNumber, String bankAccountNumber, String employmentType, String employmentScope, double hourlySalary, double globalSalary, String startDate, boolean fired, int vacationDays, Integer branchId, boolean canManageShift) {
+        this(employeeId, name, bankNumber, bankBranchNumber, bankAccountNumber, employmentType, employmentScope,
+                hourlySalary, globalSalary, startDate, fired, vacationDays, branchId, canManageShift,
+                null, null, null, null, null);
+    }
+
+    public EmployeeDto(String employeeId, String name, String bankNumber, String bankBranchNumber, String bankAccountNumber, String employmentType, String employmentScope, double hourlySalary, double globalSalary, String startDate, boolean fired, int vacationDays, Integer branchId, boolean canManageShift, String fixedDayOff, String weeklyWeekStartDate, String weeklySubmissionDeadline, String weeklyConstraints, String weeklyPreferences) {
         this.employeeId = employeeId;
         this.name = name;
         this.bankNumber = bankNumber;
@@ -31,6 +42,11 @@ public final class EmployeeDto {
         this.vacationDays = vacationDays;
         this.branchId = branchId;
         this.canManageShift = canManageShift;
+        this.fixedDayOff = fixedDayOff;
+        this.weeklyWeekStartDate = weeklyWeekStartDate;
+        this.weeklySubmissionDeadline = weeklySubmissionDeadline;
+        this.weeklyConstraints = weeklyConstraints;
+        this.weeklyPreferences = weeklyPreferences;
     }
 
     public String getEmployeeId() {
@@ -87,6 +103,26 @@ public final class EmployeeDto {
 
     public boolean canManageShift() {
         return canManageShift;
+    }
+
+    public String getFixedDayOff() {
+        return fixedDayOff;
+    }
+
+    public String getWeeklyWeekStartDate() {
+        return weeklyWeekStartDate;
+    }
+
+    public String getWeeklySubmissionDeadline() {
+        return weeklySubmissionDeadline;
+    }
+
+    public String getWeeklyConstraints() {
+        return weeklyConstraints;
+    }
+
+    public String getWeeklyPreferences() {
+        return weeklyPreferences;
     }
 
 }

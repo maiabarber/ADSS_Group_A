@@ -80,7 +80,7 @@ public class DeliveryManager {
 
         for (Driver driver : drivers) {
             if (driver.canDrive(truck)
-                    && employeeTransportationService.isDriverAssignedToShift(
+                    && employeeTransportationService.canRequestDriverForDeliveryShift(
                             driver.getEmployeeId(),
                             departureDateTime)) {
                 availableDrivers.add(driver);
@@ -297,10 +297,11 @@ public class DeliveryManager {
             deliveryForm
         );
 
+        LocalDateTime deliveryDateTime = LocalDateTime.of(delivery.getDeliveryDate(), delivery.getDepartureTime());
         employeeTransportationService.createDriverAssignmentRequest(
             driver.getEmployeeId(),
             delivery.getDeliveryId(),
-            LocalDateTime.of(delivery.getDeliveryDate(), delivery.getDepartureTime())
+            deliveryDateTime
         );
 
         if (delivery.isOverweight()) {

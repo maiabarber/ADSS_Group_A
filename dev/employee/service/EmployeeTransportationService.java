@@ -51,17 +51,45 @@ public class EmployeeTransportationService {
                 "No active shift for this time: " + dateTime.toLocalTime());
     }
 
+    private List<ShiftType> getCandidateShiftTypesByTime(LocalDateTime dateTime) {
+        int hour = dateTime.getHour();
+        List<ShiftType> candidates = new ArrayList<>();
+
+        if (hour >= 6 && hour < 14) {
+            candidates.add(ShiftType.MORNING_OVERTIME);
+            candidates.add(ShiftType.MORNING);
+            return candidates;
+        }
+
+        if (hour >= 14 && hour < 16) {
+            candidates.add(ShiftType.MORNING_OVERTIME);
+            return candidates;
+        }
+
+        if (hour >= 16 && hour < 22) {
+            candidates.add(ShiftType.EVENING);
+            return candidates;
+        }
+
+        throw new IllegalArgumentException(
+                "No active shift for this time: " + dateTime.toLocalTime());
+    }
+
     public Shift getShiftByDateTime(LocalDateTime dateTime) {
         if (dateTime == null) {
             throw new IllegalArgumentException("dateTime is required");
         }
 
-        ShiftType shiftType = getShiftTypeByTime(dateTime);
-
         try {
-            return shiftRepositoryImpl
-                    .findByDateAndType(dateTime.toLocalDate(), shiftType)
-                    .orElse(null);
+            for (ShiftType shiftType : getCandidateShiftTypesByTime(dateTime)) {
+                Shift shift = shiftRepositoryImpl
+                        .findByDateAndType(dateTime.toLocalDate(), shiftType)
+                        .orElse(null);
+                if (shift != null) {
+                    return shift;
+                }
+            }
+            return null;
         } catch (RepositoryException e) {
             return null;
         }
@@ -96,7 +124,8 @@ public class EmployeeTransportationService {
     }
 
     private boolean canEmployeeWorkAt(Employee employee, LocalDateTime dateTime) {
-        ShiftType shiftType = getShiftTypeByTime(dateTime);
+        Shift shift = getShiftByDateTime(dateTime);
+        ShiftType shiftType = shift == null ? getShiftTypeByTime(dateTime) : shift.getShiftType();
         WeeklyAvailabilityRequest availability = employee.getWeeklyAvailabilityRequest();
 
         if (employee.getFixedDayOff() != null
@@ -138,7 +167,8 @@ public class EmployeeTransportationService {
             throw new IllegalArgumentException("deliveryDateTime is required");
         }
 
-        ShiftType shiftType = getShiftTypeByTime(deliveryDateTime);
+        Shift shift = getShiftByDateTime(deliveryDateTime);
+        ShiftType shiftType = shift == null ? getShiftTypeByTime(deliveryDateTime) : shift.getShiftType();
 
         DriverAssignmentRequest request = new DriverAssignmentRequest(
                 driverId,
@@ -198,6 +228,92 @@ public class EmployeeTransportationService {
         }
 
         return false;
+    }
+
+    public boolean canRequestDriverForDeliveryShift(String driverId, LocalDateTime deliveryDateTime) {
+        if (driverId == null || driverId.isBlank() || deliveryDateTime == null) {
+            return false;
+        }
+
+        Shift shift = getShiftByDateTime(deliveryDateTime);
+        if (shift == null) {
+            return false;
+        }
+
+        Employee driver = null;
+        try {
+            for (Employee employee : employeeRepository.findAll()) {
+                if (employee != null && driverId.equals(employee.getId())) {
+                    driver = employee;
+                    break;
+                }
+            }
+        } catch (RepositoryException e) {
+            return false;
+        }
+
+        if (driver == null
+                || driver.isFired()
+                || !driver.getAuthorizedRoles().contains(Role.DRIVER)
+                || !canEmployeeWorkAt(driver, deliveryDateTime)) {
+            return false;
+        }
+
+        for (ShiftAssignment assignment : shift.getAssignments()) {
+            if (assignment == null
+                    || assignment.getEmployee() == null
+                    || !driverId.equals(assignment.getEmployee().getId())) {
+                continue;
+            }
+
+            return assignment.getRole() == Role.DRIVER
+                    && assignment.isApproved()
+                    && !assignment.isCancellationRequested();
+        }
+
+        return true;
+    }
+
+    public boolean assignDriverToDeliveryShift(String driverId, LocalDateTime deliveryDateTime)
+            throws RepositoryException {
+        if (driverId == null || driverId.isBlank() || deliveryDateTime == null) {
+            return false;
+        }
+
+        Shift shift = getShiftByDateTime(deliveryDateTime);
+        if (shift == null) {
+            return false;
+        }
+
+        Employee driver = null;
+        for (Employee employee : employeeRepository.findAll()) {
+            if (employee != null && driverId.equals(employee.getId())) {
+                driver = employee;
+                break;
+            }
+        }
+
+        if (driver == null || driver.isFired() || !driver.getAuthorizedRoles().contains(Role.DRIVER)) {
+            return false;
+        }
+
+        if (!canEmployeeWorkAt(driver, deliveryDateTime)) {
+            return false;
+        }
+
+        for (ShiftAssignment assignment : shift.getAssignments()) {
+            if (assignment != null
+                    && assignment.getEmployee() != null
+                    && driverId.equals(assignment.getEmployee().getId())) {
+                return assignment.getRole() == Role.DRIVER && assignment.isApproved();
+            }
+        }
+
+        ShiftAssignment assignment = new ShiftAssignment(driver, shift, Role.DRIVER);
+        assignment.setApproved(true);
+        shift.addAssignment(assignment);
+        shiftRepositoryImpl.save(shift);
+        return true;
     }
 
     public boolean hasStorekeeperInShift(LocalDateTime arrivalDateTime) {

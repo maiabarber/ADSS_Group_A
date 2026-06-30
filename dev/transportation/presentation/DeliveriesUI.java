@@ -273,6 +273,7 @@ public class DeliveriesUI {
         );
 
         System.out.println("Delivery created successfully.");
+        System.out.println("Driver assignment request was sent to HR manager.");
         System.out.println(deliveriesApplication.getDeliverySummary(delivery));
 
         if (delivery.getStatus() == DeliveryStatus.PENDING_REPLAN) {

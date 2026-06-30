@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -183,11 +184,16 @@ public class EmployeeRepositoryImpl implements EmployeeRepository {
 
         UserDto existingUser = userDao.findbyId(employee.getId());
         boolean isHrManager = existingUser != null && existingUser.isHrManager();
-
-        userDao.createOrUpdate(new UserDto(
+        UserDto updatedUser = new UserDto(
                 employee.getId(),
                 employee.getPassword(),
-                isHrManager));
+                isHrManager);
+
+        if (existingUser == null
+                || !Objects.equals(existingUser.getPassword(), updatedUser.getPassword())
+                || existingUser.isHrManager() != updatedUser.isHrManager()) {
+            userDao.createOrUpdate(updatedUser);
+        }
 
         employeeDao.createOrUpdate(EmployeeMapper.toDto(employee));
 

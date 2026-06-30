@@ -13,9 +13,13 @@ import employee.domain.Branch;
 import employee.domain.User;
 import employee.domain.WeeklyAvailabilityRequest;
 import dataaccess.DatabaseConnection;
+import dataaccess.dao.DriverDAOImpl;
+import dataaccess.dao.DriverLicenseTypeDaoImpl;
 import dataaccess.dao.EmployeeDAOImpl;
 import dataaccess.dao.ShiftDaoImpl;
 import dataaccess.dto.BranchDto;
+import dataaccess.dto.DriverDto;
+import dataaccess.dto.DriverLicenseTypeDto;
 import dataaccess.repository.EmployeeRepository;
 import dataaccess.repository.RepositoryException;
 import dataaccess.repository.ShiftRepository;
@@ -44,6 +48,7 @@ import java.util.Scanner;
 import transportation.domain.Site;
 import transportation.domain.SiteType;
 import transportation.domain.ShippingZone;
+import transportation.domain.LicenseType;
 import dataaccess.mapper.BranchMapper;
 
 /**
@@ -277,11 +282,34 @@ public class ConsolePresentation {
             }
             ensureWeeklyAvailabilityCurrent(employee);
             userController.addEmployee(currentUser.get(), employee);
+            saveTransportationDriverIfNeeded(employee);
             System.out.println("Employee added successfully.");
         } catch (RepositoryException e) {
             System.out.println("Error: Failed to add employee: " + e.getMessage());
         } catch (IllegalArgumentException e) {
             System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    private void saveTransportationDriverIfNeeded(Employee employee) throws RepositoryException {
+        if (employee == null || !employee.getAuthorizedRoles().contains(Role.DRIVER)) {
+            return;
+        }
+
+        LicenseType licenseType = employeePresentation.getDriverLicenseTypeInput();
+        if (licenseType == null) {
+            throw new RepositoryException("Driver license type is required");
+        }
+
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            new DriverDAOImpl(connection).createOrUpdate(new DriverDto(
+                    employee.getId(),
+                    employee.getName()));
+            new DriverLicenseTypeDaoImpl(connection).createOrUpdate(new DriverLicenseTypeDto(
+                    employee.getId(),
+                    licenseType.name()));
+        } catch (SQLException e) {
+            throw new RepositoryException("Failed to save driver license type", e);
         }
     }
 
@@ -775,14 +803,14 @@ public class ConsolePresentation {
             Employee manager = null;
             String managerId = shiftPresentation.getSelectManagerIdInput();
             for (Employee employee : employees) {
-                if (employee.getId().equals(managerId)) {
+                if (employee.getId().equals(managerId) && !isHrManager(employee)) {
                     manager = employee;
                     break;
                 }
             }
 
             if (manager == null) {
-                System.out.println("Shift manager id not found.");
+                System.out.println("Shift manager id not found. Shift was not created.");
                 return;
             }
 
