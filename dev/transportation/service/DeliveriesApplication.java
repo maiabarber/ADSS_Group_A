@@ -7,8 +7,12 @@ import java.util.List;
 
 import dataaccess.DatabaseConnection;
 import dataaccess.DatabaseSeeder;
+import dataaccess.dao.DeliveryDocumentDaoImpl;
+import dataaccess.dao.DeliveryItemDaoImpl;
 import dataaccess.dao.DeliveryStopDaoImpl;
 import dataaccess.dto.DeliveryDto;
+import dataaccess.dto.DeliveryDocumentDto;
+import dataaccess.dto.DeliveryItemDto;
 import dataaccess.dto.DeliveryStopDto;
 import dataaccess.dto.DriverDto;
 import dataaccess.dto.ShippingZoneDto;
@@ -419,23 +423,79 @@ public class DeliveriesApplication {
     private void saveDeliveryStops(Delivery delivery) {
         try (java.sql.Connection connection = DatabaseConnection.getConnection()) {
             DeliveryStopDaoImpl stopDao = new DeliveryStopDaoImpl(connection);
+            DeliveryDocumentDaoImpl documentDao = new DeliveryDocumentDaoImpl(connection);
+            DeliveryItemDaoImpl itemDao = new DeliveryItemDaoImpl(connection);
+
             for (DeliveryStop stop : delivery.getStops()) {
+                int stopId = generateStopId(delivery.getDeliveryId(), stop.getStopOrder());
+
                 stopDao.createOrUpdate(new DeliveryStopDto(
-                        generateStopId(delivery.getDeliveryId(), stop.getStopOrder()),
+                        stopId,
                         delivery.getDeliveryId(),
                         stop.getStopOrder(),
                         stop.getStopType().name(),
                         stop.getSite().getSiteId(),
                         stop.getPlannedArrivalDateTime().toString()
                 ));
+
+                replaceStopDocumentAndItems(connection, documentDao, itemDao, stopId, stop);
             }
         } catch (Exception e) {
-            throw new IllegalStateException("Delivery saved but failed to save delivery stops", e);
+            throw new IllegalStateException("Delivery saved but failed to save delivery stops and items", e);
         }
     }
 
     private int generateStopId(int deliveryId, int stopOrder) {
         return deliveryId * 1000 + stopOrder + 1;
+    }
+
+    private void replaceStopDocumentAndItems(
+            java.sql.Connection connection,
+            DeliveryDocumentDaoImpl documentDao,
+            DeliveryItemDaoImpl itemDao,
+            int stopId,
+            DeliveryStop stop) throws Exception {
+
+        deletePersistedDocumentAndItemsForStop(connection, stopId);
+
+        if (!stop.hasDocument()) {
+            return;
+        }
+
+        DeliveryDocument document = stop.getDocument();
+        documentDao.createOrUpdate(new DeliveryDocumentDto(
+                document.getDocumentNumber(),
+                stopId
+        ));
+
+        for (DeliveryItem item : document.getItems()) {
+            itemDao.createOrUpdate(new DeliveryItemDto(
+                    item.getItemId(),
+                    document.getDocumentNumber(),
+                    item.getItemName(),
+                    item.getQuantity()
+            ));
+        }
+    }
+
+    private void deletePersistedDocumentAndItemsForStop(java.sql.Connection connection, int stopId)
+            throws java.sql.SQLException {
+        try (java.sql.PreparedStatement deleteItems = connection.prepareStatement("""
+                DELETE FROM delivery_items
+                WHERE document_number IN (
+                    SELECT document_number
+                    FROM delivery_documents
+                    WHERE stop_id = ?
+                )
+                """);
+             java.sql.PreparedStatement deleteDocuments = connection.prepareStatement(
+                     "DELETE FROM delivery_documents WHERE stop_id = ?")) {
+            deleteItems.setInt(1, stopId);
+            deleteItems.executeUpdate();
+
+            deleteDocuments.setInt(1, stopId);
+            deleteDocuments.executeUpdate();
+        }
     }
 
     public void cancelDelivery(Delivery delivery) {
