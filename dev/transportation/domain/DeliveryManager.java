@@ -231,6 +231,12 @@ public class DeliveryManager {
         return nextDocumentNumber++;
     }
 
+    public void synchronizeNextDocumentNumber(int nextDocumentNumber) {
+        if (nextDocumentNumber > this.nextDocumentNumber) {
+            this.nextDocumentNumber = nextDocumentNumber;
+        }
+    }
+
     public DeliveryDocument createDocument(List<DeliveryItem> items) {
         if (items == null) {
             throw new IllegalArgumentException("items cannot be null");
